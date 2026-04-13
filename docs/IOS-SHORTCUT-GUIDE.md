@@ -140,18 +140,21 @@ That's it. End the **Repeat with Each** block.
 
 ---
 
-## Advanced: Cattle Tag Prompt
+## Advanced: Cattle Tag Prompt (Multi-Photo)
 
-For cattle photos specifically, you might want a version that asks for the tag number:
+For cattle photos specifically, you might want a version that asks for the tag number and photo number:
 
 After Action 2 (Select Photos), add:
 - **If** FolderPath contains `cattle`
   - **Ask for Input**: `Enter tag number (e.g., 189)`
-  - Set Filename to: `tag-[input].jpg`
+  - Save to variable **TagNumber**
+  - **Ask for Input**: `Photo number or description (e.g., 1, 2, front, side)`
+  - Save to variable **PhotoLabel**
+  - Set Filename to: `tag-[TagNumber]-[PhotoLabel].jpg`
 - **Otherwise**
   - Use the timestamp filename
 
-This way cattle photos are automatically named `tag-189.jpg`, `tag-247.jpg`, etc., matching what the website HTML expects.
+This way cattle photos are named `tag-189-1.jpg`, `tag-189-front.jpg`, etc. The first photo (`-1`) becomes the primary card image on the site, and the rest show up in a mini gallery when clicking the card.
 
 ---
 

@@ -93,6 +93,7 @@ After M and R see the site and are excited about it, the builder will show them 
 - The animal card CSS and HTML template exist in the code as a **commented-out section** with clear instructions
 - The filter tabs (All / Breeding Stock / For Sale) are built but **hidden** until Phase 2
 - `site-config.json` has the empty cattle array ready to populate
+- Animal cards support **multiple photos per animal** — tapping a card opens a mini gallery
 - There's a comment in `cattle.html` that says something like:
   ```html
   <!-- PHASE 2: Individual animal cards go here.
@@ -100,6 +101,26 @@ After M and R see the site and are excited about it, the builder will show them 
        Each card needs: tag, name, born, sire, dam, breed, status, photo.
        Uncomment the filter tabs above when adding cards. -->
   ```
+
+### Multi-Photo Naming Convention (for cattle)
+
+Each animal can have multiple photos. Naming convention:
+```
+tag-189-1.jpg       (primary photo — shown on the card)
+tag-189-2.jpg       (additional angle)
+tag-189-3.jpg       (additional angle)
+```
+
+Or with descriptive suffixes:
+```
+tag-189-front.jpg
+tag-189-side.jpg
+tag-189-calf.jpg
+```
+
+The iOS Shortcut (cattle variant) asks for tag number then photo number/description, and builds the filename automatically.
+
+On the site: the animal card shows the `-1` (or first found) image as the primary. Clicking/tapping the card opens a lightbox that cycles through all photos for that tag number. Claude Code should build the card component to support this in the commented-out Phase 2 code.
 
 ---
 
