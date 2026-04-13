@@ -22,12 +22,14 @@
       "name": "",
       "role": "",
       "bio": "",
+      "birthday": "YYYY-MM-DD",
       "photo": "images/about/member-1.jpg"
     },
     {
       "name": "",
       "role": "",
       "bio": "",
+      "birthday": "YYYY-MM-DD",
       "photo": "images/about/member-2.jpg"
     }
   ],

@@ -789,9 +789,20 @@
         </div>
     </section>
 
-    <!-- BIRTHDAY BANNER (auto-shown via JS on mascot's birthday) -->
+    <!-- BIRTHDAY BANNER (auto-shown via JS when it's someone's birthday) -->
     <div class="birthday-banner" id="birthdayBanner" style="display:none">
-        <span>🎂</span> Happy Birthday to our Junior Ranch Hand, <strong id="birthdayName">[Name]</strong>! <span>🎂</span>
+        <span>🎂</span> <span id="birthdayMessage"></span> <span>🎂</span>
+    </div>
+
+    <!--
+        BIRTHDAY DATA: Add each family member here. Claude Code will fill these in.
+        Format: data-name="First Name" data-birthday="YYYY-MM-DD" data-role="title"
+        The mascot entry also powers the auto-age calculation in the mascot section.
+    -->
+    <div id="birthdayData" style="display:none">
+        <span data-name="[M's Name]" data-birthday="YYYY-MM-DD" data-role="owner"></span>
+        <span data-name="[R's Name]" data-birthday="YYYY-MM-DD" data-role="owner"></span>
+        <span data-name="[Son's Name]" data-birthday="YYYY-MM-DD" data-role="mascot"></span>
     </div>
 
     <!-- MASCOT / JUNIOR RANCH HAND -->
@@ -884,32 +895,54 @@
         }, { threshold: 0.15 });
         reveals.forEach(el => observer.observe(el));
 
-        // Mascot age calculation & birthday banner
+        // Birthday system — checks all family members
         (function() {
-            const section = document.getElementById('mascotSection');
-            if (!section) return;
-            const bday = section.dataset.birthday;
-            const name = section.dataset.name;
-            if (!bday || bday === 'YYYY-MM-DD') return;
-
-            const birthday = new Date(bday + 'T00:00:00');
+            const entries = document.querySelectorAll('#birthdayData span');
             const today = new Date();
-            let age = today.getFullYear() - birthday.getFullYear();
-            const m = today.getMonth() - birthday.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) age--;
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+            const birthdayNames = [];
 
-            // Set age in heading
-            const ageEl = document.getElementById('mascotAge');
-            if (ageEl) ageEl.textContent = age;
+            entries.forEach(function(entry) {
+                const bday = entry.dataset.birthday;
+                const name = entry.dataset.name;
+                const role = entry.dataset.role;
+                if (!bday || bday === 'YYYY-MM-DD') return;
 
-            // Check if today is their birthday
-            const isBirthday = today.getMonth() === birthday.getMonth()
-                            && today.getDate() === birthday.getDate();
+                const birthday = new Date(bday + 'T00:00:00');
+                const isBirthday = todayMonth === birthday.getMonth() && todayDate === birthday.getDate();
 
-            if (isBirthday) {
-                const banner = document.getElementById('birthdayBanner');
-                const bName = document.getElementById('birthdayName');
-                if (bName) bName.textContent = name;
+                // Calculate age for mascot section
+                if (role === 'mascot') {
+                    let age = today.getFullYear() - birthday.getFullYear();
+                    const m = todayMonth - birthday.getMonth();
+                    if (m < 0 || (m === 0 && todayDate < birthday.getDate())) age--;
+                    const ageEl = document.getElementById('mascotAge');
+                    if (ageEl) ageEl.textContent = age;
+                }
+
+                if (isBirthday) {
+                    birthdayNames.push({ name: name, role: role });
+                }
+            });
+
+            // Show birthday banner if anyone has a birthday today
+            if (birthdayNames.length > 0) {
+                var msg = '';
+                if (birthdayNames.length === 1) {
+                    var p = birthdayNames[0];
+                    if (p.role === 'mascot') {
+                        msg = 'Happy Birthday to our Junior Ranch Hand, <strong>' + p.name + '</strong>!';
+                    } else {
+                        msg = 'Happy Birthday to <strong>' + p.name + '</strong> from the Summers Ranch family!';
+                    }
+                } else {
+                    var names = birthdayNames.map(function(p) { return p.name; });
+                    msg = 'Happy Birthday to <strong>' + names.join('</strong> and <strong>') + '</strong>!';
+                }
+                var banner = document.getElementById('birthdayBanner');
+                var msgEl = document.getElementById('birthdayMessage');
+                if (msgEl) msgEl.innerHTML = msg;
                 if (banner) {
                     banner.style.display = '';
                     document.body.classList.add('has-birthday');

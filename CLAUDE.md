@@ -16,7 +16,7 @@ Before doing ANY code work, **prompt the user to fill in `site-config.json`**. W
 Ask for: ranch name (confirm "Summers Ranch" or alternate), tagline, year established, location (city/state/county/street/zip), phone, email, primary cattle breed, secondary breed if any, approximate herd size, selling method (auction, private treaty, both), Facebook/Instagram URLs.
 
 ### Step 2 — Family Members
-Ask for each family member's first name, role on the ranch, and brief 1–2 sentence bio. They should upload portrait photos to `images/about/`.
+Ask for each family member's first name, role on the ranch, brief 1–2 sentence bio, and **birthday (YYYY-MM-DD)**. Birthdays power the site-wide birthday banner system. They should upload portrait photos to `images/about/`.
 
 ### Step 3 — Mascot / Junior Ranch Hand
 Ask for: son's first name only (no last names on the public site), **birthday in YYYY-MM-DD format** (used for auto-age calculation and birthday banner), a short description of what he does on the ranch. They should upload 3–5 photos to `images/mascot/`.
@@ -34,22 +34,26 @@ After `site-config.json` is filled, proceed to code updates.
 
 ---
 
-## Mascot Birthday System
+## Birthday System (All Family Members)
 
-The mascot section uses a `data-birthday` attribute on the HTML element. JavaScript auto-calculates current age and checks if today is the birthday.
+The site has a family-wide birthday banner. In `index.html` there's a hidden `#birthdayData` div with a `<span>` per person:
 
-```javascript
-const birthday = new Date(el.dataset.birthday);
-const today = new Date();
-let age = today.getFullYear() - birthday.getFullYear();
-const m = today.getMonth() - birthday.getMonth();
-if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) age--;
-const isBirthday = today.getMonth() === birthday.getMonth() && today.getDate() === birthday.getDate();
-// If isBirthday, show a birthday banner at the top of the page
+```html
+<div id="birthdayData" style="display:none">
+    <span data-name="M" data-birthday="YYYY-MM-DD" data-role="owner"></span>
+    <span data-name="R" data-birthday="YYYY-MM-DD" data-role="owner"></span>
+    <span data-name="Son" data-birthday="YYYY-MM-DD" data-role="mascot"></span>
+</div>
 ```
 
-On the mascot's birthday, display a celebratory banner across the top of every page:
-"Happy Birthday to our Junior Ranch Hand, [Name]! 🎂"
+On page load, JS checks every entry:
+- `data-role="mascot"` also auto-calculates age for the mascot section heading
+- If today is anyone's birthday, a gold banner slides in at the top
+- Owners get: "Happy Birthday to [Name] from the Summers Ranch family!"
+- Mascot gets: "Happy Birthday to our Junior Ranch Hand, [Name]!"
+- Multiple same-day birthdays combine names
+
+When gathering content, **ask for all family member birthdays** and populate both this div and the `birthday` fields in `site-config.json`.
 
 ---
 
