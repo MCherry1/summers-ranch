@@ -3,11 +3,8 @@
     "name": "",
     "tagline": "",
     "year_established": "",
-    "location_city": "",
     "location_state": "",
     "location_county": "",
-    "street_address": "",
-    "zip_code": "",
     "phone": "",
     "email": "",
     "breed_primary": "",
@@ -15,7 +12,10 @@
     "herd_size_approx": "",
     "selling_method": "private treaty and auction",
     "social_facebook": "",
-    "social_instagram": ""
+    "social_instagram": "",
+    "location_display": "town_and_county",
+    "location_note": "Call for directions \u2014 visitors welcome by appointment",
+    "location_town": ""
   },
   "family": [
     {
@@ -70,6 +70,5 @@
       "notes": ""
     }
   ],
-  "formspree_id": "",
-  "google_maps_embed_url": ""
+  "formspree_id": ""
 }

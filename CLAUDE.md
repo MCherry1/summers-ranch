@@ -149,7 +149,7 @@ Draft the About page together. He can give you the broad strokes — how long th
 - He may upload via the iOS Shortcut (see `docs/IOS-SHORTCUT-GUIDE.md`) or via GitHub directly
 
 ### Step 6 — Contact & Map
-Formspree form ID, Google Maps embed URL.
+Formspree form ID for the contact form. **No exact address or Google Maps embed** — for ranch security (livestock/equipment theft, trespassing), use town and county only. The contact page should say something like "Located in [Town], [County] County, [State]. Call us for directions — visitors welcome by appointment." The ranch owners can choose to add a map later in Phase 2 if they want.
 
 ### Step 7 — DO NOT Ask For
 - Individual cattle tag numbers (he doesn't have them)
@@ -180,7 +180,7 @@ If user provides raw photos, create an optimization script.
 4. Wire up birthday system with real names and dates
 5. Optimize and add real photos
 6. Set up Formspree contact form
-7. Add Google Maps embed
+7. Replace map section with town/county text and "call for directions" (NO exact address or map pin)
 8. Add YouTube embeds for any videos
 9. Comment out (don't delete) the individual animal card system for Phase 2
 10. Test responsive design at all breakpoints
