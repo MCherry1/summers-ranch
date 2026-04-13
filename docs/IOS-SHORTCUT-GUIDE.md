@@ -29,6 +29,7 @@ Open the Shortcuts app → tap **+** to create a new shortcut → name it **"Ran
   - `Hero`
   - `About`
   - `Mascot`
+  - `Hunting`
 
 For each menu item, set a **Text** action with the folder path:
 - Cattle → `images/cattle`
@@ -36,6 +37,7 @@ For each menu item, set a **Text** action with the folder path:
 - Hero → `images/hero`
 - About → `images/about`
 - Mascot → `images/mascot`
+- Hunting → `images/hunting`
 
 Save the result to a variable called **FolderPath**.
 

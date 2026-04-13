@@ -54,6 +54,13 @@ This is what gets built with available content. It should look FINISHED, not lik
 - These go in `images/gallery/` and `images/hero/` — NOT `images/cattle/`
 - Any videos (calves nursing, ranch scenery) can be uploaded to YouTube and embedded
 
+**Hunting trip photos:**
+- The family takes an annual hunting trip — this is on the About page as a "get to know us" section
+- Photos go in `images/hunting/` and also show up under the "Hunting" filter in the gallery
+- Each trip card can have a year and brief caption (e.g., "2024 Season — Colorado elk")
+- The builder may have some of these photos; if not, this section can launch with placeholders and fill in later
+- Tone: casual, fun, family tradition — this isn't a hunting outfitter site, just a glimpse of life off the ranch
+
 **Contact form & map:**
 - Formspree ID (he sets this up)
 - Google Maps embed URL
