@@ -192,19 +192,19 @@
 </head>
 <body>
     <nav class="nav" id="nav">
-        <a href="index.html" class="nav-logo">Summers Ranch<span>Est. [Year]</span></a>
+        <a href="index.html" class="nav-logo">Summers Ranch<span>Est. 2001</span></a>
         <ul class="nav-links">
             <li><a href="about.html">About</a></li>
             <li><a href="cattle.html">Our Cattle</a></li>
             <li><a href="gallery.html">Gallery</a></li>
             <li><a href="contact.html" class="active">Contact</a></li>
         </ul>
-        <a href="tel:+15551234567" class="nav-phone"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>(555) 123-4567</a>
+        <a href="tel:+12095555555" class="nav-phone"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>(209) 555-5555</a>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     </nav>
     <div class="mobile-menu" id="mobileMenu">
         <a href="about.html">About</a><a href="cattle.html">Our Cattle</a><a href="gallery.html">Gallery</a><a href="contact.html">Contact</a>
-        <a href="tel:+15551234567" style="color:var(--gold);font-size:1.4rem">(555) 123-4567</a>
+        <a href="tel:+12095555555" style="color:var(--gold);font-size:1.4rem">(209) 555-5555</a>
     </div>
 
     <section class="page-banner">
@@ -226,7 +226,7 @@
                 </div>
                 <div class="info-text">
                     <h3>Phone</h3>
-                    <p class="phone-big"><a href="tel:+15551234567">(555) 123-4567</a></p>
+                    <p class="phone-big"><a href="tel:+12095555555">(209) 555-5555</a></p>
                 </div>
             </div>
 
@@ -236,7 +236,7 @@
                 </div>
                 <div class="info-text">
                     <h3>Email</h3>
-                    <p><a href="mailto:info@mrsummersranch.com">info@mrsummersranch.com</a></p>
+                    <p><a href="mailto:mcherry@gmail.com">mcherry@gmail.com</a></p>
                 </div>
             </div>
 
@@ -246,7 +246,8 @@
                 </div>
                 <div class="info-text">
                     <h3>Location</h3>
-                    <p>[Town], [County] County<br>[State]</p>
+                    <p>Sutter Creek, Amador County<br>California</p>
+                    <p class="loc-note" style="font-size:0.85rem;color:var(--stone);margin-top:0.4rem">Call for directions &mdash; visitors welcome by appointment.</p>
                 </div>
             </div>
         </div>
@@ -256,13 +257,11 @@
             <p>We'll get back to you as soon as we can.</p>
 
             <!--
-                FORM BACKEND: This uses Formspree (free tier: 50 submissions/month).
-                1. Go to formspree.io and create a free account
-                2. Create a new form and get your form ID
-                3. Replace YOUR_FORM_ID below with that ID
-                The form will work without any server-side code.
+                FORM BACKEND: Formspree. Endpoint below points at the live form ID.
+                Submissions arrive in the Formspree dashboard and forward to the
+                configured email address.
             -->
-            <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+            <form class="contact-form" action="https://formspree.io/f/mzdybyjl" method="POST">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="name">Name</label>
@@ -294,10 +293,10 @@
             2. The z=10 sets zoom level (10 = county level, 12 = town level, 8 = wider region)
             3. This pins to the TOWN, not the ranch — intentional for privacy
         -->
-        <a href="https://www.google.com/maps/search/[Town],+[State]" target="_blank" rel="noopener" title="View area in Google Maps" style="display:block;">
+        <a href="https://www.google.com/maps/search/Sutter+Creek,+California" target="_blank" rel="noopener" title="View area in Google Maps" style="display:block;">
             <iframe
                 class="map-embed"
-                src="https://maps.google.com/maps?q=[Town],+[County]+County,+[State]&t=&z=10&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=Sutter+Creek,+Amador+County,+California&t=&z=10&ie=UTF8&iwloc=&output=embed"
                 width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade">
             </iframe>
