@@ -26,7 +26,7 @@
       "role": "Elder Ranch Hand",
       "bio": "Marty's family has called Sutter Creek home for generations. He worked cattle as a young man, then spent a long career as a heavy-machinery mechanic at Folsom State Prison before recently retiring. Now he gets to do what he's always wanted \u2014 spend his days with cows and grandsons.",
       "birthday": "YYYY-MM-DD",
-      "photo": "images/about/marty.jpg"
+      "photo": "images/mascot/theodore-main.jpg"
     },
     {
       "name": "Roianne Summers",
@@ -64,11 +64,13 @@
   "formspree_id": "mzdybyjl",
   "todos_for_owners": [
     "Marty's birthday (add to birthdayData span in index.html + family[0].birthday here)",
-    "Real family and mascot photos (images/about/, images/mascot/)",
-    "Real herd photos (images/gallery/, images/hero/) to replace Unsplash placeholders",
-    "Real hunting trip photos + captions (About page hunting cards)",
+    "Upload the 5 real photos referenced by the HTML: images/mascot/theodore-main.jpg, images/hunting/marty-buck.jpg, images/hunting/roianne-buck.jpg, images/hunting/elk.jpg, images/gallery/ranch-cat.jpg",
+    "Solo / non-hunting Roianne photo for the family grid on about.html (currently Unsplash placeholder)",
+    "Real herd photos (images/gallery/, images/hero/, images/cattle/) to replace remaining Unsplash placeholders on cattle.html and gallery.html",
+    "Landscape / ranch-scenery photos for hero backgrounds and remaining gallery items",
     "Confirm mcherry@gmail.com vs. a dedicated ranch email address",
     "Confirm phone number (currently (209) 555-5555 placeholder)",
-    "Verify year_established (2001)"
+    "Verify year_established (2001)",
+    "Paste YouTube video IDs into gallery.html video section"
   ]
 }
