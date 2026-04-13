@@ -1,77 +1,76 @@
 {
   "ranch": {
-    "name": "",
-    "tagline": "",
-    "year_established": "",
-    "location_state": "",
-    "location_county": "",
-    "phone": "",
-    "email": "",
-    "breed_primary": "",
-    "breed_secondary": "",
-    "herd_size_approx": "",
-    "selling_method": "private treaty and auction",
-    "social_facebook": "",
-    "social_instagram": "",
+    "name": "Summers Ranch",
+    "tagline": "Waiting for Bistek",
+    "year_established": "2001",
+    "location_state": "California",
+    "location_county": "Amador",
+    "location_town": "Sutter Creek",
     "location_display": "town_and_county",
     "location_note": "Call for directions \u2014 visitors welcome by appointment",
-    "location_town": ""
+    "phone": "(209) 555-5555",
+    "phone_tel": "+12095555555",
+    "email": "mcherry@gmail.com",
+    "breed_primary": "Hereford",
+    "breed_secondary": "",
+    "herd_size_approx": "40",
+    "acreage": "160",
+    "selling_method": "private treaty and auction",
+    "social_facebook": "",
+    "social_instagram": ""
   },
   "family": [
     {
-      "name": "",
-      "role": "",
-      "bio": "",
+      "name": "Marty Summers",
+      "nickname": "Uncle Chicken",
+      "role": "Elder Ranch Hand",
+      "bio": "Marty's family has called Sutter Creek home for generations. He worked cattle as a young man, then spent a long career as a heavy-machinery mechanic at Folsom State Prison before recently retiring. Now he gets to do what he's always wanted \u2014 spend his days with cows and grandsons.",
       "birthday": "YYYY-MM-DD",
-      "photo": "images/about/member-1.jpg"
+      "photo": "images/mascot/theodore-main.jpg"
     },
     {
-      "name": "",
-      "role": "",
-      "bio": "",
-      "birthday": "YYYY-MM-DD",
-      "photo": "images/about/member-2.jpg"
+      "name": "Roianne Summers",
+      "nickname": "Poochie",
+      "role": "Logistics (Party Planning)",
+      "bio": "Roianne is Filipina-Mexican, born in San Francisco to a Mexican mother from South Texas and a Filipino father who immigrated to the Bay Area with his large family. She grew up a city girl before meeting Marty and trading the Bay for the foothills. She keeps the ranch \u2014 and the family \u2014 running.",
+      "birthday": "1975-06-28",
+      "photo": "images/about/roianne.jpg"
     }
   ],
   "mascot": {
-    "first_name": "",
-    "birthday": "YYYY-MM-DD",
+    "first_name": "Theodore",
+    "birthday": "2025-01-11",
     "title": "Junior Ranch Hand",
-    "bio": "",
-    "photo": "images/mascot/mascot-main.jpg",
+    "bio": "The official Junior Ranch Hand of Summers Ranch and the next generation of Summers ranching.",
+    "photo": "images/mascot/theodore-main.jpg",
     "photos_gallery": [
-      "images/mascot/mascot-1.jpg",
-      "images/mascot/mascot-2.jpg",
-      "images/mascot/mascot-3.jpg"
+      "images/mascot/theodore-1.jpg",
+      "images/mascot/theodore-2.jpg",
+      "images/mascot/theodore-3.jpg"
     ]
   },
   "about": {
-    "story_paragraph_1": "",
-    "story_paragraph_2": "",
-    "philosophy_quote": "",
+    "story_paragraph_1": "Summers Ranch has been a family operation since 2001, set on 160 acres of rolling pasture in Sutter Creek, California. Marty grew up here \u2014 his family has called Sutter Creek home for generations, and he was working cattle before he was old enough to drive. Roianne grew up in the San Francisco Bay Area, a Filipina-Mexican city girl who met a country boy, fell for him, and never looked back. Together they raised a son and a daughter, built up a working Hereford herd, and made this patch of the Sierra foothills their own.",
+    "story_paragraph_2": "We're not a factory. We're a family that knows every animal by its tag number, tracks every lineage to keep our genetics strong, and puts in the early mornings and late nights because that's what the work demands.",
+    "philosophy_quote": "Take care of the land, take care of the animals, and everything else follows.",
     "philosophy_1_title": "Honest Genetics",
-    "philosophy_1_text": "",
+    "philosophy_1_text": "We track every pedigree and make breeding decisions based on real data, not guesswork. Strong lineage means strong herds.",
     "philosophy_2_title": "Animal Welfare",
-    "philosophy_2_text": "",
+    "philosophy_2_text": "Our cattle are raised on open pasture with proper nutrition, veterinary care, and the space to thrive. Healthy animals produce healthy offspring.",
     "philosophy_3_title": "Land Stewardship",
-    "philosophy_3_text": ""
+    "philosophy_3_text": "We manage our pastures with rotation and care. The ranch will be here for the next generation because we treat the land right today."
   },
-  "cattle": [
-    {
-      "tag": "",
-      "name": "",
-      "born": "",
-      "sire_tag": "",
-      "dam_tag": "",
-      "breed": "",
-      "sex": "",
-      "status": "breeding",
-      "photos": [
-        "images/cattle/tag-XXX-1.jpg",
-        "images/cattle/tag-XXX-2.jpg"
-      ],
-      "notes": ""
-    }
-  ],
-  "formspree_id": ""
+  "cattle": [],
+  "formspree_id": "mzdybyjl",
+  "todos_for_owners": [
+    "Marty's birthday (add to birthdayData span in index.html + family[0].birthday here)",
+    "Upload the 5 real photos referenced by the HTML: images/mascot/theodore-main.jpg, images/hunting/marty-buck.jpg, images/hunting/roianne-buck.jpg, images/hunting/elk.jpg, images/gallery/ranch-cat.jpg",
+    "Solo / non-hunting Roianne photo for the family grid on about.html (currently Unsplash placeholder)",
+    "Real herd photos (images/gallery/, images/hero/, images/cattle/) to replace remaining Unsplash placeholders on cattle.html and gallery.html",
+    "Landscape / ranch-scenery photos for hero backgrounds and remaining gallery items",
+    "Confirm mcherry@gmail.com vs. a dedicated ranch email address",
+    "Confirm phone number (currently (209) 555-5555 placeholder)",
+    "Verify year_established (2001)",
+    "Paste YouTube video IDs into gallery.html video section"
+  ]
 }
