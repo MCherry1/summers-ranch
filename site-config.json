@@ -1,0 +1,73 @@
+{
+  "ranch": {
+    "name": "",
+    "tagline": "",
+    "year_established": "",
+    "location_city": "",
+    "location_state": "",
+    "location_county": "",
+    "street_address": "",
+    "zip_code": "",
+    "phone": "",
+    "email": "",
+    "breed_primary": "",
+    "breed_secondary": "",
+    "herd_size_approx": "",
+    "selling_method": "private treaty and auction",
+    "social_facebook": "",
+    "social_instagram": ""
+  },
+  "family": [
+    {
+      "name": "",
+      "role": "",
+      "bio": "",
+      "photo": "images/about/member-1.jpg"
+    },
+    {
+      "name": "",
+      "role": "",
+      "bio": "",
+      "photo": "images/about/member-2.jpg"
+    }
+  ],
+  "mascot": {
+    "first_name": "",
+    "birthday": "YYYY-MM-DD",
+    "title": "Junior Ranch Hand",
+    "bio": "",
+    "photo": "images/mascot/mascot-main.jpg",
+    "photos_gallery": [
+      "images/mascot/mascot-1.jpg",
+      "images/mascot/mascot-2.jpg",
+      "images/mascot/mascot-3.jpg"
+    ]
+  },
+  "about": {
+    "story_paragraph_1": "",
+    "story_paragraph_2": "",
+    "philosophy_quote": "",
+    "philosophy_1_title": "Honest Genetics",
+    "philosophy_1_text": "",
+    "philosophy_2_title": "Animal Welfare",
+    "philosophy_2_text": "",
+    "philosophy_3_title": "Land Stewardship",
+    "philosophy_3_text": ""
+  },
+  "cattle": [
+    {
+      "tag": "",
+      "name": "",
+      "born": "",
+      "sire_tag": "",
+      "dam_tag": "",
+      "breed": "",
+      "sex": "",
+      "status": "breeding",
+      "photo": "images/cattle/tag-XXX.jpg",
+      "notes": ""
+    }
+  ],
+  "formspree_id": "",
+  "google_maps_embed_url": ""
+}
