@@ -286,13 +286,22 @@
         </div>
     </div>
 
-    <!-- LOCATION -->
+    <!-- LOCATION MAP — Town-level pin only, not exact address -->
     <section class="map-section">
-        <div class="map-placeholder">
-            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span style="font-size:1.1rem;font-weight:400;color:var(--earth);font-family:var(--font-display)">Located in [Town], [County] County, [State]</span>
-            <span>Call us for directions — visitors welcome by appointment</span>
-        </div>
+        <!--
+            HOW TO SET THE MAP LOCATION:
+            1. Replace TOWN, STATE below with the real town (e.g., "Abilene, Texas")
+            2. The z=10 sets zoom level (10 = county level, 12 = town level, 8 = wider region)
+            3. This pins to the TOWN, not the ranch — intentional for privacy
+        -->
+        <a href="https://www.google.com/maps/search/[Town],+[State]" target="_blank" rel="noopener" title="View area in Google Maps" style="display:block;">
+            <iframe
+                class="map-embed"
+                src="https://maps.google.com/maps?q=[Town],+[County]+County,+[State]&t=&z=10&ie=UTF8&iwloc=&output=embed"
+                width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </a>
     </section>
 
     <footer class="footer">
