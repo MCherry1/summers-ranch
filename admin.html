@@ -545,6 +545,105 @@
         }
         .calves-stepper input:disabled { background: var(--linen); color: var(--stone); }
 
+        /* NUDGES — "Needs Attention" section at the top of the panel */
+        .nudges {
+            background: linear-gradient(135deg, #FBF4DE, #F5E9C2);
+            border: 1px solid rgba(198,168,75,0.35);
+            border-radius: 4px;
+            padding: 1rem 1.1rem 0.9rem;
+            margin: 0 0 1rem;
+            box-shadow: 0 2px 10px rgba(198,168,75,0.12);
+        }
+        .nudges-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--earth);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .nudges-icon { font-size: 1.1rem; line-height: 1; }
+        .nudges-count {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--saddle);
+            background: rgba(198,168,75,0.18);
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            margin-left: 0.3rem;
+        }
+        .nudges-list { list-style: none; padding: 0; margin: 0; }
+        .nudges-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.55rem 0;
+            border-top: 1px dashed rgba(198,168,75,0.25);
+            font-size: 0.88rem;
+            color: var(--charcoal);
+        }
+        .nudges-item:first-child { border-top: none; }
+        .nudges-item-icon {
+            font-size: 1.05rem;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+        .nudges-item-text {
+            flex: 1;
+            line-height: 1.45;
+            min-width: 0;
+        }
+        .nudges-item-view {
+            flex-shrink: 0;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--earth);
+            background: var(--warm-white);
+            border: 1px solid rgba(61,43,31,0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            min-height: 32px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .nudges-item-view:hover {
+            background: var(--saddle);
+            border-color: var(--saddle);
+            color: var(--warm-white);
+        }
+        .nudges-expand, .nudges-dismiss {
+            background: transparent;
+            border: none;
+            color: var(--saddle);
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0.55rem 0 0.1rem;
+            display: block;
+            text-align: center;
+            width: 100%;
+            margin-top: 0.35rem;
+        }
+        .nudges-expand:hover, .nudges-dismiss:hover { color: var(--rust); }
+        .nudges-expand { border-top: 1px dashed rgba(198,168,75,0.25); }
+        .animal.highlight-flash {
+            animation: nudge-flash 1.6s ease;
+        }
+        @keyframes nudge-flash {
+            0%   { box-shadow: 0 0 0 0 rgba(198,168,75,0.0); }
+            20%  { box-shadow: 0 0 0 6px rgba(198,168,75,0.45); }
+            100% { box-shadow: 0 0 0 0 rgba(198,168,75,0.0); }
+        }
+
         /* Status row with inline remove-from-herd button */
         .status-row { display: flex; gap: 0.6rem; align-items: flex-end; }
         .status-row .form-group { flex: 1; margin-bottom: 0; }
@@ -599,6 +698,18 @@
             <h2>Your herd</h2>
             <p id="herdMeta">Loading…</p>
         </div>
+
+        <!-- Needs Attention (see docs/BEHAVIOR-DRIVEN-SPEC.md § 4) — client-side
+             nudges computed from cattle-data.json. Hidden when empty. -->
+        <section class="nudges" id="nudges" style="display:none">
+            <p class="nudges-title">
+                <span class="nudges-icon" aria-hidden="true">⚡</span>
+                Needs Attention <span class="nudges-count" id="nudgesCount"></span>
+            </p>
+            <ul class="nudges-list" id="nudgesList"></ul>
+            <button type="button" class="nudges-expand" id="nudgesExpand" style="display:none"></button>
+            <button type="button" class="nudges-dismiss" id="nudgesDismiss">Dismiss all</button>
+        </section>
 
         <div class="panel-actions">
             <button class="btn btn-wide" id="addAnimalBtn">+ Add Animal</button>
@@ -963,7 +1074,204 @@
             if (animals.length === 0) {
                 animalList.innerHTML = '<p style="text-align:center;color:var(--stone);padding:2rem">No animals yet. Tap "Add Animal" or upload a photo via the shortcut.</p>';
             }
+
+            renderNudges();
         }
+
+        // ---------- Needs Attention nudges (BEHAVIOR-DRIVEN-SPEC § 4) ----------
+        const NUDGES_DISMISS_KEY = 'srp_nudges_dismissed_v1';
+        const NUDGE_MAX_SHOWN = 5;
+        let nudgesExpanded = false;
+
+        // Rough "days since" on an ISO date string. Returns Infinity when
+        // the date can't be parsed so "stale" checks fail safe (no false
+        // positives for loose "Spring 2024"-style values).
+        function daysSinceIso(s) {
+            if (!s) return Infinity;
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+            if (!m) return Infinity;
+            const d = new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0);
+            return Math.round((Date.now() - d.getTime()) / 86400000);
+        }
+
+        function computeNudges(animals) {
+            const out = [];
+            if (!animals || animals.length === 0) {
+                out.push({
+                    id: 'empty-herd',
+                    icon: '🐄',
+                    text: 'Your herd is empty — add your first animal!'
+                });
+                return out;
+            }
+            const isVisible = a => a.status !== 'culled' && a.status !== 'deceased'
+                                   && a.status !== 'reference' && a.source !== 'reference';
+            animals.forEach(a => {
+                if (!isVisible(a)) return;
+                const tag = a.tag;
+                const label = a.name ? `Tag #${tag} (${a.name})` : `Tag #${tag}`;
+
+                // Missing key fields — only flag herd animals, and only the
+                // fields the admin form captures.
+                const missing = [];
+                if (!a.born) missing.push('birth date');
+                if (!a.sex)  missing.push('sex');
+                if (!a.breed && !a.breed_detail) missing.push('breed');
+                if (missing.length) {
+                    out.push({
+                        id: 'missing-' + tag,
+                        tag: tag,
+                        icon: '⚠️',
+                        text: `${label} is missing ${missing.join(' and ')}`
+                    });
+                }
+
+                const photoDates = (a.photo_dates || []).filter(Boolean);
+                const newestPhotoDays = photoDates.length
+                    ? Math.min.apply(null, photoDates.map(daysSinceIso))
+                    : Infinity;
+
+                // Stale photo: >6 months (183 days) since newest photo.
+                // Only nudge if the animal actually has photos to compare.
+                if ((a.photos || []).length > 0 && newestPhotoDays > 183 && isFinite(newestPhotoDays)) {
+                    const months = Math.floor(newestPhotoDays / 30);
+                    out.push({
+                        id: 'stale-' + tag,
+                        tag: tag,
+                        icon: '📷',
+                        text: `${label} hasn't been photographed in ${months} months`
+                    });
+                }
+
+                // Sale without recent photo: >60 days old
+                if (a.status === 'sale' && (a.photos || []).length > 0 &&
+                    newestPhotoDays > 60 && isFinite(newestPhotoDays)) {
+                    const months = Math.floor(newestPhotoDays / 30);
+                    const agePhrase = months >= 2
+                        ? `${months} months old`
+                        : `${newestPhotoDays} days old`;
+                    out.push({
+                        id: 'sale-stale-' + tag,
+                        tag: tag,
+                        icon: '🏷️',
+                        text: `${label} is for sale but photos are ${agePhrase} — buyers want current shots`
+                    });
+                }
+
+                // No side-profile (requires photo_types data from the pipeline).
+                // Only nudge once classification exists — the check is a no-op
+                // for animals that haven't been through Claude yet.
+                const types = a.photo_types || [];
+                const hasAnyClassification = types.some(t => t && t !== '');
+                if (hasAnyClassification && !types.includes('side-profile')) {
+                    out.push({
+                        id: 'no-side-' + tag,
+                        tag: tag,
+                        icon: '📐',
+                        text: `${label} has no side profile — this is the #1 photo buyers want`
+                    });
+                }
+            });
+            return out;
+        }
+
+        function loadDismissedNudges() {
+            try {
+                const raw = sessionStorage.getItem(NUDGES_DISMISS_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch { return []; }
+        }
+        function saveDismissedNudges(ids) {
+            try { sessionStorage.setItem(NUDGES_DISMISS_KEY, JSON.stringify(ids)); } catch {}
+        }
+
+        function renderNudges() {
+            const container = document.getElementById('nudges');
+            const list = document.getElementById('nudgesList');
+            const count = document.getElementById('nudgesCount');
+            const expandBtn = document.getElementById('nudgesExpand');
+            if (!container || !list || !count || !expandBtn) return;
+
+            const dismissed = new Set(loadDismissedNudges());
+            const allNudges = computeNudges(data ? data.animals : []);
+            const active = allNudges.filter(n => !dismissed.has(n.id));
+
+            if (active.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = '';
+            count.textContent = '(' + active.length + ')';
+
+            const shown = nudgesExpanded ? active : active.slice(0, NUDGE_MAX_SHOWN);
+            list.innerHTML = '';
+            shown.forEach(n => {
+                const li = document.createElement('li');
+                li.className = 'nudges-item';
+                li.innerHTML =
+                    '<span class="nudges-item-icon">' + n.icon + '</span>' +
+                    '<span class="nudges-item-text">' + escapeHtml(n.text) + '</span>' +
+                    (n.tag
+                        ? '<button type="button" class="nudges-item-view" data-view-tag="' +
+                          escapeAttr(n.tag) + '">View</button>'
+                        : '');
+                list.appendChild(li);
+            });
+
+            // Expand-more control when there are more than NUDGE_MAX_SHOWN
+            if (active.length > NUDGE_MAX_SHOWN) {
+                expandBtn.style.display = '';
+                expandBtn.textContent = nudgesExpanded
+                    ? 'Show fewer'
+                    : 'and ' + (active.length - NUDGE_MAX_SHOWN) + ' more…';
+            } else {
+                expandBtn.style.display = 'none';
+            }
+
+            // Wire up [View] buttons — find the matching animal card and
+            // scroll it into view with a brief highlight flash.
+            list.querySelectorAll('[data-view-tag]').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const tag = btn.dataset.viewTag;
+                    const card = document.querySelector('.animal[data-tag="' + CSS.escape(tag) + '"]');
+                    if (!card) return;
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.remove('highlight-flash');
+                    // Force reflow so the animation restarts
+                    void card.offsetWidth;
+                    card.classList.add('highlight-flash');
+                    // Auto-open the edit form since the user is here to act
+                    if (!card.classList.contains('open')) {
+                        document.querySelectorAll('.animal.open').forEach(a => a.classList.remove('open'));
+                        card.classList.add('open');
+                    }
+                });
+            });
+        }
+
+        // Wire dismiss + expand buttons once at startup
+        (function wireNudgeButtons() {
+            const dismiss = document.getElementById('nudgesDismiss');
+            const expand = document.getElementById('nudgesExpand');
+            if (dismiss) {
+                dismiss.addEventListener('click', () => {
+                    // Dismiss every currently-shown nudge so they stay gone
+                    // for this session (they'll reappear on next tab load if
+                    // still relevant).
+                    const active = computeNudges(data ? data.animals : []);
+                    saveDismissedNudges(active.map(n => n.id));
+                    renderNudges();
+                });
+            }
+            if (expand) {
+                expand.addEventListener('click', () => {
+                    nudgesExpanded = !nudgesExpanded;
+                    renderNudges();
+                });
+            }
+        })();
 
         function primaryPhoto(animal) {
             const photos = animal.photos || [];
