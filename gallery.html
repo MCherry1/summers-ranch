@@ -48,7 +48,7 @@
 
         /* BANNER */
         .page-banner { position: relative; height: 50vh; min-height: 350px; display: flex; align-items: flex-end; overflow: hidden; }
-        .page-banner-bg { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(61,43,31,0.2) 0%, rgba(61,43,31,0.7) 100%), url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80') center/cover no-repeat; }
+        .page-banner-bg { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(61,43,31,0.2) 0%, rgba(61,43,31,0.7) 100%), url('images/hero/mixed-herd.jpg') center/cover no-repeat; }
         .page-banner-content { position: relative; z-index: 2; padding: 0 2rem 3rem; max-width: var(--content-max); margin: 0 auto; width: 100%; }
         .page-banner h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; color: var(--warm-white); }
         .breadcrumb { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,253,249,0.5); margin-bottom: 0.75rem; }
@@ -225,8 +225,8 @@
 
     <div class="gallery-grid" id="galleryGrid">
         <!-- Replace these Unsplash placeholders with real ranch photos -->
-        <div class="gallery-item reveal" data-category="cattle" data-full="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=1600&q=80" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=600&q=80" alt="Cattle grazing" loading="lazy">
+        <div class="gallery-item reveal" data-category="cattle" data-full="images/hero/pasture-wide.jpg" onclick="openLightbox(this)">
+            <img src="images/hero/pasture-wide.jpg" alt="Summers Ranch pasture with Herefords under a blue sky" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">Herd at pasture</span></div>
         </div>
         <div class="gallery-item reveal" data-category="ranch" data-full="images/gallery/summers-hawaii.jpg" onclick="openLightbox(this)">
@@ -237,8 +237,8 @@
             <img src="images/gallery/ranch-cat.jpg" alt="The ranch cat lounging in a planter" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">The ranch cat</span></div>
         </div>
-        <div class="gallery-item reveal" data-category="cattle" data-full="https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?w=1600&q=80" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?w=600&q=80" alt="Close-up of bull" loading="lazy">
+        <div class="gallery-item reveal" data-category="cattle" data-full="images/cattle/hereford-profile.jpg" onclick="openLightbox(this)">
+            <img src="images/cattle/hereford-profile.jpg" alt="Hereford in profile" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">Herd sire</span></div>
         </div>
         <div class="gallery-item reveal" data-category="seasons" data-full="images/gallery/thanksgiving.jpg" onclick="openLightbox(this)">
@@ -249,8 +249,8 @@
             <img src="images/gallery/four-generations.jpg" alt="Four generations on the couch" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">Four generations</span></div>
         </div>
-        <div class="gallery-item reveal" data-category="cattle" data-full="https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=1600&q=80" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=600&q=80" alt="Cattle in field" loading="lazy">
+        <div class="gallery-item reveal" data-category="cattle" data-full="images/cattle/calf-portrait.jpg" onclick="openLightbox(this)">
+            <img src="images/cattle/calf-portrait.jpg" alt="Newborn Hereford calf with its mother" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">Spring calves</span></div>
         </div>
         <div class="gallery-item reveal" data-category="seasons" data-full="images/gallery/snow-day.jpg" onclick="openLightbox(this)">
@@ -261,9 +261,17 @@
             <img src="images/gallery/family-gathering.jpg" alt="Summers family gathered around the table" loading="lazy">
             <div class="gallery-item-overlay"><span class="gallery-item-caption">Family table</span></div>
         </div>
-        <div class="gallery-item reveal" data-category="cattle" data-full="https://images.unsplash.com/photo-1557800636-894a64c1696f?w=1600&q=80" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1557800636-894a64c1696f?w=600&q=80" alt="Calf portrait" loading="lazy">
-            <div class="gallery-item-overlay"><span class="gallery-item-caption">New arrival</span></div>
+        <div class="gallery-item reveal" data-category="cattle" data-full="images/cattle/herd-pair.jpg" onclick="openLightbox(this)">
+            <img src="images/cattle/herd-pair.jpg" alt="Two Herefords in the corral" loading="lazy">
+            <div class="gallery-item-overlay"><span class="gallery-item-caption">In the corral</span></div>
+        </div>
+        <div class="gallery-item reveal" data-category="cattle" data-full="images/hero/mixed-herd.jpg" onclick="openLightbox(this)">
+            <img src="images/hero/mixed-herd.jpg" alt="Mixed herd in winter pasture" loading="lazy">
+            <div class="gallery-item-overlay"><span class="gallery-item-caption">Winter range</span></div>
+        </div>
+        <div class="gallery-item reveal" data-category="ranch" data-full="images/gallery/ranch-dogs.jpg" onclick="openLightbox(this)">
+            <img src="images/gallery/ranch-dogs.jpg" alt="The ranch dogs" loading="lazy">
+            <div class="gallery-item-overlay"><span class="gallery-item-caption">Ranch hands</span></div>
         </div>
         <div class="gallery-item reveal" data-category="hunting" data-full="images/gallery/hunter-heritage.jpg" onclick="openLightbox(this)">
             <img src="images/gallery/hunter-heritage.jpg" alt="Marty and Theodore with trophy antlers" loading="lazy">
