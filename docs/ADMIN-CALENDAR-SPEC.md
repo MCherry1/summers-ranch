@@ -265,6 +265,30 @@ Everything on this tab should be usable on an iPhone with big fingers:
 - Buttons are full-width on mobile
 - Edit forms expand inline — no modals or popups that might be hard to dismiss on mobile
 
+### Swipe Gestures
+
+Support swipe left/right to switch between Herd and Calendar tabs. This is standard mobile web behavior and does NOT require a native app — touch events work in all modern mobile browsers.
+
+**Implementation:**
+```javascript
+// Track touch start and end positions
+let touchStartX = 0;
+panel.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+panel.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(diff) > 80) {  // minimum 80px swipe
+        if (diff > 0) switchTab('herd');    // swipe right → Herd
+        else switchTab('calendar');          // swipe left → Calendar
+    }
+});
+```
+
+- Minimum swipe distance: 80px (prevents accidental triggers when scrolling)
+- Swipe right → Herd tab (the "back" direction)
+- Swipe left → Calendar tab (the "forward" direction)
+- Add the same swipe support to the expanded cattle card view for swiping between animal photos
+- Optional: subtle slide animation on tab transition (CSS `transform: translateX`) to reinforce the spatial metaphor
+
 ---
 
 ## Implementation Priority
