@@ -1,6 +1,6 @@
 # Upload Ranch Photos to GitHub — iOS Shortcut Guide
 
-This shortcut lets you select photos from your iPhone, resize and compress them automatically, then upload directly to the Summers Ranch GitHub repo. One tap.
+Select photos on your iPhone, pick a category, and they upload automatically. A GitHub Actions pipeline handles all the heavy lifting — resizing, compressing, stripping GPS data, and organizing into the right folders. Your phone just uploads.
 
 ---
 
@@ -10,92 +10,117 @@ This shortcut lets you select photos from your iPhone, resize and compress them 
    - Go to: github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token
    - Repository access: select `MCherry1/summers-ranch` only
    - Permissions: Contents → Read and Write
+   - Set expiration to 1 year
    - Copy the token — you'll paste it into the shortcut once
 
 2. **The Shortcuts app** on your iPhone (it's built in)
 
 ---
 
+## How It Works
+
+```
+Phone                          GitHub (automatic)
+─────                          ──────────────────
+Pick category (General/        GitHub Actions triggers:
+  Cattle/Hunting)              → Resize to 1200px
+Select photos                  → Strip metadata
+Strip GPS data (fast)          → Compress to JPEG 82%
+Upload to images/inbox/        → Route to correct folder
+Done ✓                         → Auto-number cattle photos
+                               → Commit changes
+                               → Site rebuilds (~2 min)
+```
+
+You don't resize on the phone. You don't pick folders. The server does all of that.
+
+---
+
 ## Build the Shortcut: Step by Step
 
-Open the Shortcuts app → tap **+** to create a new shortcut → name it **"Ranch Photo Upload"**
+Open the Shortcuts app → tap **+** → name it **"Ranch Photos"**
 
 ### Action 1: Choose from Menu
 - Add: **Choose from Menu**
-- Prompt: `Upload photos to which folder?`
-- Options (add one per line):
-  - `Cattle`
-  - `Gallery`
-  - `Hero`
-  - `About`
-  - `Mascot`
-  - `Hunting`
+- Prompt: `What kind of photos?`
+- Add three options: `General`, `Cattle`, `Hunting`
 
-For each menu item, set a **Text** action with the folder path:
-- Cattle → `images/cattle`
-- Gallery → `images/gallery`
-- Hero → `images/hero`
-- About → `images/about`
-- Mascot → `images/mascot`
-- Hunting → `images/hunting`
+### Inside "Cattle":
 
-Save the result to a variable called **FolderPath**.
+- Add: **Ask for Input**
+  - Prompt: `Tag number?`
+  - Input Type: **Text**
+- Save to variable **TagNumber**
+- Add: **Text**: `cattle-tag-[TagNumber]`
+  (tap TagNumber variable from the bar above keyboard)
+- Save to variable **Prefix**
+
+### Inside "Hunting":
+
+- Add: **Text**: `hunting`
+- Save to variable **Prefix**
+
+### Inside "General":
+
+- Add: **Text**: `photo`
+- Save to variable **Prefix**
+
+### After the menu (back in the main flow):
 
 ### Action 2: Select Photos
 - Add: **Select Photos**
 - Turn ON **Select Multiple**
 
-### Action 3: Repeat with Each (photo loop)
+### Action 3: Repeat with Each
 - Add: **Repeat with Each** on the Selected Photos
 
-Inside the repeat loop, add these actions:
+Inside the repeat loop:
 
-### Action 4: Resize Image
-- Add: **Resize Image**
-- Width: choose based on folder (or use 800 as a default)
-  - For Hero photos you might want 1920, but 800 works fine for everything else to start
-- Height: **Auto**
-
-### Action 5: Convert Image
+### Action 4: Convert Image (strip metadata only — no resize)
 - Add: **Convert Image**
 - Format: **JPEG**
-- Quality: **80%** (good balance of quality vs file size)
-- Preserving Metadata: **OFF** (strips GPS/location data — good for privacy)
+- Quality: **80%**
+- Preserving Metadata: **OFF**
 
-### Action 6: Generate Filename
+This is fast — it strips GPS/location data without resizing. The server handles resizing.
+
+### Action 5: Generate Filename
 - Add: **Format Date**
-- Date: **Current Date**
-- Format: **Custom** → `yyyyMMdd-HHmmss`
+  - Date: **Current Date**
+  - Format: **Custom** → `yyyyMMdd-HHmmss`
 - Save to variable **Timestamp**
 
-- Add: **Text**
-- Content: `photo-[Timestamp].jpg`
+- Add: **Text**: `[Prefix]-[Timestamp].jpg`
+  (tap the variables from the bar above the keyboard)
 - Save to variable **Filename**
 
-*Alternatively, for cattle photos, you could add an "Ask for Input" to type the tag number and use `tag-[input].jpg`*
+This creates filenames like:
+- `photo-20260413-192500.jpg` (general)
+- `cattle-tag-189-20260413-192500.jpg` (cattle)
+- `hunting-20260413-192500.jpg` (hunting)
 
-### Action 7: Base64 Encode
+### Action 6: Base64 Encode
 - Add: **Base64 Encode**
-- Input: the converted image from Action 5
-- Line Break: **None** (IMPORTANT — the GitHub API breaks if there are line breaks)
+- Input: the converted image from Action 4
+- **Line Break: None** ← IMPORTANT — the upload breaks without this
 
 Save to variable **EncodedImage**
 
-### Action 8: Build the JSON Body
-- Add: **Text** action with this content:
+### Action 7: Build JSON Body
+- Add: **Text**:
 
 ```
-{"message":"Add photo [Filename]","content":"[EncodedImage]"}
+{"message":"Add [Filename]","content":"[EncodedImage]"}
 ```
 
-(Use the variable tokens — tap the variable names from the bar above the keyboard)
+(Use the variable tokens — tap Filename and EncodedImage from the bar)
 
 Save to variable **RequestBody**
 
-### Action 9: Upload to GitHub
+### Action 8: Upload to GitHub
 - Add: **Get Contents of URL**
-- URL: `https://api.github.com/repos/MCherry1/summers-ranch/contents/[FolderPath]/[Filename]`
-  (Insert the FolderPath and Filename variables into the URL)
+- URL: `https://api.github.com/repos/MCherry1/summers-ranch/contents/images/inbox/[Filename]`
+  (Insert the Filename variable into the URL)
 - Method: **PUT**
 - Headers:
   - `Authorization` → `Bearer YOUR_PAT_TOKEN_HERE`
@@ -103,79 +128,76 @@ Save to variable **RequestBody**
   - `Content-Type` → `application/json`
 - Request Body: **File** → select the RequestBody variable
 
-### Action 10: Check Result
-- Add: **If**
-- Input: Result of Get Contents of URL
-- Contains: `"content"`
-- Then: **Show Notification** → "✅ Uploaded [Filename]"
-- Otherwise: **Show Notification** → "❌ Upload failed — check the result"
+**Note:** Everything goes to `images/inbox/` — the pipeline sorts it from there.
+
+### Action 9: Notification
+- Add: **Show Notification** → `✅ Uploaded [Filename]`
 
 ### End of Repeat Loop
 
-That's it. End the **Repeat with Each** block.
+That's the whole shortcut.
+
+---
+
+## What Happens After Upload
+
+The GitHub Actions pipeline (`.github/workflows/process-photos.yml`) triggers automatically:
+
+1. **Cattle photos** (`cattle-tag-189-...`): Resized, stripped, moved to `images/cattle/tag-189-1.jpg`. If `tag-189-1.jpg` already exists, it becomes `tag-189-2.jpg`, then `-3`, etc. You never have to track the numbering — it's automatic.
+
+2. **Hunting photos** (`hunting-...`): Resized, stripped, moved to `images/hunting/` with a clean date-based name.
+
+3. **General photos** (`photo-...`): If the Claude API key is set up, the photo gets analyzed and categorized automatically (cattle → cattle folder, family → gallery, landscape → gallery, etc.). If no API key, it just goes to `images/gallery/`.
+
+All photos are resized to max 1200px wide, compressed to JPEG quality 82, and have all metadata stripped.
 
 ---
 
 ## How to Use It
 
-1. Tap the shortcut (or add it to your Home Screen)
-2. Pick a folder (Cattle, Gallery, etc.)
-3. Select one or more photos from your library
-4. Wait a few seconds per photo
-5. Done — photos are live on GitHub, site rebuilds in ~2 minutes
+1. Tap the shortcut (or use from the Share Sheet)
+2. Pick: General, Cattle, or Hunting
+3. If Cattle: type the tag number
+4. Select one or more photos
+5. Wait for the uploads (a few seconds each)
+6. Done — the pipeline handles the rest
 
 ---
 
-## Tips & Gotchas
+## Tips
 
-**File size limit:** GitHub's Contents API has a **25 MB limit** per file. At 80% JPEG quality and 800px width, your photos will typically be 50–150 KB, so this is never an issue.
+**Speed:** The shortcut is fast now because it's not resizing on your phone. The only processing is the JPEG conversion (strips metadata), which takes under a second per photo. The upload time depends on your cell signal.
 
-**Repo size:** GitHub Pages repos should stay under 1 GB. At ~100 KB per photo, you can fit roughly 10,000 photos before worrying. You're fine.
+**Cattle tag numbers:** Just enter the number — the pipeline handles the `-1`, `-2`, `-3` numbering automatically based on what already exists in the repo. Upload 5 photos of tag 189 in a row and they'll become `tag-189-1.jpg` through `tag-189-5.jpg`.
 
-**Base64 line breaks:** The most common failure is the base64 string containing `\n` characters. Make sure the Base64 Encode action's Line Break setting is **None**.
+**Base64 line breaks:** The most common upload failure. Make sure the Base64 Encode action's Line Break setting is **None**.
 
-**Overwriting files:** If you upload a file with the same name as an existing one, the API will return an error (422). Either use unique timestamps in filenames (which the shortcut does) or add logic to fetch the existing file's SHA first.
+**File size limit:** GitHub's API has a 25 MB per-file limit. Even unresized iPhone photos are typically 5-10 MB, so you're well within limits. The pipeline will shrink them on the server.
 
-**Privacy:** The Convert Image action with "Preserving Metadata: OFF" strips EXIF data including GPS coordinates. This is important — you don't want your ranch's precise GPS location embedded in every photo on a public website.
+**PAT security:** The PAT is stored inside the shortcut. It only has write access to this one repo. You can revoke it anytime from GitHub Settings → Developer settings → Personal access tokens. Fine-grained PATs scoped to a single repo are about as safe as it gets.
 
-**PAT security:** The PAT is stored inside the shortcut. It only has write access to this one repo. You can revoke it anytime from GitHub settings. Consider creating a dedicated PAT just for this shortcut with minimal permissions.
+**Sharing the shortcut:** You can share this shortcut with Marty and Roianne. The PAT inside it lets their phones upload directly to the repo. If a phone is lost, revoke the PAT from GitHub and create a new one.
 
 ---
 
-## Advanced: Cattle Tag Prompt (Multi-Photo)
+## Share Sheet Integration
 
-For cattle photos specifically, you might want a version that asks for the tag number and photo number:
+To use this from the Photos app directly:
+1. Open the shortcut settings (tap the ⓘ icon)
+2. Turn on **Show in Share Sheet**
+3. Set accepted types to **Images**
 
-After Action 2 (Select Photos), add:
-- **If** FolderPath contains `cattle`
-  - **Ask for Input**: `Enter tag number (e.g., 189)`
-  - Save to variable **TagNumber**
-  - **Ask for Input**: `Photo number or description (e.g., 1, 2, front, side)`
-  - Save to variable **PhotoLabel**
-  - Set Filename to: `tag-[TagNumber]-[PhotoLabel].jpg`
-- **Otherwise**
-  - Use the timestamp filename
-
-This way cattle photos are named `tag-189-1.jpg`, `tag-189-front.jpg`, etc. The first photo (`-1`) becomes the primary card image on the site, and the rest show up in a mini gallery when clicking the card.
+Now: Photos app → select photos → Share → "Ranch Photos" → pick category → done.
 
 ---
 
 ## Quick Test
 
-Before using it for real, test with one photo:
 1. Run the shortcut
-2. Pick "Gallery"
+2. Pick "General"
 3. Select one photo
-4. Check github.com/MCherry1/summers-ranch — you should see the new file in `images/gallery/`
-5. The site will rebuild on its own within a couple minutes
-
----
-
-## Alternative: Share Sheet Integration
-
-You can also set this shortcut to appear in the **Share Sheet**:
-1. Open the shortcut settings (tap the ⓘ)
-2. Turn on **Show in Share Sheet**
-3. Set Input: **Images**
-
-Now when you're in the Photos app, you can select photos → tap Share → tap "Ranch Photo Upload" → pick a folder → done. Even faster.
+4. Wait for the ✅ notification
+5. Go to github.com/MCherry1/summers-ranch
+6. Check `images/inbox/` — your photo should be there
+7. Wait a few minutes — GitHub Actions will process it and move it to `images/gallery/`
+8. Check the Actions tab to see the workflow run
