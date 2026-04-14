@@ -41,11 +41,12 @@ Don't actually crop the file. Instead, ask Claude to return the focal point (whe
 ```
 Classify this cattle photo. Respond with ONLY a JSON object, no markdown, no backticks:
 
-{"type": "side-profile|headshot|rear|three-quarter|with-handler|in-pasture|group|other", "focus_x": 50, "focus_y": 50}
+{"type": "side-profile|headshot|rear|three-quarter|with-handler|in-pasture|group|other", "focus_x": 50, "focus_y": 50, "box": [15, 20, 85, 90]}
 
 type: Classify the camera angle (see definitions below).
-focus_x: Horizontal position of the main animal as a percentage (0 = left edge, 50 = center, 100 = right edge).
-focus_y: Vertical position of the main animal as a percentage (0 = top, 50 = center, 100 = bottom).
+focus_x: Horizontal center of the main animal as a percentage (0=left, 100=right).
+focus_y: Vertical center of the main animal as a percentage (0=top, 100=bottom).
+box: Bounding box around the main animal as [left%, top%, right%, bottom%]. Include the whole animal with a small margin. For group shots, box the most prominent animal.
 
 Definitions:
 - side-profile: Full body visible from the side, showing the animal's build/conformation
@@ -53,38 +54,57 @@ Definitions:
 (... same definitions as current ...)
 ```
 
-### Storage in cattle-data.json
+### Two Files Per Cattle Photo
 
-Add a `photo_focus` array alongside `photos`, `photo_dates`, and `photo_types`:
+The pipeline saves two versions of each cattle photo:
 
-```json
-{
-  "photos": ["images/cattle/tag-189-1.jpg", "images/cattle/tag-189-2.jpg"],
-  "photo_dates": ["2024-03-15", "2025-01-22"],
-  "photo_types": ["in-pasture", "side-profile"],
-  "photo_focus": ["30,60", "50,45"]
-}
+- **`tag-189-3.jpg`** — Full image, resized to 1200px max width, EXIF stripped. Used in the lightbox expanded view and the growth timeline.
+- **`tag-189-3-thumb.jpg`** — Auto-cropped around the animal with ~20% padding. Used on the card grid.
+
+### Auto-Crop Logic (ImageMagick)
+
+```python
+def crop_to_subject(source_path, thumb_path, box, padding_pct=20):
+    """
+    Crop an image to the bounding box returned by Claude, with padding.
+    box = [left%, top%, right%, bottom%]
+    """
+    from PIL import Image  # or use ImageMagick subprocess
+
+    img = Image.open(source_path)
+    w, h = img.size
+
+    # Convert percentages to pixels
+    left   = int(w * box[0] / 100)
+    top    = int(h * box[1] / 100)
+    right  = int(w * box[2] / 100)
+    bottom = int(h * box[3] / 100)
+
+    # Add padding
+    pad_x = int((right - left) * padding_pct / 100)
+    pad_y = int((bottom - top) * padding_pct / 100)
+    left   = max(0, left - pad_x)
+    top    = max(0, top - pad_y)
+    right  = min(w, right + pad_x)
+    bottom = min(h, bottom + pad_y)
+
+    cropped = img.crop((left, top, right, bottom))
+    cropped.save(thumb_path, "JPEG", quality=82)
 ```
 
-Each entry is "X,Y" as percentages. Default "50,50" if classification fails.
+### What This Solves
 
-### CSS Usage on the Cattle Page
+| Scenario | Without crop | With auto-crop |
+|---|---|---|
+| Close-up of a big bull filling 80% of frame | Card looks fine | Card looks the same (crop barely changes anything) |
+| Shy calf at 20% of frame, lots of sky/grass | Tiny cow on the card, looks inconsistent | Card crops to the calf, looks similar size to the bull |
+| Cow in left third, landscape orientation | CSS centers on middle, cow partially cut off | Thumbnail centers on the cow, full image in lightbox |
 
-When rendering a card image:
-```javascript
-var focus = animal.photo_focus && animal.photo_focus[photoIndex]
-    ? animal.photo_focus[photoIndex]
-    : "50,50";
-var parts = focus.split(",");
-img.style.objectPosition = parts[0] + "% " + parts[1] + "%";
-```
+**On the card grid, every animal appears roughly the same size.** That's what professional breeder sites achieve with professional photography. We achieve it with a $0.02 API call and 5 lines of ImageMagick.
 
-This means:
-- Cow in left third → `object-position: 30% 50%` → card crops around the cow
-- Cow centered → `object-position: 50% 50%` → default behavior, no change
-- Cow low in frame → `object-position: 50% 70%` → card shifts down
+### Fallback
 
-**No actual file cropping needed.** The full image is preserved (good for the lightbox expanded view). Only the card thumbnail smartly centers on the subject.
+If Claude doesn't return a box (API failure, no key), skip the thumbnail. The card falls back to the full image with `object-fit: cover` and `object-position` from the focal point (or default center). Still works — just less consistent.
 
 ---
 
