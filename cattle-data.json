@@ -29,7 +29,38 @@
       "photo_types": [
         ""
       ],
-      "primary_photo": ""
+      "primary_photo": "images/cattle/tag-215-1.jpg"
+    },
+    {
+      "tag": "109a",
+      "name": "",
+      "born": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-109a-1.jpg"
+      ],
+      "photo_dates": [
+        "2026-04-05"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-109a-1.jpg"
     }
   ],
   "sires": [],
@@ -37,7 +68,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-14 06:47 UTC",
+    "last_updated": "2026-04-14 22:10 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
