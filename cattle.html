@@ -141,14 +141,17 @@
             align-items: center;
             gap: 2rem;
             background: var(--linen);
-            padding: 1.5rem 2rem;
+            padding: 2rem;
             border-radius: 2px;
         }
         .brand-img {
-            width: 100px; height: 100px;
+            width: 180px; height: 180px;
             object-fit: contain;
             flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s;
         }
+        .brand-img:hover { transform: scale(1.05); }
         .brand-text .section-label {
             font-size: 0.7rem; font-weight: 700;
             letter-spacing: 0.3em; text-transform: uppercase;
@@ -156,6 +159,22 @@
         }
         .brand-text p:last-child {
             font-size: 0.95rem; color: var(--stone);
+        }
+
+        /* BRAND LIGHTBOX */
+        .brand-lightbox {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center; justify-content: center;
+            padding: 2rem;
+            cursor: pointer;
+        }
+        .brand-lightbox.open { display: flex; }
+        .brand-lightbox img {
+            max-width: 90vw; max-height: 85vh;
+            object-fit: contain;
         }
 
         /* PHOTO COUNT BADGE */
@@ -310,12 +329,17 @@
     <div class="brand-strip reveal">
         <div class="brand-inner">
             <!-- Upload your brand photo to images/cattle/brand.jpg -->
-            <img src="images/cattle/brand.jpg" alt="Summers Ranch brand" class="brand-img" onerror="this.parentElement.parentElement.style.display='none'">
+            <img src="images/cattle/brand.jpg" alt="Summers Ranch brand" class="brand-img" onclick="document.getElementById('brandLightbox').classList.add('open')" onerror="this.parentElement.parentElement.style.display='none'">
             <div class="brand-text">
                 <p class="section-label">Our Brand</p>
-                <p>The mark that means Summers Ranch.</p>
+                <p>The mark that means Summers Ranch. <span style="font-size:0.8rem;color:var(--sage);cursor:pointer" onclick="document.getElementById('brandLightbox').classList.add('open')">Click to view full size.</span></p>
             </div>
         </div>
+    </div>
+
+    <!-- BRAND LIGHTBOX -->
+    <div class="brand-lightbox" id="brandLightbox" onclick="this.classList.remove('open')">
+        <img src="images/cattle/brand.jpg" alt="Summers Ranch brand — full size">
     </div>
 
     <!-- FILTER TABS -->
