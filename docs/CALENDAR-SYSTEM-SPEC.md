@@ -275,8 +275,9 @@ The `advance_days` field controls how early a banner appears. Use these defaults
 | Consignment / breed sale | 30 | "Find us at the Red Bluff Bull Sale — January 25" | "We're at the Red Bluff Bull Sale today — stop by and say hello" |
 | Cattle show / expo | 30 | "We're showing at the Amador County Fair — October 4-6" | "Come see us at the Amador County Fair this weekend" |
 | Local auction | 7 | "We're bringing calves to Escalon Livestock this Saturday" | "We're at Escalon Livestock Auction today" |
-| Hunting trip | 0 | (none) | "The Summers crew is in Colorado for the annual hunt" |
 | Ranch event / open house | 21 | "Open house at the ranch — May 17. Call for details." | "Open house today — come on by" |
+
+**Note:** Do NOT publicize hunting trips, travel, or any events that indicate the ranch is unattended. This is a security concern — the ranch is well-known locally and livestock theft is a real risk. Hunting photos go on the About page as static content only, not in the calendar or banner system.
 
 To support both pre-event and during-event text, events in the JSON should have:
 - `banner` — shown during the `advance_days` window before the event

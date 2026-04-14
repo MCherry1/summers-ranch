@@ -1,16 +1,31 @@
 {
   "birthdays": [
-    { "name": "Marty", "date": "05-20", "role": "owner", "message": "Happy Birthday to Marty from the Summers Ranch family!" },
-    { "name": "Roianne", "date": "06-28", "role": "owner", "message": "Happy Birthday to Roianne from the Summers Ranch family!" },
-    { "name": "Theodore", "date": "01-11", "year": 2025, "role": "mascot", "message": "Happy Birthday to our Junior Ranch Hand, Theodore!" }
+    {
+      "name": "Marty",
+      "date": "05-20",
+      "role": "owner",
+      "message": "Happy Birthday to Marty from the Summers Ranch family!"
+    },
+    {
+      "name": "Roianne",
+      "date": "06-28",
+      "role": "owner",
+      "message": "Happy Birthday to Roianne from the Summers Ranch family!"
+    },
+    {
+      "name": "Theodore",
+      "date": "01-11",
+      "year": 2025,
+      "role": "mascot",
+      "message": "Happy Birthday to our Junior Ranch Hand, Theodore!"
+    }
   ],
-
   "seasons": [
     {
       "name": "Calving Season",
       "start": "02-15",
       "end": "04-30",
-      "banner": "Calving season is underway — new arrivals coming soon!",
+      "banner": "Calving season is underway \u2014 new arrivals coming soon!",
       "hero_image": "images/hero/spring-calves.jpg",
       "status_text": "Calves are hitting the ground at Summers Ranch.",
       "priority": 2
@@ -21,16 +36,16 @@
       "end": "08-31",
       "banner": null,
       "hero_image": "images/hero/summer-pasture.jpg",
-      "status_text": "Breeding season — the herd is out on summer pasture.",
+      "status_text": "Breeding season \u2014 the herd is out on summer pasture.",
       "priority": 2
     },
     {
       "name": "Fall Roundup",
       "start": "09-15",
       "end": "11-15",
-      "banner": "Fall calves are ready — call about availability.",
+      "banner": "Fall calves are ready \u2014 call about availability.",
       "hero_image": "images/hero/fall-roundup.jpg",
-      "status_text": "Fall roundup — weaning calves and sorting the herd.",
+      "status_text": "Fall roundup \u2014 weaning calves and sorting the herd.",
       "priority": 2
     },
     {
@@ -43,30 +58,8 @@
       "priority": 2
     }
   ],
-
-  "events": [
-    {
-      "name": "Annual Elk Hunt — Colorado",
-      "date": "2026-10-15",
-      "end_date": "2026-10-22",
-      "type": "hunting",
-      "banner": "The Summers crew is in Colorado for the annual hunt. We'll be back soon!",
-      "advance_days": 0,
-      "show_in_upcoming": true,
-      "priority": 3
-    }
-  ],
-
-  "recurring_events": [
-    {
-      "name": "Pheasant Club",
-      "description": "Marty's local pheasant hunting club",
-      "frequency": "monthly",
-      "months": [10, 11, 12, 1, 2],
-      "show_in_upcoming": false
-    }
-  ],
-
+  "events": [],
+  "recurring_events": [],
   "meta": {
     "last_updated": "",
     "google_calendar_id": "",
