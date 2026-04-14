@@ -187,6 +187,16 @@ The admin nudges system could then flag: "Tag #189 has 3 photos but they're all 
 
 This adds almost no cost (Claude is already looking at the image) but gives the nudge system better data to work with.
 
+### Quality-Aware Primary Photo Selection
+
+The primary photo auto-selector should factor in quality, but with a strong recency bias:
+
+- **"poor" rated photos are skipped** for primary selection — fall back to the next-best photo by type priority. A photo where the animal is barely visible shouldn't represent it.
+- **"fair" rated photos are used anyway** — a slightly soft recent photo beats a sharp old one. The nudge system flags it for replacement.
+- **"good" and "excellent" are treated the same** for selection purposes.
+
+In short: recent wins unless the photo is genuinely unusable. The nudge handles the rest.
+
 ---
 
 ## Implementation Priority
