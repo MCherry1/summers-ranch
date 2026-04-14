@@ -491,6 +491,81 @@
             .animal-name-line { font-size: 1.3rem; }
             .animal-form { padding: 0.5rem 1.25rem 1.5rem; }
         }
+
+        /* Extended status chip tones (beyond the basic three) */
+        .status-retired  { background: rgba(122,117,111,0.15); color: var(--stone); }
+        .status-culled   { background: rgba(160,82,45,0.12);   color: var(--rust); }
+        .status-deceased { background: rgba(45,45,45,0.12);    color: var(--charcoal); }
+        .status-reference{ background: rgba(139,105,20,0.08);  color: var(--saddle); }
+
+        /* Expandable weights group */
+        .weights-toggle {
+            cursor: pointer;
+            font-size: 0.78rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--stone);
+            margin-bottom: 0.4rem;
+            user-select: none;
+        }
+        .weights-toggle::before {
+            content: '▸ ';
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .weights-toggle.open::before { transform: rotate(90deg); }
+        .weights-fields { display: none; }
+        .weights-fields.open { display: block; }
+
+        /* Calves stepper */
+        .calves-stepper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.35rem;
+        }
+        .calves-stepper button {
+            width: 44px; height: 44px;
+            font-size: 1.3rem;
+            background: var(--linen);
+            color: var(--earth);
+            border-radius: 2px;
+            border: 1px solid rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+        .calves-stepper button:hover:not(:disabled) { background: var(--gold); }
+        .calves-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .calves-stepper input {
+            width: 64px;
+            text-align: center;
+            font-size: 1.05rem !important;
+            padding: 0.7rem 0 !important;
+            min-height: 44px !important;
+        }
+        .calves-stepper input:disabled { background: var(--linen); color: var(--stone); }
+
+        /* Status row with inline remove-from-herd button */
+        .status-row { display: flex; gap: 0.6rem; align-items: flex-end; }
+        .status-row .form-group { flex: 1; margin-bottom: 0; }
+        .remove-herd-btn {
+            display: none;
+            padding: 0 0.9rem;
+            min-height: 48px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--rust);
+            background: transparent;
+            border: 1px solid var(--rust);
+            border-radius: 2px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .remove-herd-btn:hover { background: var(--rust); color: var(--warm-white); }
+        .remove-herd-btn.show { display: inline-block; }
     </style>
 </head>
 <body>
@@ -809,10 +884,13 @@
 
         // Recompute the breeder lists from the current animals' breeding_stock + sex.
         // Mutates data.sires and data.dams in place. Called before render and before save.
+        // Reference animals (source=reference) are NOT counted here — they come through
+        // a separate code path when building the datalists.
         function recomputeBreeders() {
             const sires = [];
             const dams = [];
             (data.animals || []).forEach(a => {
+                if (a.source === 'reference') return;
                 if (!a.breeding_stock) return;
                 if (a.sex === 'bull') sires.push(a.tag);
                 else if (a.sex === 'cow' || a.sex === 'heifer') dams.push(a.tag);
@@ -826,8 +904,22 @@
         function rebuildDatalists() {
             const siresDl = document.getElementById('siresDatalist');
             const damsDl = document.getElementById('damsDatalist');
-            siresDl.innerHTML = (data.sires || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
-            damsDl.innerHTML = (data.dams || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
+            // Main herd breeders
+            let siresHtml = (data.sires || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
+            let damsHtml  = (data.dams  || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
+            // Reference animals — prefixed label so they're visually grouped in the
+            // autocomplete. (datalist doesn't support <optgroup>, so we fall back to
+            // a readable label trick.)
+            (data.animals || []).forEach(a => {
+                if (a.source !== 'reference') return;
+                const label = a.source_ranch ? `${a.tag} — ${a.source_ranch}` : `${a.tag} (outside)`;
+                const opt = `<option value="${escapeAttr(a.tag)}" label="${escapeAttr(label)}">`;
+                if (a.sex === 'bull') siresHtml += opt;
+                else if (a.sex === 'cow' || a.sex === 'heifer') damsHtml += opt;
+                else { siresHtml += opt; damsHtml += opt; }
+            });
+            siresDl.innerHTML = siresHtml;
+            damsDl.innerHTML  = damsHtml;
         }
 
         // ---------- Render ----------
@@ -883,8 +975,22 @@
             el.className = 'animal';
             el.dataset.tag = animal.tag;
 
-            const statusClass = animal.status === 'sale' ? 'status-sale' : animal.status === 'sold' ? 'status-sold' : 'status-breeding';
-            const statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
+            const statusLabels = {
+                breeding:  'Breeding Stock',
+                sale:      'For Sale',
+                sold:      'Sold',
+                retired:   'Retired',
+                culled:    'Culled',
+                deceased:  'Deceased',
+                reference: 'Reference'
+            };
+            const statusClass = 'status-' + (animal.status || 'breeding');
+            const statusText  = statusLabels[animal.status] || 'Breeding Stock';
+
+            const calvesVal = (typeof animal.calves === 'number') ? animal.calves : 0;
+            const calvesManual = !!animal.calves_manual;
+            const source = animal.source || 'herd';
+            const showSourceRanch = source !== 'herd' || !!animal.source_ranch;
 
             el.innerHTML = `
                 <div class="animal-summary">
@@ -915,6 +1021,16 @@
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
+                            <label>Registration #</label>
+                            <input type="text" data-field="registration" value="${escapeAttr(animal.registration || '')}" placeholder="e.g., AHA-43567890" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>Breed detail (optional)</label>
+                            <input type="text" data-field="breed_detail" value="${escapeAttr(animal.breed_detail || '')}" placeholder="e.g., Hereford x Angus" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row2">
+                        <div class="form-group">
                             <label>Sire (tag #)</label>
                             <input type="text" data-field="sire" value="${escapeAttr(animal.sire || '')}" list="siresDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
@@ -923,11 +1039,58 @@
                             <input type="text" data-field="dam" value="${escapeAttr(animal.dam || '')}" list="damsDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
                     </div>
+                    <div class="form-group status-row">
+                        <div class="form-group" style="margin:0">
+                            <label>Status</label>
+                            <select data-field="status" data-role="status-select">
+                                ${statusOptions(animal.status)}
+                            </select>
+                        </div>
+                        <button type="button" class="remove-herd-btn${REMOVED_STATUSES.has(animal.status) ? ' show' : ''}" data-role="remove-herd">Remove from Herd</button>
+                    </div>
+                    <div class="form-row2">
+                        <div class="form-group">
+                            <label>Source</label>
+                            <select data-field="source" data-role="source-select">
+                                ${sourceOptions(source)}
+                            </select>
+                        </div>
+                        <div class="form-group" data-role="source-ranch-group" style="${showSourceRanch ? '' : 'display:none'}">
+                            <label>Source ranch</label>
+                            <input type="text" data-field="source_ranch" value="${escapeAttr(animal.source_ranch || '')}" placeholder="e.g., Red River Ranch" autocomplete="off">
+                        </div>
+                    </div>
                     <div class="form-group">
-                        <label>Status</label>
-                        <select data-field="status">
-                            ${statusOptions(animal.status)}
-                        </select>
+                        <label>${calvesLabelForSex(animal.sex)}</label>
+                        <div class="calves-stepper">
+                            <button type="button" data-role="calves-dec" ${calvesManual ? '' : 'disabled'}>&lsaquo;</button>
+                            <input type="number" data-field="calves" value="${calvesVal}" min="0" ${calvesManual ? '' : 'disabled'}>
+                            <button type="button" data-role="calves-inc" ${calvesManual ? '' : 'disabled'}>&rsaquo;</button>
+                            <label class="checkbox-label" style="margin-left:0.5rem;padding:0;min-height:auto">
+                                <input type="checkbox" data-field="calves_manual" data-role="calves-manual" ${calvesManual ? 'checked' : ''}>
+                                <span style="font-size:0.8rem">Edit manually</span>
+                            </label>
+                        </div>
+                        <p class="checkbox-hint" style="margin-left:0">Auto-increments when new animals are added with this one as sire/dam. Check "Edit manually" to set the number yourself — useful for calves born before the site existed.</p>
+                    </div>
+                    <div class="form-group">
+                        <p class="weights-toggle" data-role="weights-toggle">Weights (optional)</p>
+                        <div class="weights-fields" data-role="weights-fields">
+                            <div class="form-row2">
+                                <div class="form-group">
+                                    <label>Birth weight (lb)</label>
+                                    <input type="text" inputmode="numeric" data-field="birth_weight" value="${animal.birth_weight != null ? animal.birth_weight : ''}" placeholder="e.g., 78">
+                                </div>
+                                <div class="form-group">
+                                    <label>Weaning weight (lb)</label>
+                                    <input type="text" inputmode="numeric" data-field="weaning_weight" value="${animal.weaning_weight != null ? animal.weaning_weight : ''}" placeholder="e.g., 540">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Yearling weight (lb)</label>
+                                <input type="text" inputmode="numeric" data-field="yearling_weight" value="${animal.yearling_weight != null ? animal.yearling_weight : ''}" placeholder="optional">
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group checkbox-group">
                         <label class="checkbox-label">
@@ -966,6 +1129,81 @@
                     pick.classList.add('primary');
                 });
             });
+
+            // Weights group: click toggle expands/collapses
+            const weightsToggle = el.querySelector('[data-role="weights-toggle"]');
+            const weightsFields = el.querySelector('[data-role="weights-fields"]');
+            // Auto-open if any weight is already set
+            if (animal.birth_weight || animal.weaning_weight || animal.yearling_weight) {
+                weightsToggle.classList.add('open');
+                weightsFields.classList.add('open');
+            }
+            weightsToggle.addEventListener('click', e => {
+                e.stopPropagation();
+                weightsToggle.classList.toggle('open');
+                weightsFields.classList.toggle('open');
+            });
+
+            // Source dropdown → show/hide source_ranch field
+            const sourceSelect = el.querySelector('[data-role="source-select"]');
+            const sourceRanchGroup = el.querySelector('[data-role="source-ranch-group"]');
+            sourceSelect.addEventListener('change', () => {
+                sourceRanchGroup.style.display = (sourceSelect.value === 'herd') ? 'none' : '';
+            });
+
+            // Calves stepper + manual-override toggle
+            const calvesInput = el.querySelector('[data-field="calves"]');
+            const calvesDec   = el.querySelector('[data-role="calves-dec"]');
+            const calvesInc   = el.querySelector('[data-role="calves-inc"]');
+            const calvesManualCb = el.querySelector('[data-role="calves-manual"]');
+            calvesManualCb.addEventListener('change', () => {
+                const on = calvesManualCb.checked;
+                calvesInput.disabled = !on;
+                calvesDec.disabled   = !on;
+                calvesInc.disabled   = !on;
+            });
+            calvesDec.addEventListener('click', e => {
+                e.stopPropagation();
+                const n = Math.max(0, (parseInt(calvesInput.value, 10) || 0) - 1);
+                calvesInput.value = n;
+            });
+            calvesInc.addEventListener('click', e => {
+                e.stopPropagation();
+                const n = (parseInt(calvesInput.value, 10) || 0) + 1;
+                calvesInput.value = n;
+            });
+
+            // Status dropdown → show/hide "Remove from Herd" button
+            const statusSelect = el.querySelector('[data-role="status-select"]');
+            const removeBtn = el.querySelector('[data-role="remove-herd"]');
+            const originalStatus = animal.status || 'breeding';
+            let confirmedRemove = REMOVED_STATUSES.has(originalStatus); // pre-confirmed if already removed
+            statusSelect.addEventListener('change', () => {
+                if (REMOVED_STATUSES.has(statusSelect.value)) {
+                    removeBtn.classList.add('show');
+                    // If newly changed to a removed status (not pre-confirmed), force confirmation before save
+                    if (statusSelect.value !== originalStatus) confirmedRemove = false;
+                } else {
+                    removeBtn.classList.remove('show');
+                    confirmedRemove = true; // not a removal, nothing to confirm
+                }
+            });
+            removeBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                const label = animal.name ? `Tag #${animal.tag} (${animal.name})` : `Tag #${animal.tag}`;
+                const ok = window.confirm(
+                    `This will remove ${label} from the active herd. The animal's records and photos will be kept ` +
+                    `but it will no longer appear on the public cattle page. Are you sure?`
+                );
+                if (ok) {
+                    confirmedRemove = true;
+                    removeBtn.textContent = 'Removal confirmed — tap Save';
+                    removeBtn.disabled = true;
+                }
+            });
+            // Store on the element for save() to read
+            el._getConfirmedRemove = () => confirmedRemove;
+            el._getStatusSelect = () => statusSelect;
 
             // Action buttons
             el.querySelector('[data-action="cancel"]').addEventListener('click', e => {
@@ -1006,13 +1244,37 @@
 
         function statusOptions(current) {
             const opts = [
-                { v: 'breeding', label: 'Breeding Stock' },
-                { v: 'sale',     label: 'For Sale' },
-                { v: 'sold',     label: 'Sold' }
+                { v: 'breeding',  label: 'Breeding Stock' },
+                { v: 'sale',      label: 'For Sale' },
+                { v: 'sold',      label: 'Sold' },
+                { v: 'retired',   label: 'Retired' },
+                { v: 'culled',    label: 'Culled' },
+                { v: 'deceased',  label: 'Deceased' },
+                { v: 'reference', label: 'Reference (outside / lineage only)' }
             ];
             return opts.map(o =>
                 `<option value="${o.v}"${o.v === (current || 'breeding') ? ' selected' : ''}>${o.label}</option>`
             ).join('');
+        }
+
+        function sourceOptions(current) {
+            const opts = [
+                { v: 'herd',      label: 'Herd (born/raised here)' },
+                { v: 'reference', label: 'Reference (outside, lineage only)' },
+                { v: 'purchased', label: 'Purchased from another ranch' }
+            ];
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === (current || 'herd') ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
+        // Statuses that count as "removed from active herd" and trigger
+        // the confirmation flow
+        const REMOVED_STATUSES = new Set(['sold', 'culled', 'deceased', 'retired']);
+
+        function calvesLabelForSex(sex) {
+            const s = String(sex || '').toLowerCase();
+            return (s === 'bull' || s === 'steer') ? 'Calves sired' : 'Calves';
         }
 
         function photoPicker(animal) {
@@ -1084,13 +1346,36 @@
             saveBtn.textContent = 'Saving…';
 
             try {
+                // Gate: if the user picked a "removed from herd" status but
+                // hasn't clicked through the confirmation button, bail
+                if (el._getConfirmedRemove && !el._getConfirmedRemove()) {
+                    showToast('Tap "Remove from Herd" to confirm before saving', 'error');
+                    saveBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    saveBtn.textContent = 'Save';
+                    return;
+                }
+
                 // Build the edited animal from form values
                 const edited = Object.assign({}, originalAnimal);
+                // Fields that should be stored as Number|null rather than trimmed strings
+                const numericFields = new Set([
+                    'birth_weight', 'weaning_weight', 'yearling_weight', 'calves'
+                ]);
                 el.querySelectorAll('[data-field]').forEach(input => {
+                    const f = input.dataset.field;
                     if (input.type === 'checkbox') {
-                        edited[input.dataset.field] = input.checked;
+                        edited[f] = input.checked;
+                    } else if (numericFields.has(f)) {
+                        const raw = input.value.trim();
+                        if (raw === '') {
+                            edited[f] = (f === 'calves') ? 0 : null;
+                        } else {
+                            const n = Number(raw);
+                            edited[f] = isNaN(n) ? (f === 'calves' ? 0 : null) : n;
+                        }
                     } else {
-                        edited[input.dataset.field] = input.value.trim();
+                        edited[f] = input.value.trim();
                     }
                 });
 
@@ -1107,10 +1392,35 @@
                     edited.photos = ordered;
                 }
 
+                // Auto-increment parents' calves count when a sire or dam is
+                // newly assigned (was empty before, now populated). Only bump
+                // if the parent doesn't have calves_manual set — manual override
+                // wins so the user's typed number isn't stomped.
+                const newSire = (edited.sire || '').toString().trim();
+                const newDam  = (edited.dam  || '').toString().trim();
+                const oldSire = (originalAnimal.sire || '').toString().trim();
+                const oldDam  = (originalAnimal.dam  || '').toString().trim();
+                const bumpSire = newSire && newSire !== oldSire;
+                const bumpDam  = newDam  && newDam  !== oldDam;
+
                 await commitCattleData(d => {
                     const idx = d.animals.findIndex(a => a.tag === originalAnimal.tag);
                     if (idx === -1) throw new Error('Animal disappeared from data file');
                     d.animals[idx] = edited;
+
+                    if (bumpSire) {
+                        const s = d.animals.find(a => String(a.tag) === newSire);
+                        if (s && !s.calves_manual) {
+                            s.calves = (typeof s.calves === 'number' ? s.calves : 0) + 1;
+                        }
+                    }
+                    if (bumpDam) {
+                        const m = d.animals.find(a => String(a.tag) === newDam);
+                        if (m && !m.calves_manual) {
+                            m.calves = (typeof m.calves === 'number' ? m.calves : 0) + 1;
+                        }
+                    }
+
                     return edited.name
                         ? `Update tag #${edited.tag} (${edited.name})`
                         : `Update tag #${edited.tag}`;
@@ -1198,14 +1508,24 @@
                 tag: tag,
                 name: newName.value.trim(),
                 born: newBorn.value.trim(),
+                registration: '',
                 sire: '',
                 dam: '',
                 breed: 'Hereford',
+                breed_detail: '',
                 sex: newSex.value,
                 status: newStatus.value || 'breeding',
+                source: 'herd',
+                source_ranch: '',
                 breeding_stock: newBreedingStock.checked,
+                birth_weight: null,
+                weaning_weight: null,
+                yearling_weight: null,
+                calves: 0,
+                calves_manual: false,
                 notes: '',
-                photos: []
+                photos: [],
+                photo_dates: []
             };
 
             newSaveBtn.disabled = true;

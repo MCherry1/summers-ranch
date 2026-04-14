@@ -237,6 +237,202 @@
         }
         .calf-ribbon.bull   { background: #6B9BC7; }
         .calf-ribbon.heifer { background: #D4869C; }
+        /* Sold corner ribbon */
+        .sold-ribbon {
+            position: absolute;
+            top: 14px; left: -32px;
+            transform: rotate(-45deg);
+            width: 118px;
+            text-align: center;
+            padding: 3px 0;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: #a93226;
+            z-index: 2;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        /* Make cards obviously tappable */
+        .animal-card { cursor: pointer; }
+
+        /* ANIMAL LIGHTBOX (expanded card view) */
+        .animal-lightbox {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(20,14,8,0.88);
+            z-index: 2500;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2rem 1rem;
+            overflow-y: auto;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .animal-lightbox.open { display: flex; opacity: 1; }
+        .animal-lightbox-inner {
+            background: var(--warm-white);
+            border-radius: 3px;
+            max-width: 720px;
+            width: 100%;
+            margin: auto;
+            position: relative;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.25s ease;
+        }
+        .animal-lightbox.open .animal-lightbox-inner { transform: scale(1); }
+        .lb-close {
+            position: absolute;
+            top: 10px; right: 10px;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.55);
+            color: var(--warm-white);
+            font-size: 1.4rem;
+            line-height: 44px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 3;
+            border: none;
+            padding: 0;
+        }
+        .lb-close:hover { background: rgba(0,0,0,0.8); }
+        .lb-photo-wrap {
+            position: relative;
+            background: #1a120b;
+            width: 100%;
+            height: 60vh;
+            max-height: 520px;
+            min-height: 280px;
+            overflow: hidden;
+        }
+        .lb-photo-wrap img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+        }
+        .lb-arrow {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.45);
+            color: var(--warm-white);
+            font-size: 1.5rem;
+            line-height: 44px; text-align: center;
+            border: none; cursor: pointer;
+            z-index: 2;
+        }
+        .lb-arrow:hover { background: rgba(0,0,0,0.7); }
+        .lb-arrow.prev { left: 10px; }
+        .lb-arrow.next { right: 10px; }
+        @media (hover: none) {
+            .lb-arrow { display: none; }
+        }
+        .lb-photo-date {
+            position: absolute;
+            left: 12px; bottom: 12px;
+            padding: 4px 10px;
+            background: rgba(0,0,0,0.55);
+            color: var(--warm-white);
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 2px;
+            z-index: 2;
+        }
+        .lb-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.75rem 0 0.25rem;
+            background: var(--warm-white);
+        }
+        .lb-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: rgba(61,43,31,0.18);
+            cursor: pointer;
+            transition: background 0.2s;
+            border: none;
+            padding: 0;
+        }
+        .lb-dot.active { background: var(--saddle); }
+        .lb-body { padding: 1.5rem 1.75rem 2rem; }
+        .lb-tag {
+            font-size: 0.75rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--sage);
+            font-weight: 700;
+        }
+        .lb-name {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 600;
+            color: var(--earth);
+            margin: 0.15rem 0 0.25rem;
+            line-height: 1.15;
+        }
+        .lb-age {
+            font-size: 0.9rem;
+            color: var(--stone);
+            margin-bottom: 1.25rem;
+        }
+        .lb-details {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.4rem 1.25rem;
+            font-size: 0.92rem;
+            margin-bottom: 1.25rem;
+        }
+        .lb-details dt { color: var(--stone); font-weight: 400; }
+        .lb-details dd { color: var(--charcoal); font-weight: 400; }
+        .lb-notes {
+            font-style: italic;
+            color: var(--stone);
+            border-left: 3px solid var(--linen);
+            padding: 0.25rem 0 0.25rem 1rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.95rem;
+        }
+        .lb-status {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: 0.3rem 0.85rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+        .lb-inquire {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 0.95rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: var(--saddle);
+            border: 1px solid var(--saddle);
+            border-radius: 2px;
+            transition: background 0.25s, border-color 0.25s;
+        }
+        .lb-inquire:hover { background: var(--rust); border-color: var(--rust); }
+        @media (max-width: 600px) {
+            .animal-lightbox { padding: 0; }
+            .animal-lightbox-inner { border-radius: 0; min-height: 100vh; }
+            .lb-photo-wrap { height: 55vh; }
+            .lb-body { padding: 1.25rem 1.25rem 2rem; }
+            .lb-name { font-size: 1.6rem; }
+        }
         /* New Arrivals highlight section */
         .new-arrivals {
             max-width: 1200px;
@@ -423,6 +619,29 @@
         <img src="images/cattle/brand.jpg" alt="Summers Ranch brand — full size">
     </div>
 
+    <!-- ANIMAL LIGHTBOX (expanded card view) -->
+    <div class="animal-lightbox" id="animalLightbox" aria-hidden="true" role="dialog">
+        <div class="animal-lightbox-inner" id="animalLightboxInner">
+            <button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+            <div class="lb-photo-wrap" id="lbPhotoWrap">
+                <img id="lbPhoto" alt="">
+                <button class="lb-arrow prev" id="lbPrev" aria-label="Previous photo">&lsaquo;</button>
+                <button class="lb-arrow next" id="lbNext" aria-label="Next photo">&rsaquo;</button>
+                <span class="lb-photo-date" id="lbPhotoDate" style="display:none"></span>
+            </div>
+            <div class="lb-dots" id="lbDots"></div>
+            <div class="lb-body">
+                <p class="lb-tag" id="lbTag"></p>
+                <h2 class="lb-name" id="lbName"></h2>
+                <p class="lb-age" id="lbAge"></p>
+                <dl class="lb-details" id="lbDetails"></dl>
+                <p class="lb-notes" id="lbNotes" style="display:none"></p>
+                <span class="lb-status" id="lbStatus"></span>
+                <a href="#" class="lb-inquire" id="lbInquire" style="display:none">Inquire About This Animal</a>
+            </div>
+        </div>
+    </div>
+
     <!-- FILTER TABS -->
     <div class="category-tabs">
         <button class="tab-btn active" onclick="filterCards('all')">All</button>
@@ -549,13 +768,43 @@
                 return Math.round((today - born) / 86400000);
             }
 
+            // Pretty-print a sex value ("cow" -> "Cow")
+            function prettySex(s) {
+                if (!s) return '';
+                return String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase();
+            }
+            // Female sexes use "Calves", males use "Calves Sired"
+            function calvesLabel(sex) {
+                var s = String(sex || '').toLowerCase();
+                return (s === 'bull' || s === 'steer') ? 'Calves Sired' : 'Calves';
+            }
+            // Status -> badge class + label (extended per spec § 4)
+            function statusMeta(status) {
+                switch (status) {
+                    case 'sale':     return { cls: 'status-available', text: 'For Sale' };
+                    case 'sold':     return { cls: 'status-sold',      text: 'Sold' };
+                    case 'retired':  return { cls: 'status-sold',      text: 'Retired' };
+                    case 'breeding':
+                    default:         return { cls: 'status-breeding',  text: 'Breeding Stock' };
+                }
+            }
+            // "2024-03-15" -> "Mar 2024". Returns "" if not parseable.
+            function formatPhotoDate(s) {
+                if (!s) return '';
+                var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+                if (!m) return '';
+                var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                var mi = parseInt(m[2], 10) - 1;
+                return (months[mi] || '') + ' ' + m[1];
+            }
+            var hoverCapable = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+
             // Build a card element for an animal. Called once for the main grid,
             // and again for the New Arrivals row (fresh DOM each time).
             function buildCard(animal, today, opts) {
                 var photos = animal.photos || [];
                 var primaryPhoto = photos.length > 0 ? photos[0] : 'images/cattle/brand.jpg';
-                var statusClass = animal.status === 'sale' ? 'status-available' : 'status-breeding';
-                var statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
+                var meta = statusMeta(animal.status);
 
                 var born = parseBorn(animal.born);
                 var age = formatAge(born, today);
@@ -568,16 +817,21 @@
                 card.dataset.category = animal.status === 'sale' ? 'sale' : 'breeding';
                 card.dataset.tag = animal.tag;
 
+                var breedDisplay = animal.breed_detail || animal.breed || 'Hereford';
                 var detailRows = '';
-                if (animal.born) detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
-                if (age)         detailRows += '<dt>Age</dt><dd>' + age + '</dd>';
-                if (animal.sire) detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
-                if (animal.dam)  detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
-                detailRows += '<dt>Breed</dt><dd>' + (animal.breed || 'Hereford') + '</dd>';
-                if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + animal.sex + '</dd>';
+                if (animal.born)         detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
+                if (age)                 detailRows += '<dt>Age</dt><dd>' + age + '</dd>';
+                if (animal.registration) detailRows += '<dt>Reg #</dt><dd>' + animal.registration + '</dd>';
+                if (animal.sire)         detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
+                if (animal.dam)          detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
+                detailRows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
+                if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + prettySex(animal.sex) + '</dd>';
+                if (typeof animal.calves === 'number' && animal.calves > 0) {
+                    detailRows += '<dt>' + calvesLabel(animal.sex) + '</dt><dd>' + animal.calves + '</dd>';
+                }
 
                 var photoCountHtml = photos.length > 1
-                    ? '<span class="photo-count">' + photos.length + ' photos — tap to cycle</span>'
+                    ? '<span class="photo-count">' + photos.length + ' photos — tap to view</span>'
                     : '';
 
                 // New-arrival ribbon (bull/heifer) — only in new-arrivals row to keep
@@ -590,6 +844,10 @@
                     } else if (sex === 'heifer' || sex === 'cow' || sex === 'heifer calf') {
                         ribbonHtml = '<span class="calf-ribbon heifer">Heifer</span>';
                     }
+                }
+                // SOLD corner ribbon — overrides calf ribbon for sold animals
+                if (animal.status === 'sold') {
+                    ribbonHtml = '<span class="sold-ribbon">Sold</span>';
                 }
                 var hatHtml = birthday ? '<span class="birthday-hat" aria-label="Birthday">🎂</span>' : '';
                 var newBadge = (opts && opts.showNewBadge && isNewArrival) ? '<span class="new-badge">New</span>' : '';
@@ -604,36 +862,231 @@
                         '<p class="animal-tag">Tag #' + animal.tag + newBadge + '</p>' +
                         '<p class="animal-name">' + (animal.name || '—') + '</p>' +
                         (detailRows ? '<dl class="animal-details">' + detailRows + '</dl>' : '') +
-                        '<span class="animal-status ' + statusClass + '">' + statusText + '</span>' +
+                        '<span class="animal-status ' + meta.cls + '">' + meta.text + '</span>' +
                         photoCountHtml +
                     '</div>';
 
-                // Photo cycling — tap to advance, auto-cycle every 5 seconds
-                if (photos.length > 1) {
+                var img = card.querySelector('.animal-card-img img');
+                img.style.transition = 'opacity 0.4s ease';
+
+                // Hover cycling (desktop) — slow crossfade, every 4s. Only the
+                // hovered card cycles. No global auto-cycle on the grid.
+                if (photos.length > 1 && hoverCapable) {
                     (function(cardEl, photoList) {
                         var idx = 0;
-                        var img = cardEl.querySelector('.animal-card-img img');
-                        cardEl.style.cursor = 'pointer';
-                        cardEl.addEventListener('click', function() {
+                        var timer = null;
+                        function step() {
                             idx = (idx + 1) % photoList.length;
                             img.style.opacity = '0';
                             setTimeout(function() {
                                 img.src = photoList[idx];
                                 img.style.opacity = '1';
                             }, 200);
+                        }
+                        cardEl.addEventListener('mouseenter', function() {
+                            if (timer) return;
+                            timer = setInterval(step, 4000);
                         });
-                        setInterval(function() {
-                            idx = (idx + 1) % photoList.length;
+                        cardEl.addEventListener('mouseleave', function() {
+                            if (timer) { clearInterval(timer); timer = null; }
+                            idx = 0;
                             img.style.opacity = '0';
                             setTimeout(function() {
-                                img.src = photoList[idx];
+                                img.src = photoList[0];
                                 img.style.opacity = '1';
-                            }, 200);
-                        }, 5000 + Math.random() * 2000);
+                            }, 150);
+                        });
                     })(card, photos);
                 }
+
+                // Tap/click opens the lightbox (expanded view)
+                card.addEventListener('click', function() {
+                    openLightbox(animal, today);
+                });
+
                 return { card: card, born: born, isNewArrival: isNewArrival };
             }
+
+            // ---------- LIGHTBOX (expanded card view) ----------
+            var lb        = document.getElementById('animalLightbox');
+            var lbInner   = document.getElementById('animalLightboxInner');
+            var lbClose   = document.getElementById('lbClose');
+            var lbPhoto   = document.getElementById('lbPhoto');
+            var lbPrev    = document.getElementById('lbPrev');
+            var lbNext    = document.getElementById('lbNext');
+            var lbDate    = document.getElementById('lbPhotoDate');
+            var lbDots    = document.getElementById('lbDots');
+            var lbTag     = document.getElementById('lbTag');
+            var lbName    = document.getElementById('lbName');
+            var lbAge     = document.getElementById('lbAge');
+            var lbDetails = document.getElementById('lbDetails');
+            var lbNotes   = document.getElementById('lbNotes');
+            var lbStatus  = document.getElementById('lbStatus');
+            var lbInquire = document.getElementById('lbInquire');
+
+            var lbState = { photos: [], dates: [], idx: 0, timer: null };
+
+            function lbStop() {
+                if (lbState.timer) { clearInterval(lbState.timer); lbState.timer = null; }
+            }
+            function lbShow(i) {
+                if (!lbState.photos.length) return;
+                lbState.idx = (i + lbState.photos.length) % lbState.photos.length;
+                lbPhoto.style.opacity = '0';
+                setTimeout(function() {
+                    lbPhoto.src = lbState.photos[lbState.idx];
+                    lbPhoto.style.opacity = '1';
+                }, 200);
+                // Dots
+                var dotEls = lbDots.querySelectorAll('.lb-dot');
+                dotEls.forEach(function(d, di) {
+                    d.classList.toggle('active', di === lbState.idx);
+                });
+                // Date caption
+                var dateStr = formatPhotoDate(lbState.dates[lbState.idx]);
+                if (dateStr) {
+                    lbDate.textContent = dateStr;
+                    lbDate.style.display = '';
+                } else {
+                    lbDate.style.display = 'none';
+                }
+            }
+            function lbStart() {
+                lbStop();
+                if (lbState.photos.length > 1) {
+                    lbState.timer = setInterval(function() { lbShow(lbState.idx + 1); }, 5000);
+                }
+            }
+            function openLightbox(animal, today) {
+                var photos = (animal.photos && animal.photos.length) ? animal.photos : ['images/cattle/brand.jpg'];
+                lbState.photos = photos.slice();
+                lbState.dates  = (animal.photo_dates || []).slice();
+                lbState.idx    = 0;
+
+                // Build dot nav
+                lbDots.innerHTML = '';
+                if (photos.length > 1) {
+                    photos.forEach(function(_, di) {
+                        var b = document.createElement('button');
+                        b.className = 'lb-dot' + (di === 0 ? ' active' : '');
+                        b.setAttribute('aria-label', 'Photo ' + (di + 1));
+                        b.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            lbStart(); lbShow(di);
+                        });
+                        lbDots.appendChild(b);
+                    });
+                    lbPrev.style.display = '';
+                    lbNext.style.display = '';
+                } else {
+                    lbPrev.style.display = 'none';
+                    lbNext.style.display = 'none';
+                }
+
+                // Details
+                var born = parseBorn(animal.born);
+                var age  = formatAge(born, today);
+                lbTag.textContent  = 'Tag #' + animal.tag;
+                lbName.textContent = animal.name || '—';
+                lbAge.textContent  = age || '';
+                lbAge.style.display = age ? '' : 'none';
+
+                var breedDisplay = animal.breed_detail || animal.breed || 'Hereford';
+                var rows = '';
+                if (animal.born)         rows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
+                if (animal.registration) rows += '<dt>Reg #</dt><dd>' + animal.registration + '</dd>';
+                if (animal.sire)         rows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
+                if (animal.dam)          rows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
+                rows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
+                if (animal.sex)          rows += '<dt>Sex</dt><dd>' + prettySex(animal.sex) + '</dd>';
+                if (typeof animal.calves === 'number' && animal.calves > 0) {
+                    rows += '<dt>' + calvesLabel(animal.sex) + '</dt><dd>' + animal.calves + '</dd>';
+                }
+                if (animal.birth_weight)    rows += '<dt>Birth wt</dt><dd>' + animal.birth_weight + ' lb</dd>';
+                if (animal.weaning_weight)  rows += '<dt>Weaning wt</dt><dd>' + animal.weaning_weight + ' lb</dd>';
+                if (animal.yearling_weight) rows += '<dt>Yearling wt</dt><dd>' + animal.yearling_weight + ' lb</dd>';
+                if (animal.source === 'purchased' && animal.source_ranch) {
+                    rows += '<dt>Acquired</dt><dd>' + animal.source_ranch + '</dd>';
+                }
+                lbDetails.innerHTML = rows;
+
+                // Notes
+                if (animal.notes) {
+                    lbNotes.textContent = '"' + animal.notes + '"';
+                    lbNotes.style.display = '';
+                } else {
+                    lbNotes.style.display = 'none';
+                }
+
+                // Status chip
+                var meta = statusMeta(animal.status);
+                lbStatus.className = 'lb-status ' + meta.cls;
+                lbStatus.textContent = meta.text;
+
+                // Inquire CTA (only when for sale)
+                if (animal.status === 'sale') {
+                    lbInquire.href = 'contact.html?animal=' + encodeURIComponent(animal.tag);
+                    lbInquire.style.display = '';
+                } else {
+                    lbInquire.style.display = 'none';
+                }
+
+                // Show it
+                lb.classList.add('open');
+                lb.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                lbShow(0);
+                lbStart();
+            }
+            function closeLightbox() {
+                lbStop();
+                lb.classList.remove('open');
+                lb.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            // Wire lightbox controls
+            lbClose.addEventListener('click', function(e) { e.stopPropagation(); closeLightbox(); });
+            lb.addEventListener('click', function(e) {
+                // Click on backdrop (not on inner card) closes
+                if (e.target === lb) closeLightbox();
+            });
+            lbPrev.addEventListener('click', function(e) {
+                e.stopPropagation();
+                lbStart(); lbShow(lbState.idx - 1);
+            });
+            lbNext.addEventListener('click', function(e) {
+                e.stopPropagation();
+                lbStart(); lbShow(lbState.idx + 1);
+            });
+            document.addEventListener('keydown', function(e) {
+                if (!lb.classList.contains('open')) return;
+                if (e.key === 'Escape')      closeLightbox();
+                else if (e.key === 'ArrowLeft')  { lbStart(); lbShow(lbState.idx - 1); }
+                else if (e.key === 'ArrowRight') { lbStart(); lbShow(lbState.idx + 1); }
+            });
+            // Touch swipe (mobile)
+            (function() {
+                var startX = null, startY = null;
+                lb.addEventListener('touchstart', function(e) {
+                    if (!e.touches || !e.touches[0]) return;
+                    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+                }, { passive: true });
+                lb.addEventListener('touchend', function(e) {
+                    if (startX == null) return;
+                    var t = e.changedTouches && e.changedTouches[0];
+                    if (!t) return;
+                    var dx = t.clientX - startX, dy = t.clientY - startY;
+                    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+                        lbStart();
+                        if (dx < 0) lbShow(lbState.idx + 1);
+                        else        lbShow(lbState.idx - 1);
+                    } else if (dy > 80 && Math.abs(dy) > Math.abs(dx)) {
+                        closeLightbox();
+                    }
+                    startX = startY = null;
+                }, { passive: true });
+            })();
 
             // Read "today" via the ranch calendar module so ?date= override works here too.
             var today = (window.__ranchCalendar && window.__ranchCalendar.today) || new Date();
@@ -641,7 +1094,24 @@
             fetch('cattle-data.json')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var animals = data.animals || [];
+                var allAnimals = data.animals || [];
+                // Hide culled/deceased/reference from the public page entirely.
+                // Reference also covers outside sires/dams — never appear as cards.
+                var hiddenStatuses = { culled: 1, deceased: 1, reference: 1 };
+                var animals = allAnimals.filter(function(a) {
+                    if (hiddenStatuses[a.status]) return false;
+                    if (a.source === 'reference') return false;
+                    return true;
+                });
+                // Sort: active animals first (breeding/sale), then sold/retired.
+                var bottomStatuses = { sold: 1, retired: 1 };
+                animals.sort(function(a, b) {
+                    var ab = bottomStatuses[a.status] ? 1 : 0;
+                    var bb = bottomStatuses[b.status] ? 1 : 0;
+                    if (ab !== bb) return ab - bb;
+                    return 0;
+                });
+
                 if (animals.length === 0) {
                     grid.innerHTML = '<p style="text-align:center;color:var(--stone);grid-column:1/-1">Herd data coming soon.</p>';
                     return;
@@ -653,11 +1123,8 @@
                 animals.forEach(function(animal) {
                     var built = buildCard(animal, today, { showRibbon: false, showNewBadge: false });
                     grid.appendChild(built.card);
-                    if (built.isNewArrival) newArrivalAnimals.push(animal);
-                });
-
-                document.querySelectorAll('.animal-card-img img').forEach(function(img) {
-                    img.style.transition = 'opacity 0.3s ease';
+                    // New arrivals should only celebrate live, not-sold animals
+                    if (built.isNewArrival && animal.status !== 'sold') newArrivalAnimals.push(animal);
                 });
 
                 // New Arrivals section: only during calving season, only if any

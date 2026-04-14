@@ -4,15 +4,27 @@
       "tag": "215",
       "name": "",
       "born": "",
+      "registration": "",
       "sire": "",
       "dam": "",
       "breed": "Hereford",
+      "breed_detail": "",
       "sex": "cow",
       "status": "breeding",
+      "source": "herd",
+      "source_ranch": "",
       "breeding_stock": true,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calves": 0,
+      "calves_manual": false,
       "notes": "",
       "photos": [
         "images/cattle/tag-215-1.jpg"
+      ],
+      "photo_dates": [
+        ""
       ]
     }
   ],

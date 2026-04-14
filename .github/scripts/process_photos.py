@@ -35,6 +35,12 @@ ABOUT_DIR = Path("images/about")
 MASCOT_DIR = Path("images/mascot")
 HERO_DIR = Path("images/hero")
 
+# Cache of "photo-path -> ISO date (YYYY-MM-DD)" populated during process_inbox
+# from the original inbox filename (the iOS Shortcut stamps filenames with a
+# timestamp like 20260413-203518 before upload). Used by update_cattle_data
+# to populate each animal's photo_dates array in lockstep with photos[].
+PHOTO_DATES = {}
+
 # Max width for processed photos
 MAX_WIDTH = 1200
 JPEG_QUALITY = 82
@@ -184,6 +190,31 @@ def next_cattle_number(tag_number):
     return max(numbers, default=0) + 1
 
 
+def extract_iso_date(filename):
+    """
+    Pull an ISO date (YYYY-MM-DD) out of an iOS-Shortcut-style filename.
+
+    The Shortcut stamps filenames with a YYYYMMDD-HHMMSS timestamp:
+        cattle-tag-189-20260413-203518.jpg
+        cattle-tag-[189]-[20260413-203518].jpg
+        hunting-20260413-203518.jpg
+    We extract the first YYYYMMDD run and format it as 2026-04-13.
+    Returns "" if no date can be parsed.
+    """
+    match = re.search(r'(\d{4})(\d{2})(\d{2})', filename)
+    if not match:
+        return ""
+    year, month, day = match.groups()
+    # Loose sanity check: plausible year, month, day
+    try:
+        y, m, d = int(year), int(month), int(day)
+        if 2000 <= y <= 2100 and 1 <= m <= 12 and 1 <= d <= 31:
+            return f"{year}-{month}-{day}"
+    except ValueError:
+        pass
+    return ""
+
+
 def route_by_prefix(filename):
     """
     Determine category and target filename from the upload prefix.
@@ -239,6 +270,12 @@ def process_inbox():
         original_size = photo.stat().st_size
         print(f"  Original size: {original_size / 1024:.0f} KB")
 
+        # Capture the original upload date BEFORE we strip EXIF — the Shortcut
+        # already encoded it into the filename, so we just parse it out.
+        captured_date = extract_iso_date(photo.name)
+        if captured_date:
+            print(f"  Capture date: {captured_date}")
+
         # Step 1: Resize and strip EXIF
         if not strip_and_resize(photo):
             print(f"  SKIPPED (processing error)")
@@ -273,6 +310,11 @@ def process_inbox():
         target_dir.mkdir(parents=True, exist_ok=True)
         photo.rename(target)
         print(f"  Moved to: {target}")
+
+        # Remember the date so update_cattle_data() can populate photo_dates
+        # keyed to this photo in lockstep with animal.photos.
+        if captured_date and category == "cattle":
+            PHOTO_DATES[str(target)] = captured_date
 
     print("\nInbox processing complete.")
 
@@ -332,24 +374,53 @@ def update_cattle_data():
                 "tag": tag,
                 "name": "",
                 "born": "",
+                "registration": "",
                 "sire": "",
                 "dam": "",
                 "breed": "Hereford",
+                "breed_detail": "",
                 "sex": "",
                 "status": "breeding",
+                "source": "herd",
+                "source_ranch": "",
                 "breeding_stock": False,
-                "notes": ""
+                "birth_weight": None,
+                "weaning_weight": None,
+                "yearling_weight": None,
+                "calves": 0,
+                "calves_manual": False,
+                "notes": "",
+                "photos": [],
+                "photo_dates": []
             })
             existing_tags.add(tag)
             changed = True
 
-    # Update photo arrays for all animals
+    # Update photo arrays for all animals. Keep photo_dates in lockstep with
+    # photos: look up this run's fresh dates from PHOTO_DATES, and carry over
+    # any existing dates stored in the JSON for photos we're not touching.
     for animal in animals:
         tag = animal["tag"]
         photos = tag_photos.get(tag, [])
         old_photos = animal.get("photos", [])
-        if photos != old_photos:
+        old_dates  = animal.get("photo_dates", [])
+        # Build a lookup from the old arrays so we can preserve dates that
+        # were already recorded (e.g. from a previous run).
+        old_lookup = {}
+        for i, p in enumerate(old_photos):
+            if i < len(old_dates):
+                old_lookup[p] = old_dates[i]
+        new_dates = []
+        for p in photos:
+            if p in PHOTO_DATES:
+                new_dates.append(PHOTO_DATES[p])
+            elif p in old_lookup and old_lookup[p]:
+                new_dates.append(old_lookup[p])
+            else:
+                new_dates.append("")
+        if photos != old_photos or new_dates != old_dates:
             animal["photos"] = photos
+            animal["photo_dates"] = new_dates
             changed = True
 
     # Rebuild sires/dams from the breeding_stock flag + sex.
