@@ -196,15 +196,17 @@ def route_by_prefix(filename):
     name = filename.lower()
 
     # Cattle: extract tag number, auto-assign sequential number
-    cattle_match = re.match(r'cattle-tag-(\w+)-', name)
+    # Shortcut formats as: cattle-tag-[125]-[20260413-203518].jpg
+    # or possibly:         cattle-tag-125-20260413-203518.jpg
+    cattle_match = re.match(r'cattle-tag-\[?(\w+)\]?-', name)
     if cattle_match:
         tag_number = cattle_match.group(1)
         seq = next_cattle_number(tag_number)
         return "cattle", f"tag-{tag_number}-{seq}.jpg"
 
     # Hunting: move directly, keep a clean name
-    if name.startswith("hunting-"):
-        # Extract date portion for a clean name
+    # Shortcut formats as: hunting-[20260413-203518].jpg or hunting-20260413...
+    if name.startswith("hunting"):
         date_match = re.search(r'(\d{8})', name)
         date_str = date_match.group(1) if date_match else "undated"
         return "hunting", f"hunt-{date_str}.jpg"
