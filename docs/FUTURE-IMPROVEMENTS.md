@@ -8,6 +8,18 @@
 
 ## High Priority — Build When Data Exists
 
+### Calendar / Events Tab in Admin Panel
+Add a second tab to the admin panel: **"Herd"** (existing cattle management) and **"Calendar"** (event management). The Calendar tab should:
+
+- **"Add New Event" button** at the top — walks through a simple creation wizard: event name, start date, end date, category dropdown (sale/show/auction/hunting/general), advance warning days, banner text, and optional during-event text.
+- **Upcoming events** listed below in chronological order (soonest first). Each event is an editable card with all the fields visible and a delete button.
+- **Past events** listed below upcoming, in reverse chronological order (most recent first). Collapsible or limited to last 10 with a "show more" option. Past events can be duplicated (for recurring annual events — "Copy to next year" button that pre-fills everything with dates shifted +1 year).
+- **Category dropdown options:** Sale, Show/Expo, Auction, Hunting, Ranch Event, General
+- **All fields map directly** to `ranch-calendar.json` — the admin panel reads and writes to this file via the GitHub API, same pattern as cattle-data.json.
+- Don't build Google Calendar sync. This tab IS the calendar. Marty adds events here instead of maintaining a separate Google Calendar.
+
+**Why this matters:** Marty uses a paper calendar. Adding a Google Calendar fetch is adding steps to a workflow he won't use. Putting everything in the admin panel he already bookmarks keeps it in one place. Two tabs, one bookmark.
+
 ### Pedigree / Family Tree View
 When enough lineage data is entered (sire/dam chains going back 2-3 generations), add a **"Pedigree" tab or expandable section** inside the animal's expanded card view. Show a simple 3-generation family tree:
 

@@ -226,6 +226,37 @@
             cursor: pointer;
         }
         .btn-wide:hover { background: #5a6e4f; border-color: #5a6e4f; }
+        .sort-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .sort-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--stone);
+            margin-right: 0.25rem;
+        }
+        .sort-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--stone);
+            background: var(--linen);
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            min-height: 36px;
+            transition: all 0.3s;
+        }
+        .sort-btn:hover { color: var(--earth); border-color: var(--saddle); }
+        .sort-btn.active { color: var(--warm-white); background: var(--earth); }
         .new-animal {
             background: var(--warm-white);
             border: 1px solid var(--gold);
@@ -496,6 +527,13 @@
 
         <div class="panel-actions">
             <button class="btn btn-wide" id="addAnimalBtn">+ Add Animal</button>
+            <div class="sort-bar">
+                <span class="sort-label">Sort:</span>
+                <button class="sort-btn active" data-sort="tag">Tag #</button>
+                <button class="sort-btn" data-sort="newest">Newest</button>
+                <button class="sort-btn" data-sort="oldest">Oldest</button>
+                <button class="sort-btn" data-sort="status">Status</button>
+            </div>
         </div>
 
         <!-- Inline "new animal" form, hidden until Add is clicked -->
@@ -798,7 +836,22 @@
             rebuildDatalists();
 
             const animals = (data.animals || []).slice();
+            const sortMode = window._sortMode || 'tag';
+            const statusOrder = { breeding: 0, sale: 1, sold: 2, retired: 3, culled: 4, deceased: 5, reference: 6 };
             animals.sort((a, b) => {
+                if (sortMode === 'newest' || sortMode === 'oldest') {
+                    const da = a.born || ''; const db = b.born || '';
+                    const cmp = da.localeCompare(db);
+                    return sortMode === 'newest' ? -cmp : cmp;
+                }
+                if (sortMode === 'status') {
+                    const sa = statusOrder[a.status] ?? 99;
+                    const sb = statusOrder[b.status] ?? 99;
+                    if (sa !== sb) return sa - sb;
+                    // Within same status, sort by age descending (newest first)
+                    return (b.born || '').localeCompare(a.born || '');
+                }
+                // Default: tag number
                 const an = parseInt(a.tag, 10);
                 const bn = parseInt(b.tag, 10);
                 if (!isNaN(an) && !isNaN(bn)) return an - bn;
@@ -1077,6 +1130,17 @@
                 saveBtn.textContent = 'Save';
             }
         }
+
+        // ---------- Sort controls ----------
+        window._sortMode = 'tag';
+        document.querySelectorAll('.sort-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                window._sortMode = btn.dataset.sort;
+                render();
+            });
+        });
 
         // ---------- Add new animal ----------
         const newAnimalCard = $('newAnimalCard');
