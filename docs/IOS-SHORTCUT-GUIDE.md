@@ -28,7 +28,7 @@ Phone                          GitHub (automatic)
 ─────                          ──────────────────
 Pick category (General/        GitHub Actions triggers:
   Cattle/Hunting)              → Resize to 1200px
-Select photos                  → Strip metadata
+Select photos                  → Upload raw
 Strip GPS data (fast)          → Compress to JPEG 82%
 Upload to images/inbox/        → Route to correct folder
 Done ✓                         → Auto-number cattle photos
@@ -80,13 +80,13 @@ Open the Shortcuts app → tap **+** → name it **"Ranch Photos"**
 
 Inside the repeat loop:
 
-### Action 4: Convert Image (strip metadata only — no resize)
+### Action 4: Convert Image (JPEG, preserve metadata)
 - Add: **Convert Image**
 - Format: **JPEG**
 - Quality: **80%**
-- Preserving Metadata: **OFF**
+- Preserving Metadata: **ON**
 
-This is fast — it strips GPS/location data without resizing. The server handles resizing.
+This preserves the photo date for the timeline. The server strips GPS and other private metadata — your location stays safe.
 
 ### Action 5: Generate Filename
 - Add: **Format Date**
@@ -170,7 +170,7 @@ All photos are resized to max 1200px wide, compressed to JPEG quality 82, and ha
 
 ## Tips
 
-**Speed:** The shortcut is fast now because it's not resizing on your phone. The only processing is the JPEG conversion (strips metadata), which takes under a second per photo. The upload time depends on your cell signal.
+**Speed:** The shortcut is fast because it's not resizing on your phone. The only processing is the JPEG conversion, which takes under a second per photo. Metadata (including the photo date) is preserved — the server strips GPS data later. The upload time depends on your cell signal.
 
 **Cattle tag numbers:** Just enter the number — the pipeline handles the `-1`, `-2`, `-3` numbering automatically based on what already exists in the repo. Upload 5 photos of tag 189 in a row and they'll become `tag-189-1.jpg` through `tag-189-5.jpg`.
 

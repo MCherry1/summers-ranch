@@ -25,6 +25,7 @@ import json
 import subprocess
 import base64
 import re
+import hashlib
 from pathlib import Path
 
 INBOX = Path("images/inbox")
@@ -68,6 +69,27 @@ JPEG_QUALITY = 82
 
 # Size threshold — skip files already under 300KB (likely already processed)
 SIZE_THRESHOLD = 300_000
+
+
+def file_hash(filepath):
+    """Compute SHA-256 hash of a file's contents."""
+    h = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def build_existing_hashes():
+    """Build a set of SHA-256 hashes of all existing photos in the repo."""
+    hashes = set()
+    for directory in [CATTLE_DIR, GALLERY_DIR, HUNTING_DIR, ABOUT_DIR, MASCOT_DIR, HERO_DIR]:
+        if not directory.exists():
+            continue
+        for photo in directory.iterdir():
+            if photo.suffix.lower() in (".jpg", ".jpeg", ".png") and photo.name != ".gitkeep":
+                hashes.add(file_hash(photo))
+    return hashes
 
 
 def strip_and_resize(filepath, max_width=MAX_WIDTH, quality=JPEG_QUALITY):
@@ -396,6 +418,11 @@ def process_inbox():
 
     print(f"Found {len(photos)} photo(s) in inbox.")
 
+    # Build hash index of all existing photos for duplicate detection
+    print("Building duplicate detection index...")
+    existing_hashes = build_existing_hashes()
+    print(f"  {len(existing_hashes)} existing photos indexed.")
+
     has_api = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
     if has_api:
         print("Claude API key found — will classify untagged photos.")
@@ -404,14 +431,35 @@ def process_inbox():
 
     for photo in photos:
         print(f"\nProcessing: {photo.name}")
+
+        # Duplicate check — compare raw file hash against all existing photos
+        incoming_hash = file_hash(photo)
+        if incoming_hash in existing_hashes:
+            print(f"  DUPLICATE — this photo already exists in the repo. Removing from inbox.")
+            photo.unlink()
+            continue
+
         original_size = photo.stat().st_size
         print(f"  Original size: {original_size / 1024:.0f} KB")
 
-        # Capture the original upload date BEFORE we strip EXIF — the Shortcut
-        # already encoded it into the filename, so we just parse it out.
-        captured_date = extract_iso_date(photo.name)
-        if captured_date:
-            print(f"  Capture date: {captured_date}")
+        # Capture the original photo date BEFORE we strip EXIF.
+        # Priority: EXIF DateTimeOriginal (actual capture time) → filename timestamp
+        captured_date = ""
+        try:
+            result = subprocess.run(
+                ["exiftool", "-DateTimeOriginal", "-s3", str(photo)],
+                capture_output=True, text=True, timeout=5
+            )
+            exif_date = result.stdout.strip()  # Format: "2026:04:13 20:35:18"
+            if exif_date and len(exif_date) >= 10:
+                captured_date = exif_date[:10].replace(":", "-")
+                print(f"  EXIF capture date: {captured_date}")
+        except Exception:
+            pass
+        if not captured_date:
+            captured_date = extract_iso_date(photo.name)
+            if captured_date:
+                print(f"  Filename date: {captured_date}")
 
         # Step 1: Resize and strip EXIF
         if not strip_and_resize(photo):
@@ -447,6 +495,9 @@ def process_inbox():
         target_dir.mkdir(parents=True, exist_ok=True)
         photo.rename(target)
         print(f"  Moved to: {target}")
+
+        # Add to duplicate index so same-batch dupes get caught too
+        existing_hashes.add(incoming_hash)
 
         # Remember the date so update_cattle_data() can populate photo_dates
         # keyed to this photo in lockstep with animal.photos.
