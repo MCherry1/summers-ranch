@@ -261,13 +261,18 @@ Here's the complete schema with all new fields:
       "tag": "189",
       "name": "Bessie",
       "born": "2024-03-15",
+      "registration": "AHA-43567890",
       "sire": "12",
       "dam": "45",
       "breed": "Hereford",
+      "breed_detail": "",
       "sex": "cow",
       "status": "breeding",
       "source": "herd",
       "source_ranch": "",
+      "birth_weight": 78,
+      "weaning_weight": 540,
+      "yearling_weight": null,
       "calves": 3,
       "calves_manual": false,
       "notes": "Good milker, calm temperament",
@@ -278,13 +283,18 @@ Here's the complete schema with all new fields:
       "tag": "427",
       "name": "",
       "born": "",
+      "registration": "",
       "sire": "",
       "dam": "",
       "breed": "Angus",
+      "breed_detail": "",
       "sex": "bull",
       "status": "reference",
       "source": "reference",
       "source_ranch": "Red River Ranch",
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
       "calves": 0,
       "calves_manual": false,
       "notes": "Neighbor's bull, got in summer 2025",
@@ -299,21 +309,64 @@ Here's the complete schema with all new fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `registration` | string | Breed registry number, e.g. "AHA-43567890". Display as "Reg #43567890" on card. If blank, don't show. This is the single most important field for buyers — they can look up the full record on hereford.org. |
 | `source` | string | `"herd"`, `"reference"`, or `"purchased"` |
 | `source_ranch` | string | Name of origin ranch (for reference/purchased animals) |
+| `breed_detail` | string | For crossbreds or partial breeds: "Hereford x Angus cross" or "3/4 Hereford 1/4 Angus". Only shown if populated. |
+| `birth_weight` | number/null | Birth weight in pounds. Shown on expanded card view only. |
+| `weaning_weight` | number/null | Weaning weight (adjusted 205-day) in pounds. Shown on expanded card view only. |
+| `yearling_weight` | number/null | Yearling weight in pounds. Optional. Shown on expanded card view only. |
 | `calves` | number | Total offspring count |
 | `calves_manual` | boolean | If true, auto-increment is bypassed for this animal |
 | `photo_dates` | array | ISO dates corresponding to each photo, for timeline display |
 | `notes` | string | Free-text notes shown on expanded card view |
 
+### What Goes on the Public Site vs. What Stays Private
+
+| Show on website | Keep in Marty's paper logs / professional software |
+|---|---|
+| Tag number, name, photos | Health records, vaccination history |
+| Registration number | Breeding dates, heat cycles |
+| Birth date, sire, dam | Treatment records |
+| Breed and breed detail | Purchase price, sale price |
+| Birth weight, weaning weight | Detailed culling reasons |
+| Offspring count | Veterinary notes |
+| Status, notes (curated) | Financial records |
+
+The website shows the animal's best public face. Detailed production and health data goes to a buyer privately on request.
+
+### EPDs (Expected Progeny Differences) — Do NOT Display
+
+EPDs are the deep genetics metrics (calving ease, milk, growth, carcass traits). They're critical for large seedstock operations but they change whenever the national evaluation updates. Displaying stale EPDs is worse than not displaying them. For a 40-head operation, any buyer who cares about EPDs will look them up on hereford.org using the registration number. Give them the reg number and let the AHA database do the rest.
+
+---
+
+## 7. "Inquire About This Animal" — Sale Card CTA
+
+When an animal's status is `"sale"`, the expanded card view should include a prominent call-to-action button:
+
+**Button text:** "Inquire About This Animal"
+**Behavior:** Links to `contact.html` with the tag number pre-filled in the subject/message, e.g. `contact.html?animal=189`
+**Style:** Gold background (`var(--saddle)`), white text, full-width on mobile. Same button style as the existing "Get in Touch" CTA.
+**Position:** Below the animal details, above the notes field.
+
+The contact form should detect the `?animal=` URL parameter and pre-populate:
+- Subject: "Inquiry about Tag #189"
+- Or if the animal has a name: "Inquiry about Tag #189 — Bessie"
+
+This is the conversion path. A buyer sees a nice animal, taps one button, and Marty gets a message. Make it effortless.
+
 ---
 
 ## Priority Order for Implementation
 
-1. **Expanded card view** — Biggest UX improvement, needed before adding more detail fields
-2. **Stop auto-cycling on grid** — Quick fix, improves page performance
-3. **Status workflow and sold ribbon** — Needed before handing off to Marty
-4. **Calves count + auto-increment** — Wire up with admin panel
-5. **Reference animals and outside sires** — Can wait until lineage data is entered
-6. **Photo date extraction in pipeline** — Enhancement, not blocking
-7. **Manual calves override UI** — Admin panel refinement
+1. **Expanded card view with lightbox** — Biggest UX improvement, needed before adding more detail fields
+2. **Stop auto-cycling on grid, add hover cycle** — Quick fix, improves page feel dramatically
+3. **Registration number + weight fields in schema** — Buyer-critical data, add to JSON and expanded view
+4. **Status workflow, sold ribbon, and remove-from-herd flow** — Needed before handing off to Marty
+5. **"Inquire About This Animal" CTA on sale cards** — The conversion path for buyers
+6. **Calves count + auto-increment** — Wire up with admin panel
+7. **Reference animals and outside sires** — Can wait until lineage data is entered
+8. **Photo date extraction in pipeline** — Enhancement, not blocking
+9. **Manual calves override UI** — Admin panel refinement
+10. **Breed detail field for crossbreds** — Edge case, add when needed
