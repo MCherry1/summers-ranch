@@ -1,9 +1,25 @@
 {
-  "animals": [],
+  "animals": [
+    {
+      "tag": "215",
+      "name": "",
+      "born": "",
+      "sire": "",
+      "dam": "",
+      "breed": "Hereford",
+      "sex": "cow",
+      "status": "breeding",
+      "breeding_stock": true,
+      "notes": "",
+      "photos": []
+    }
+  ],
   "sires": [],
-  "dams": [],
+  "dams": [
+    "215"
+  ],
   "meta": {
-    "last_updated": "2026-04-14 manual reset",
+    "last_updated": "2026-04-14 06:46 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
