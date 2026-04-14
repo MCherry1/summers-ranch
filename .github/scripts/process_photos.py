@@ -2,16 +2,21 @@
 """
 Summers Ranch Photo Processing Pipeline
 
-Processes raw photos uploaded to images/inbox/:
-1. Strips remaining EXIF/GPS metadata (belt-and-suspenders with phone)
-2. Resizes to max 1200px wide
-3. Compresses to JPEG quality 82
-4. If ANTHROPIC_API_KEY is set, uses Claude vision to categorize
-5. Moves to the appropriate folder with a descriptive name
-6. Removes the raw file from inbox
+Processes raw photos uploaded to images/inbox/ by the iOS Shortcut.
+The Shortcut names files with a prefix that tells us where they go:
 
-Also processes oversized cattle photos in images/cattle/:
-- Resizes to max 1200px wide, strips EXIF, keeps in place
+  cattle-tag-189-20260413-143022.jpg  → images/cattle/tag-189-1.jpg (auto-numbered)
+  hunting-20260413-143022.jpg         → images/hunting/hunt-20260413.jpg
+  photo-20260413-143022.jpg           → classified by Claude API, or gallery
+
+Processing steps:
+1. Strip EXIF/GPS metadata, auto-orient
+2. Resize to max 1200px wide
+3. Compress to JPEG quality 82
+4. Route by filename prefix (cattle, hunting) or classify with Claude API
+5. Auto-number cattle photos sequentially (tag-189-1, tag-189-2, tag-189-3...)
+6. Move to the appropriate folder
+7. Also optimize any oversized photos already in images/cattle/
 """
 
 import os
@@ -165,6 +170,49 @@ def unique_path(target_dir, filename):
     return path
 
 
+def next_cattle_number(tag_number):
+    """Find the next sequential number for a cattle tag photo."""
+    existing = list(CATTLE_DIR.glob(f"tag-{tag_number}-*.jpg"))
+    if not existing:
+        return 1
+    # Extract numbers from existing files like tag-189-1.jpg, tag-189-2.jpg
+    numbers = []
+    for f in existing:
+        match = re.search(rf'tag-{re.escape(tag_number)}-(\d+)\.jpg$', f.name)
+        if match:
+            numbers.append(int(match.group(1)))
+    return max(numbers, default=0) + 1
+
+
+def route_by_prefix(filename):
+    """
+    Determine category and target filename from the upload prefix.
+
+    Naming convention from iOS Shortcut:
+    - cattle-tag-189-20260413-143022.jpg  → cattle, auto-numbered
+    - hunting-20260413-143022.jpg         → hunting, keep timestamp name
+    - photo-20260413-143022.jpg           → needs classification or goes to gallery
+    """
+    name = filename.lower()
+
+    # Cattle: extract tag number, auto-assign sequential number
+    cattle_match = re.match(r'cattle-tag-(\w+)-', name)
+    if cattle_match:
+        tag_number = cattle_match.group(1)
+        seq = next_cattle_number(tag_number)
+        return "cattle", f"tag-{tag_number}-{seq}.jpg"
+
+    # Hunting: move directly, keep a clean name
+    if name.startswith("hunting-"):
+        # Extract date portion for a clean name
+        date_match = re.search(r'(\d{8})', name)
+        date_str = date_match.group(1) if date_match else "undated"
+        return "hunting", f"hunt-{date_str}.jpg"
+
+    # Everything else: needs classification or goes to gallery
+    return None, None
+
+
 def process_inbox():
     """Process all photos in the inbox."""
     if not INBOX.exists():
@@ -180,9 +228,9 @@ def process_inbox():
 
     has_api = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
     if has_api:
-        print("Claude API key found — will classify photos.")
+        print("Claude API key found — will classify untagged photos.")
     else:
-        print("No Claude API key — photos will go to gallery.")
+        print("No Claude API key — untagged photos will go to gallery.")
 
     for photo in photos:
         print(f"\nProcessing: {photo.name}")
@@ -197,18 +245,27 @@ def process_inbox():
         new_size = photo.stat().st_size
         print(f"  Processed size: {new_size / 1024:.0f} KB")
 
-        # Step 2: Classify (if API available)
-        category, suggested_name = classify_with_claude(photo)
+        # Step 2: Route by filename prefix
+        category, target_name = route_by_prefix(photo.name)
 
-        if category and suggested_name:
-            print(f"  Classified as: {category} -> {suggested_name}")
+        if category and target_name:
+            # Prefix told us exactly where this goes
             target_dir = get_target_dir(category)
-            target = unique_path(target_dir, suggested_name)
+            target = unique_path(target_dir, target_name)
+            print(f"  Routed by prefix: {category} -> {target.name}")
         else:
-            # No classification — keep original name, move to gallery
-            target_dir = GALLERY_DIR
-            target = unique_path(target_dir, photo.name)
-            print(f"  No classification — moving to gallery as {target.name}")
+            # No prefix match — try Claude classification
+            category, suggested_name = classify_with_claude(photo)
+
+            if category and suggested_name:
+                print(f"  Classified by Claude: {category} -> {suggested_name}")
+                target_dir = get_target_dir(category)
+                target = unique_path(target_dir, suggested_name)
+            else:
+                # No classification — keep original name, move to gallery
+                target_dir = GALLERY_DIR
+                target = unique_path(target_dir, photo.name)
+                print(f"  No classification — moving to gallery as {target.name}")
 
         # Step 3: Move
         target_dir.mkdir(parents=True, exist_ok=True)
