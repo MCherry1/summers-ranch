@@ -328,16 +328,13 @@
     <!-- BRAND -->
     <div class="brand-strip reveal">
         <div class="brand-inner">
-            <!-- Upload your brand photo to images/cattle/brand.jpg -->
-            <img src="images/cattle/brand.jpg" alt="Summers Ranch brand" class="brand-img" onclick="document.getElementById('brandLightbox').classList.add('open')" onerror="this.parentElement.parentElement.style.display='none'">
+            <img src="images/cattle/brand.jpg" alt="Summers Ranch brand" class="brand-img" onerror="this.parentElement.parentElement.style.display='none'">
             <div class="brand-text">
                 <p class="section-label">Our Brand</p>
-                <p>The mark that means Summers Ranch. <span style="font-size:0.8rem;color:var(--sage);cursor:pointer" onclick="document.getElementById('brandLightbox').classList.add('open')">Click to view full size.</span></p>
+                <p>The mark that means Summers Ranch. <span style="font-size:0.8rem;color:var(--sage);cursor:pointer" onclick="document.getElementById('brandLightbox').classList.add('open')">Tap to view full size.</span></p>
             </div>
         </div>
     </div>
-
-    <!-- BRAND LIGHTBOX -->
     <div class="brand-lightbox" id="brandLightbox" onclick="this.classList.remove('open')">
         <img src="images/cattle/brand.jpg" alt="Summers Ranch brand — full size">
     </div>
@@ -349,75 +346,10 @@
         <button class="tab-btn" onclick="filterCards('sale')">For Sale</button>
     </div>
 
-    <!-- INDIVIDUAL CATTLE CARDS -->
+    <!-- CATTLE CARDS — rendered dynamically from cattle-data.json -->
     <section class="cattle-section">
         <div class="cattle-grid" id="cattleGrid">
-
-            <div class="animal-card reveal" data-category="breeding" data-tag="1"
-                 data-photos="images/cattle/tag-1-1.jpg,images/cattle/tag-1-2.jpg">
-                <div class="animal-card-img">
-                    <img src="images/cattle/tag-1-1.jpg" alt="Tag #1" loading="lazy">
-                </div>
-                <div class="animal-card-body">
-                    <p class="animal-tag">Tag #1</p>
-                    <p class="animal-name">—</p>
-                    <dl class="animal-details">
-                        <dt>Born</dt><dd>—</dd>
-                        <dt>Sire</dt><dd>—</dd>
-                        <dt>Dam</dt><dd>—</dd>
-                        <dt>Breed</dt><dd>Hereford</dd>
-                    </dl>
-                    <span class="animal-status status-breeding">Breeding Stock</span>
-                    <span class="photo-count">2 photos</span>
-                </div>
-            </div>
-
-            <div class="animal-card reveal" data-category="breeding" data-tag="125"
-                 data-photos="images/cattle/tag-125-1.jpg">
-                <div class="animal-card-img">
-                    <img src="images/cattle/tag-125-1.jpg" alt="Tag #125" loading="lazy">
-                </div>
-                <div class="animal-card-body">
-                    <p class="animal-tag">Tag #125</p>
-                    <p class="animal-name">—</p>
-                    <dl class="animal-details">
-                        <dt>Born</dt><dd>—</dd>
-                        <dt>Sire</dt><dd>—</dd>
-                        <dt>Dam</dt><dd>—</dd>
-                        <dt>Breed</dt><dd>Hereford</dd>
-                    </dl>
-                    <span class="animal-status status-breeding">Breeding Stock</span>
-                </div>
-            </div>
-
-            <div class="animal-card reveal" data-category="breeding" data-tag="111"
-                 data-photos="images/cattle/tag-111-1.jpg">
-                <div class="animal-card-img">
-                    <img src="images/cattle/tag-111-1.jpg" alt="Tag #111" loading="lazy">
-                </div>
-                <div class="animal-card-body">
-                    <p class="animal-tag">Tag #111</p>
-                    <p class="animal-name">—</p>
-                    <dl class="animal-details">
-                        <dt>Born</dt><dd>—</dd>
-                        <dt>Sire</dt><dd>—</dd>
-                        <dt>Dam</dt><dd>—</dd>
-                        <dt>Breed</dt><dd>Hereford</dd>
-                    </dl>
-                    <span class="animal-status status-breeding">Breeding Stock</span>
-                </div>
-            </div>
-
-            <!--
-                ADD MORE ANIMALS HERE. Copy a card block above and change:
-                - data-tag="XXX"
-                - data-category="breeding" or "sale"
-                - data-photos="images/cattle/tag-XXX-1.jpg,images/cattle/tag-XXX-2.jpg"
-                - img src to the -1.jpg photo
-                - Tag number, name, born, sire, dam, status
-                Details marked with — are placeholders for M and R to fill in.
-            -->
-
+            <p style="text-align:center;color:var(--stone);font-size:0.9rem;grid-column:1/-1">Loading herd data...</p>
         </div>
     </section>
 
@@ -464,39 +396,137 @@
     </footer>
 
     <script>
+        // Nav
         const nav = document.getElementById('nav');
         window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
         const toggle = document.getElementById('navToggle'), mobileMenu = document.getElementById('mobileMenu');
         toggle.addEventListener('click', () => { toggle.classList.toggle('active'); mobileMenu.classList.toggle('open'); document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : ''; });
-        const reveals = document.querySelectorAll('.reveal');
-        const observer = new IntersectionObserver((entries) => { entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 80); observer.unobserve(e.target); } }); }, { threshold: 0.1 });
-        reveals.forEach(el => observer.observe(el));
+
+        // Reveal on scroll
+        function setupReveal() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+                var obs = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(e) {
+                        if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+                    });
+                }, { threshold: 0.1 });
+                obs.observe(el);
+            });
+        }
+        setupReveal();
 
         // Filter tabs
         function filterCards(category) {
             document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
             event.target.classList.add('active');
             document.querySelectorAll('.animal-card').forEach(function(card) {
-                if (category === 'all' || card.dataset.category === category) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
+                card.style.display = (category === 'all' || card.dataset.category === category) ? '' : 'none';
             });
         }
 
-        // Click card to cycle through photos
-        document.querySelectorAll('.animal-card').forEach(function(card) {
-            var photos = (card.dataset.photos || '').split(',').filter(Boolean);
-            if (photos.length <= 1) return;
-            var idx = 0;
-            var img = card.querySelector('.animal-card-img img');
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', function() {
-                idx = (idx + 1) % photos.length;
-                img.src = photos[idx];
+        // Build cattle cards from JSON
+        (function() {
+            var grid = document.getElementById('cattleGrid');
+            if (!grid) return;
+
+            fetch('cattle-data.json')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var animals = data.animals || [];
+                if (animals.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center;color:var(--stone);grid-column:1/-1">Herd data coming soon.</p>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+
+                animals.forEach(function(animal) {
+                    var photos = animal.photos || [];
+                    var primaryPhoto = photos.length > 0 ? photos[0] : 'images/cattle/brand.jpg';
+                    var statusClass = animal.status === 'sale' ? 'status-available' : 'status-breeding';
+                    var statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
+
+                    var card = document.createElement('div');
+                    card.className = 'animal-card reveal';
+                    card.dataset.category = animal.status === 'sale' ? 'sale' : 'breeding';
+                    card.dataset.tag = animal.tag;
+
+                    var detailRows = '';
+                    if (animal.born) detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
+                    if (animal.sire) detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
+                    if (animal.dam) detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
+                    detailRows += '<dt>Breed</dt><dd>' + (animal.breed || 'Hereford') + '</dd>';
+                    if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + animal.sex + '</dd>';
+
+                    var photoCountHtml = photos.length > 1
+                        ? '<span class="photo-count">' + photos.length + ' photos — tap to cycle</span>'
+                        : '';
+
+                    card.innerHTML =
+                        '<div class="animal-card-img">' +
+                            '<img src="' + primaryPhoto + '" alt="Tag #' + animal.tag + '" loading="lazy">' +
+                        '</div>' +
+                        '<div class="animal-card-body">' +
+                            '<p class="animal-tag">Tag #' + animal.tag + '</p>' +
+                            '<p class="animal-name">' + (animal.name || '—') + '</p>' +
+                            (detailRows ? '<dl class="animal-details">' + detailRows + '</dl>' : '') +
+                            '<span class="animal-status ' + statusClass + '">' + statusText + '</span>' +
+                            photoCountHtml +
+                        '</div>';
+
+                    // Photo cycling — tap to advance, auto-cycle every 5 seconds
+                    if (photos.length > 1) {
+                        (function(cardEl, photoList) {
+                            var idx = 0;
+                            var img = cardEl.querySelector('.animal-card-img img');
+                            cardEl.style.cursor = 'pointer';
+
+                            // Tap to cycle
+                            cardEl.addEventListener('click', function() {
+                                idx = (idx + 1) % photoList.length;
+                                img.style.opacity = '0';
+                                setTimeout(function() {
+                                    img.src = photoList[idx];
+                                    img.style.opacity = '1';
+                                }, 200);
+                            });
+
+                            // Auto-cycle every 5 seconds
+                            setInterval(function() {
+                                idx = (idx + 1) % photoList.length;
+                                img.style.opacity = '0';
+                                setTimeout(function() {
+                                    img.src = photoList[idx];
+                                    img.style.opacity = '1';
+                                }, 200);
+                            }, 5000 + Math.random() * 2000); // Stagger so they don't all change at once
+                        })(card, photos);
+                    }
+
+                    grid.appendChild(card);
+                });
+
+                // Add fade transition to all card images
+                document.querySelectorAll('.animal-card-img img').forEach(function(img) {
+                    img.style.transition = 'opacity 0.3s ease';
+                });
+
+                // Re-run scroll reveal for new cards
+                setupReveal();
+            })
+            .catch(function(err) {
+                console.error('Failed to load cattle data:', err);
+                grid.innerHTML = '<p style="text-align:center;color:var(--stone);grid-column:1/-1">Could not load herd data.</p>';
             });
-        });
+        })();
+
+        // Brand lightbox
+        var brandImg = document.querySelector('.brand-img');
+        if (brandImg) {
+            brandImg.addEventListener('click', function() {
+                document.getElementById('brandLightbox').classList.add('open');
+            });
+        }
     </script>
 </body>
 </html>

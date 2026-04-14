@@ -295,7 +295,81 @@ def process_cattle():
         print(f"    -> {photo.stat().st_size / 1024:.0f} KB")
 
 
+def update_cattle_data():
+    """
+    Scan images/cattle/ for tagged photos and:
+    1. Auto-add any new tag numbers to cattle-data.json
+    2. Update photo arrays for each animal
+    """
+    data_file = Path("cattle-data.json")
+    if not data_file.exists():
+        print("No cattle-data.json found, skipping.")
+        return
+
+    with open(data_file, "r") as f:
+        data = json.load(f)
+
+    animals = data.get("animals", [])
+    existing_tags = {a["tag"] for a in animals}
+
+    # Find all tag photos
+    tag_photos = {}
+    for photo in sorted(CATTLE_DIR.glob("tag-*-*.jpg")):
+        match = re.match(r'tag-(\w+)-(\d+)\.jpg', photo.name)
+        if match:
+            tag = match.group(1)
+            if tag not in tag_photos:
+                tag_photos[tag] = []
+            tag_photos[tag].append(str(photo))
+
+    changed = False
+
+    # Auto-add new tag numbers
+    for tag in sorted(tag_photos.keys()):
+        if tag not in existing_tags:
+            print(f"  New tag #{tag} — adding to cattle-data.json")
+            animals.append({
+                "tag": tag,
+                "name": "",
+                "born": "",
+                "sire": "",
+                "dam": "",
+                "breed": "Hereford",
+                "sex": "",
+                "status": "breeding",
+                "notes": ""
+            })
+            existing_tags.add(tag)
+            changed = True
+
+    # Update photo arrays for all animals
+    for animal in animals:
+        tag = animal["tag"]
+        photos = tag_photos.get(tag, [])
+        old_photos = animal.get("photos", [])
+        if photos != old_photos:
+            animal["photos"] = photos
+            changed = True
+
+    # Update sires/dams lists for dropdowns
+    sires = sorted(set(a["tag"] for a in animals if a.get("sex") in ("bull", "steer", "")))
+    dams = sorted(set(a["tag"] for a in animals if a.get("sex") in ("cow", "heifer", "")))
+    data["sires"] = sires
+    data["dams"] = dams
+
+    if changed:
+        from datetime import datetime
+        data["meta"]["last_updated"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        data["animals"] = animals
+        with open(data_file, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"  Updated cattle-data.json ({len(animals)} animals, {sum(len(tag_photos.get(a['tag'], [])) for a in animals)} photos)")
+    else:
+        print("  cattle-data.json already up to date.")
+
+
 if __name__ == "__main__":
     process_inbox()
     process_cattle()
+    update_cattle_data()
     print("\nDone.")
