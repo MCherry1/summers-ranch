@@ -16,19 +16,39 @@ Detect calving season from Marty's actual behavior. When he starts adding calves
 - `born` date within the last 14 days, AND
 - `sex` is one of: `calf`, `heifer`, `bull calf`, or `born` date makes the animal less than 60 days old
 
-**Banner text:** "Calving season is underway — [N] new arrivals so far!"
-Where [N] = count of animals born within the current calving window.
+**Banner text:** "Calving season is underway — [N] calves in the last [X] days!"
+Where:
+- [N] = count of animals born within the sliding window
+- [X] = days since the first calf in the current window, rounded to nearest 15 (so "15 days", "30 days", "45 days", etc.)
 
-**The calving window:**
-- Opens when the first qualifying calf is added
-- Stays open as long as new calves keep coming
-- Closes 30 days after the most recent calf's `born` date
-- Once closed, the banner disappears and the New Arrivals section on the cattle page hides
+**The calving window — sliding with a cap:**
+- **Opens** when the first qualifying calf is added (a calf with `born` within last 14 days)
+- **Stays open** as long as new calves keep coming (any calf `born` within the last 30 days)
+- **Closes** 30 days after the most recent calf's `born` date — banner disappears, New Arrivals section hides
+- **Sliding window for the count:** The [N] count only includes calves born within the last [CAP] days from today, NOT from the start of calving season. This prevents "75 calves in the last 7,000 days" if calving never fully stops.
+- **Window cap:** 90 days. This is the outer edge of a typical beef cattle calving season. Even if Marty is getting calves year-round (it happens with open breeding), the counter resets to a 90-day lookback. So it would show "12 calves in the last 90 days" at maximum.
 
-**How to count:** Scan `cattle-data.json` for all animals where:
-- `born` is a parseable date
-- The animal is less than 90 days old (based on `born` vs. today)
-- This gives you the current season's calves
+**Rounding the day count:**
+- Round to nearest 15: 1–7 days → "this week", 8–22 → "15 days", 23–37 → "30 days", 38–52 → "45 days", 53–67 → "60 days", 68–82 → "75 days", 83–90 → "90 days"
+
+**Active flag logic (pseudocode):**
+```
+today = current date
+calves = all animals where born >= (today - 90 days) AND age-appropriate sex
+most_recent_calf = max(born) among calves
+
+if calves is empty:
+    calving_active = false
+elif (today - most_recent_calf) > 30 days:
+    calving_active = false  // 30 days since last calf, season over
+else:
+    calving_active = true
+    first_calf = min(born) among calves
+    window_days = min(today - first_calf, 90)  // cap at 90
+    count = len(calves where born >= (today - window_days))
+    rounded_days = round_to_15(window_days)
+    banner = "Calving season is underway — {count} calves in the last {rounded_days}!"
+```
 
 **Priority:** This behavior-driven banner has priority 2 (same as seasons). Birthdays (priority 10) and specific events (priority 3) still override it.
 
@@ -40,19 +60,29 @@ Where [N] = count of animals born within the current calving window.
 ### Example Timeline
 ```
 March 2: Marty adds Tag #250, born March 1, sex: bull calf
-  → Banner: "Calving season is underway — 1 new arrival so far!"
+  → Banner: "Calving season is underway — 1 calf this week!"
   → New Arrivals section appears on cattle page
 
 March 8: Marty adds Tag #251 and #252
-  → Banner: "Calving season is underway — 3 new arrivals so far!"
+  → Banner: "Calving season is underway — 3 calves in the last 15 days!"
 
-April 15: Last calf was added March 28
-  → Banner still showing (within 30-day window)
+March 28: Adds Tag #253
+  → Banner: "Calving season is underway — 4 calves in the last 30 days!"
 
-April 28: 30 days since last calf
-  → Banner disappears, New Arrivals hides
+April 15: No new calves since March 28 (18 days ago, still within 30-day window)
+  → Banner still showing: "Calving season is underway — 4 calves in the last 45 days!"
 
-May 1: Site is back to normal, no calving content
+April 28: 30 days since last calf (March 28)
+  → Banner disappears. Calving season over.
+
+May 1: Site is back to normal, no calving content.
+
+--- Edge case: long calving season ---
+
+If calving stretches from Feb 1 to June 15 with calves trickling in:
+  → Window caps at 90 days. Banner shows: "Calving season is underway — 18 calves in the last 90 days!"
+  → Calves born more than 90 days ago drop out of the count but are still in the herd
+  → 30 days after the final calf, banner disappears
 ```
 
 ---
