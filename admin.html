@@ -187,6 +187,51 @@
             color: var(--stone);
         }
 
+        /* ADD BUTTON + NEW-ANIMAL CARD */
+        .panel-actions {
+            margin: 0 0 1rem;
+            padding: 0 0.25rem;
+        }
+        .btn-wide {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: var(--sage);
+            border: 1px solid var(--sage);
+            border-radius: 2px;
+            min-height: 52px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .btn-wide:hover { background: #5a6e4f; border-color: #5a6e4f; }
+        .new-animal {
+            background: var(--warm-white);
+            border: 1px solid var(--gold);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 20px rgba(198,168,75,0.15);
+        }
+        .new-animal-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--earth);
+            margin-bottom: 1rem;
+        }
+        .new-animal-hint {
+            font-size: 0.78rem;
+            color: var(--stone);
+            font-style: italic;
+            margin-top: -0.4rem;
+            margin-bottom: 0.5rem;
+        }
+
         /* TOAST */
         .toast {
             position: fixed;
@@ -316,6 +361,35 @@
         .form-group select:focus,
         .form-group textarea:focus { border-color: var(--saddle); }
         .form-group textarea { resize: vertical; min-height: 80px; }
+        .checkbox-group { padding: 0.25rem 0; }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            cursor: pointer;
+            padding: 0.5rem 0;
+            min-height: 44px;
+        }
+        .checkbox-label input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--saddle);
+            flex-shrink: 0;
+        }
+        .checkbox-label span {
+            font-size: 0.95rem;
+            color: var(--charcoal);
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .checkbox-hint {
+            font-size: 0.78rem;
+            color: var(--stone);
+            margin-top: 0.1rem;
+            margin-left: 2rem;
+        }
         .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 480px) {
             .form-row2 { grid-template-columns: 1fr; }
@@ -399,7 +473,69 @@
             <h2>Your herd</h2>
             <p id="herdMeta">Loading…</p>
         </div>
+
+        <div class="panel-actions">
+            <button class="btn btn-wide" id="addAnimalBtn">+ Add Animal</button>
+        </div>
+
+        <!-- Inline "new animal" form, hidden until Add is clicked -->
+        <div class="animal new-animal" id="newAnimalCard" style="display:none">
+            <div class="animal-form" style="display:block;border-top:none">
+                <p class="new-animal-title">New animal</p>
+                <div class="form-group">
+                    <label>Tag number *</label>
+                    <input type="text" id="newTag" placeholder="e.g., 250" autocomplete="off">
+                </div>
+                <div class="form-row2">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="newName" placeholder="e.g., Bessie" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Sex</label>
+                        <select id="newSex">
+                            <option value="">—</option>
+                            <option value="bull">Bull</option>
+                            <option value="cow">Cow</option>
+                            <option value="heifer">Heifer</option>
+                            <option value="steer">Steer</option>
+                            <option value="calf">Calf</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row2">
+                    <div class="form-group">
+                        <label>Born</label>
+                        <input type="text" id="newBorn" placeholder="e.g., Spring 2025" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="newStatus">
+                            <option value="breeding" selected>Breeding Stock</option>
+                            <option value="sale">For Sale</option>
+                            <option value="sold">Sold</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="newBreedingStock">
+                        <span>Use as breeding stock</span>
+                    </label>
+                </div>
+                <p class="new-animal-hint">Photos can be uploaded later via the iOS shortcut — they'll attach to this tag automatically.</p>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" id="newCancelBtn">Cancel</button>
+                    <button class="btn" id="newSaveBtn">Create</button>
+                </div>
+            </div>
+        </div>
+
         <div class="animal-list" id="animalList"></div>
+
+        <!-- Datalists for sire/dam autocomplete; rebuilt on render() -->
+        <datalist id="siresDatalist"></datalist>
+        <datalist id="damsDatalist"></datalist>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -433,7 +569,9 @@
         const animalList = $('animalList');
         const toast = $('toast');
 
-        // Session state — lives in closure, never in localStorage
+        // Session state — PAT lives in localStorage so refresh keeps you signed in.
+        // Clears on "Sign out" or when the tab closes. Never in localStorage.
+        const TOKEN_KEY = 'srp_admin_token';
         let token = null;       // GitHub PAT after decryption
         let data = null;        // cattle-data.json contents
         let dataSha = null;     // latest SHA for writes
@@ -466,8 +604,29 @@
         function utf8encode(s) { return new TextEncoder().encode(s); }
         function utf8decode(buf) { return new TextDecoder().decode(buf); }
 
-        // ---------- Hint fetch on load ----------
-        (async function loadHint() {
+        // ---------- On load: restore session or fetch hint ----------
+        (async function boot() {
+            // Try to restore a prior session first
+            const saved = localStorage.getItem(TOKEN_KEY);
+            if (saved) {
+                token = saved;
+                try {
+                    await loadCattleData();
+                    gate.style.display = 'none';
+                    panel.classList.add('show');
+                    signoutBtn.style.display = 'inline-block';
+                    render();
+                    return;
+                } catch (e) {
+                    // Token no longer valid — clear and fall through to password gate
+                    console.warn('Saved token rejected, showing password gate:', e.message);
+                    localStorage.removeItem(TOKEN_KEY);
+                    token = null;
+                    showToast('Session expired — please sign in again', 'error');
+                }
+            }
+
+            // No saved session — load the hint from admin-key.json
             try {
                 const res = await fetch('admin-key.json?t=' + Date.now());
                 if (!res.ok) return;
@@ -521,6 +680,9 @@
                 );
                 token = utf8decode(plain);
 
+                // Persist for the tab session so refresh doesn't re-prompt
+                localStorage.setItem(TOKEN_KEY, token);
+
                 // Clear password input immediately
                 passwordInput.value = '';
 
@@ -557,6 +719,7 @@
             token = null;
             data = null;
             dataSha = null;
+            localStorage.removeItem(TOKEN_KEY);
             animalList.innerHTML = '';
             panel.classList.remove('show');
             gate.style.display = 'flex';
@@ -586,8 +749,34 @@
             data = JSON.parse(json);
         }
 
+        // Recompute the breeder lists from the current animals' breeding_stock + sex.
+        // Mutates data.sires and data.dams in place. Called before render and before save.
+        function recomputeBreeders() {
+            const sires = [];
+            const dams = [];
+            (data.animals || []).forEach(a => {
+                if (!a.breeding_stock) return;
+                if (a.sex === 'bull') sires.push(a.tag);
+                else if (a.sex === 'cow' || a.sex === 'heifer') dams.push(a.tag);
+            });
+            sires.sort();
+            dams.sort();
+            data.sires = sires;
+            data.dams = dams;
+        }
+
+        function rebuildDatalists() {
+            const siresDl = document.getElementById('siresDatalist');
+            const damsDl = document.getElementById('damsDatalist');
+            siresDl.innerHTML = (data.sires || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
+            damsDl.innerHTML = (data.dams || []).map(t => `<option value="${escapeAttr(t)}">`).join('');
+        }
+
         // ---------- Render ----------
         function render() {
+            recomputeBreeders();
+            rebuildDatalists();
+
             const animals = (data.animals || []).slice();
             animals.sort((a, b) => {
                 const an = parseInt(a.tag, 10);
@@ -598,7 +787,8 @@
 
             const named = animals.filter(a => a.name).length;
             const lastUpdated = (data.meta && data.meta.last_updated) || 'unknown';
-            herdMeta.textContent = `${animals.length} animals · ${named} named · updated ${lastUpdated}`;
+            const breederCount = (data.sires || []).length + (data.dams || []).length;
+            herdMeta.textContent = `${animals.length} animals · ${named} named · ${breederCount} breeders · updated ${lastUpdated}`;
 
             animalList.innerHTML = '';
             animals.forEach(animal => {
@@ -606,7 +796,7 @@
             });
 
             if (animals.length === 0) {
-                animalList.innerHTML = '<p style="text-align:center;color:var(--stone);padding:2rem">No animals yet. Upload a photo via the shortcut to add one.</p>';
+                animalList.innerHTML = '<p style="text-align:center;color:var(--stone);padding:2rem">No animals yet. Tap "Add Animal" or upload a photo via the shortcut.</p>';
             }
         }
 
@@ -652,16 +842,12 @@
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
-                            <label>Sire</label>
-                            <select data-field="sire">
-                                ${tagOptions(data.sires, animal.sire, animal.tag)}
-                            </select>
+                            <label>Sire (tag #)</label>
+                            <input type="text" data-field="sire" value="${escapeAttr(animal.sire || '')}" list="siresDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label>Dam</label>
-                            <select data-field="dam">
-                                ${tagOptions(data.dams, animal.dam, animal.tag)}
-                            </select>
+                            <label>Dam (tag #)</label>
+                            <input type="text" data-field="dam" value="${escapeAttr(animal.dam || '')}" list="damsDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
                     </div>
                     <div class="form-group">
@@ -669,6 +855,13 @@
                         <select data-field="status">
                             ${statusOptions(animal.status)}
                         </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" data-field="breeding_stock" ${animal.breeding_stock ? 'checked' : ''}>
+                            <span>Use as breeding stock</span>
+                        </label>
+                        <p class="checkbox-hint">Checked + sex bull → adds to <strong>sire</strong> list. Checked + sex cow/heifer → adds to <strong>dam</strong> list. Other animals can then pick this one as their sire or dam.</p>
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
@@ -749,20 +942,6 @@
             ).join('');
         }
 
-        function tagOptions(list, current, excludeTag) {
-            const tags = (list || []).filter(t => t !== excludeTag);
-            let html = '<option value="">— unknown —</option>';
-            tags.forEach(t => {
-                const sel = t === current ? ' selected' : '';
-                html += `<option value="${escapeAttr(t)}"${sel}>#${escapeHtml(t)}</option>`;
-            });
-            // If current is not in list (historical), still show it
-            if (current && !tags.includes(current) && current !== excludeTag) {
-                html += `<option value="${escapeAttr(current)}" selected>#${escapeHtml(current)} (historical)</option>`;
-            }
-            return html;
-        }
-
         function photoPicker(animal) {
             const photos = animal.photos || [];
             if (photos.length === 0) {
@@ -772,6 +951,55 @@
                 `<div class="photo-pick${i === 0 ? ' primary' : ''}" data-photo="${escapeAttr(p)}" style="background-image: url('${escapeAttr(p)}')"></div>`
             ).join('');
             return '<div class="photo-picker">' + html + '</div>';
+        }
+
+        // ---------- Commit helper (used by save + add) ----------
+        // Applies a mutator function to data, then PUTs to GitHub. Retries once on stale-SHA.
+        // mutator: function(data) — modifies data in place, returns commit message
+        async function commitCattleData(mutator) {
+            let attempts = 0;
+            while (attempts < 2) {
+                attempts++;
+                if (attempts > 1) await loadCattleData();
+
+                const message = mutator(data);
+                if (!data.meta) data.meta = {};
+                data.meta.last_updated = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+                recomputeBreeders();
+
+                const jsonStr = JSON.stringify(data, null, 2) + '\n';
+                const contentB64 = b64encode(utf8encode(jsonStr));
+
+                const res = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        content: contentB64,
+                        sha: dataSha,
+                        branch: BRANCH
+                    })
+                });
+
+                if (res.ok) {
+                    const body = await res.json();
+                    dataSha = body.content.sha;
+                    return;
+                }
+                if (res.status === 409 || res.status === 422) {
+                    if (attempts >= 2) throw new Error('Save conflict — reload the page.');
+                    continue;
+                }
+                if (res.status === 401) {
+                    throw new Error('Token rejected (401). Regenerate via admin-setup.html.');
+                }
+                const errBody = await res.text();
+                throw new Error(`Save failed (${res.status}): ${errBody.slice(0, 120)}`);
+            }
         }
 
         // ---------- Save ----------
@@ -786,7 +1014,11 @@
                 // Build the edited animal from form values
                 const edited = Object.assign({}, originalAnimal);
                 el.querySelectorAll('[data-field]').forEach(input => {
-                    edited[input.dataset.field] = input.value.trim();
+                    if (input.type === 'checkbox') {
+                        edited[input.dataset.field] = input.checked;
+                    } else {
+                        edited[input.dataset.field] = input.value.trim();
+                    }
                 });
 
                 // Photo order: move the marked primary to index 0
@@ -802,67 +1034,19 @@
                     edited.photos = ordered;
                 }
 
-                // Try once, retry on 409/conflict
-                let ok = false;
-                let attempts = 0;
-                while (!ok && attempts < 2) {
-                    attempts++;
-                    // Refresh dataSha (critical for the retry case)
-                    if (attempts > 1) await loadCattleData();
-
-                    // Merge the edit into the freshest copy of data
-                    const idx = data.animals.findIndex(a => a.tag === originalAnimal.tag);
+                await commitCattleData(d => {
+                    const idx = d.animals.findIndex(a => a.tag === originalAnimal.tag);
                     if (idx === -1) throw new Error('Animal disappeared from data file');
-                    data.animals[idx] = edited;
-
-                    // Update meta
-                    if (!data.meta) data.meta = {};
-                    data.meta.last_updated = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-
-                    // Rebuild sires/dams lists from sex
-                    data.sires = [...new Set(data.animals.filter(a => !a.sex || a.sex === 'bull' || a.sex === 'steer').map(a => a.tag))].sort();
-                    data.dams  = [...new Set(data.animals.filter(a => !a.sex || a.sex === 'cow' || a.sex === 'heifer').map(a => a.tag))].sort();
-
-                    const jsonStr = JSON.stringify(data, null, 2) + '\n';
-                    const contentB64 = b64encode(utf8encode(jsonStr));
-
-                    const commitMsg = edited.name
+                    d.animals[idx] = edited;
+                    return edited.name
                         ? `Update tag #${edited.tag} (${edited.name})`
                         : `Update tag #${edited.tag}`;
-
-                    const res = await fetch(API_URL, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': 'Bearer ' + token,
-                            'Accept': 'application/vnd.github+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: commitMsg,
-                            content: contentB64,
-                            sha: dataSha,
-                            branch: BRANCH
-                        })
-                    });
-
-                    if (res.ok) {
-                        const body = await res.json();
-                        dataSha = body.content.sha;
-                        ok = true;
-                    } else if (res.status === 409 || res.status === 422) {
-                        // Stale SHA — refetch and retry once
-                        if (attempts >= 2) throw new Error('Save conflict — someone edited this since you started. Reload the page.');
-                        continue;
-                    } else if (res.status === 401) {
-                        throw new Error('Token rejected (401). Regenerate via admin-setup.html.');
-                    } else {
-                        const errBody = await res.text();
-                        throw new Error(`Save failed (${res.status}): ${errBody.slice(0, 120)}`);
-                    }
-                }
+                });
 
                 showToast(`Saved #${edited.tag}`, 'success');
-                // Re-render the one animal to reflect cleaned-up state
+                // Update sidebar/datalists since breeders may have changed
+                rebuildDatalists();
+                // Re-render this card
                 const fresh = buildAnimalElement(edited);
                 el.replaceWith(fresh);
             } catch (e) {
@@ -873,6 +1057,96 @@
                 saveBtn.textContent = 'Save';
             }
         }
+
+        // ---------- Add new animal ----------
+        const newAnimalCard = $('newAnimalCard');
+        const addAnimalBtn = $('addAnimalBtn');
+        const newCancelBtn = $('newCancelBtn');
+        const newSaveBtn = $('newSaveBtn');
+        const newTag = $('newTag');
+        const newName = $('newName');
+        const newSex = $('newSex');
+        const newBorn = $('newBorn');
+        const newStatus = $('newStatus');
+        const newBreedingStock = $('newBreedingStock');
+
+        function clearNewForm() {
+            newTag.value = '';
+            newName.value = '';
+            newSex.value = '';
+            newBorn.value = '';
+            newStatus.value = 'breeding';
+            newBreedingStock.checked = false;
+        }
+
+        function hideNewForm() {
+            newAnimalCard.style.display = 'none';
+            addAnimalBtn.style.display = '';
+            clearNewForm();
+        }
+
+        addAnimalBtn.addEventListener('click', () => {
+            newAnimalCard.style.display = '';
+            addAnimalBtn.style.display = 'none';
+            newTag.focus();
+        });
+
+        newCancelBtn.addEventListener('click', hideNewForm);
+
+        newSaveBtn.addEventListener('click', async () => {
+            const tag = newTag.value.trim();
+            if (!tag) {
+                showToast('Tag number is required', 'error');
+                newTag.focus();
+                return;
+            }
+            // Uniqueness check (case-insensitive)
+            const existing = (data.animals || []).find(a =>
+                String(a.tag).toLowerCase() === tag.toLowerCase()
+            );
+            if (existing) {
+                showToast(`Tag #${tag} already exists`, 'error');
+                newTag.focus();
+                return;
+            }
+
+            const animal = {
+                tag: tag,
+                name: newName.value.trim(),
+                born: newBorn.value.trim(),
+                sire: '',
+                dam: '',
+                breed: 'Hereford',
+                sex: newSex.value,
+                status: newStatus.value || 'breeding',
+                breeding_stock: newBreedingStock.checked,
+                notes: '',
+                photos: []
+            };
+
+            newSaveBtn.disabled = true;
+            newCancelBtn.disabled = true;
+            newSaveBtn.textContent = 'Creating…';
+
+            try {
+                await commitCattleData(d => {
+                    d.animals.push(animal);
+                    return animal.name
+                        ? `Add tag #${animal.tag} (${animal.name})`
+                        : `Add tag #${animal.tag}`;
+                });
+                showToast(`Added #${animal.tag}`, 'success');
+                hideNewForm();
+                render();
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'Could not create animal', 'error');
+            } finally {
+                newSaveBtn.disabled = false;
+                newCancelBtn.disabled = false;
+                newSaveBtn.textContent = 'Create';
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,61 +1,9 @@
 {
-  "animals": [
-    {
-      "tag": "1",
-      "name": "",
-      "born": "",
-      "sire": "",
-      "dam": "",
-      "breed": "Hereford",
-      "sex": "",
-      "status": "breeding",
-      "notes": "",
-      "photos": [
-        "images/cattle/tag-1-1.jpg",
-        "images/cattle/tag-1-2.jpg"
-      ]
-    },
-    {
-      "tag": "111",
-      "name": "",
-      "born": "",
-      "sire": "",
-      "dam": "",
-      "breed": "Hereford",
-      "sex": "",
-      "status": "breeding",
-      "notes": "",
-      "photos": [
-        "images/cattle/tag-111-1.jpg"
-      ]
-    },
-    {
-      "tag": "125",
-      "name": "",
-      "born": "",
-      "sire": "",
-      "dam": "",
-      "breed": "Hereford",
-      "sex": "",
-      "status": "breeding",
-      "notes": "",
-      "photos": [
-        "images/cattle/tag-125-1.jpg"
-      ]
-    }
-  ],
-  "sires": [
-    "1",
-    "111",
-    "125"
-  ],
-  "dams": [
-    "1",
-    "111",
-    "125"
-  ],
+  "animals": [],
+  "sires": [],
+  "dams": [],
   "meta": {
-    "last_updated": "2026-04-14 06:06 UTC",
+    "last_updated": "2026-04-14 manual reset",
     "photo_base_url": "images/cattle/"
   }
 }

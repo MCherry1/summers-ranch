@@ -337,6 +337,7 @@ def update_cattle_data():
                 "breed": "Hereford",
                 "sex": "",
                 "status": "breeding",
+                "breeding_stock": False,
                 "notes": ""
             })
             existing_tags.add(tag)
@@ -351,11 +352,22 @@ def update_cattle_data():
             animal["photos"] = photos
             changed = True
 
-    # Update sires/dams lists for dropdowns
-    sires = sorted(set(a["tag"] for a in animals if a.get("sex") in ("bull", "steer", "")))
-    dams = sorted(set(a["tag"] for a in animals if a.get("sex") in ("cow", "heifer", "")))
-    data["sires"] = sires
-    data["dams"] = dams
+    # Rebuild sires/dams from the breeding_stock flag + sex.
+    # The admin panel is the source of truth for which animals are breeders;
+    # this rebuild just makes sure the cached lists stay consistent with the
+    # animals' flags after a photo upload (which can't change those flags).
+    sires = sorted(set(
+        a["tag"] for a in animals
+        if a.get("breeding_stock") and a.get("sex") == "bull"
+    ))
+    dams = sorted(set(
+        a["tag"] for a in animals
+        if a.get("breeding_stock") and a.get("sex") in ("cow", "heifer")
+    ))
+    if data.get("sires") != sires or data.get("dams") != dams:
+        data["sires"] = sires
+        data["dams"] = dams
+        changed = True
 
     if changed:
         from datetime import datetime
