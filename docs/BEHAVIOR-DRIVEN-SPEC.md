@@ -261,8 +261,91 @@ Marty opens the admin page to add a new calf. At the top he sees "Tag #125 is fo
 
 ## Implementation Priority
 
-1. **Behavior-driven calving season** — Modify `js/ranch-calendar.js` to scan cattle-data.json. Biggest impact for least code.
-2. **Admin nudges** — Add the needs-attention section to admin.html. Pure client-side logic.
-3. **Claude API photo classification** — Extend the pipeline script. Requires API key.
-4. **Primary photo auto-selection** — Depends on #3. Small addition to the cattle page JS.
-5. **Featured Shots section in expanded card** — Depends on #3 and #4. Most complex UI piece.
+1. ✅ **Behavior-driven calving season** — Modify `js/ranch-calendar.js` to scan cattle-data.json. Biggest impact for least code.
+2. ✅ **Admin nudges** — Add the needs-attention section to admin.html. Pure client-side logic.
+3. ✅ **Claude API photo classification** — Extend the pipeline script. Requires API key.
+4. ✅ **Primary photo auto-selection** — Depends on #3. Small addition to the cattle page JS.
+5. ✅ **Featured Shots section in expanded card** — Depends on #3 and #4. Most complex UI piece.
+
+---
+
+## Implementation Notes
+
+All four sections shipped together. Code locations:
+
+### § 1 — Behavior-driven calving season
+- **`js/ranch-calendar.js`** — `computeCalvingState()` scans `cattle-data.json`
+  for calves (animal age < 60 days OR sex in `{calf, bull calf, heifer,
+  heifer calf}`) born within the last 90 days, filters out
+  culled/deceased/reference, applies the spec's rules:
+  - inactive when the list is empty
+  - inactive when most-recent calf is > 30 days old (season over)
+  - active otherwise, with `windowDays = min(today - first_calf, 90)`
+  - count is the number of calves born within `windowDays`
+- **`roundDaysPhrase()`** implements the spec's bucket rounding:
+  1–7 → "this week", 8–22 → "15 days", 23–37 → "30 days", 38–52 → "45 days",
+  53–67 → "60 days", 68–82 → "75 days", 83–90 → "90 days".
+- When active, a synthetic `activeSeason` object is built so the existing
+  banner/status/New Arrivals machinery sees it as a normal calving season
+  (priority 2, same as the hardcoded fallback). The hardcoded Feb–Apr
+  entry in `ranch-calendar.json` still takes over when no calves are in
+  the system yet.
+- **`cattle.html`** — no changes needed. The existing New Arrivals section
+  at `cattle.html:652` already keys off `state.activeSeason.name` matching
+  "calving", and the synthetic object satisfies that check.
+
+### § 2 — Claude API photo classification
+- **`.github/scripts/process_photos.py`** — new `classify_cattle_view()`
+  function sends each cattle photo to Claude with the prompt specified in
+  the spec and returns one of the eight view types.
+- New `PHOTO_TYPES` module cache keyed by target path, populated after a
+  cattle photo is moved in `process_inbox`.
+- New `pick_primary_photo(photos, photo_types, photo_dates)` helper
+  implements the priority table (side-profile → headshot → rear →
+  three-quarter → with-handler → in-pasture → group → other). Ties break
+  by newest ISO date, then by array order (first photo wins — matches the
+  "fall back to first" rule when nothing discriminates).
+- `update_cattle_data()` now writes `photo_types[]` in lockstep with
+  `photos[]` and `photo_dates[]`, and recomputes `primary_photo` on every
+  run. New auto-inserted animals ship with the full expanded schema.
+
+### § 3 — Expanded card dual-section layout
+- **`cattle.html`** — new `.lb-featured` row above `.lb-photo-wrap` in the
+  lightbox markup. `.lb-timeline-label` badge anchors the Growth Timeline
+  section when the featured row is visible.
+- `buildTimeline()` sorts photos chronologically (oldest first) from
+  `photo_dates`, falling back to original order for undated photos.
+  `pickFeatured()` selects up to three thumbnails: most-recent
+  side-profile, most-recent headshot, then rear → three-quarter → any
+  classified.
+- Featured thumbnails jump to the corresponding photo and pause the
+  auto-cycle for **30 seconds** via the new `pauseUntil` field on
+  `lbState`. Dot-nav, arrow, swipe, and photo-tap nav pause for
+  **10 seconds** per spec.
+- Progressive enhancement: when no photos carry a classification, both
+  `.lb-featured` and `.lb-timeline-label` stay hidden and the lightbox
+  behaves exactly like the single-section layout from `CATTLE-CARDS-SPEC.md`.
+
+### § 4 — Admin "Needs Attention" nudges
+- **`admin.html`** — new `<section class="nudges">` between the panel
+  header and panel actions, styled with the spec's gold/amber background.
+- `computeNudges()` scans `data.animals` and emits entries for:
+  - **Empty herd** (🐄) when there are zero animals
+  - **Missing fields** (⚠️) when `born`, `sex`, or `breed` are blank
+  - **Stale photos** (📷) when the newest photo is more than 6 months old
+  - **Sale with stale photos** (🏷️) when status is `sale` and photos > 60d
+  - **No side profile** (📐) when `photo_types` contains classified photos
+    but no `side-profile` entry (progressive — only fires once the
+    pipeline has written types)
+- Maximum 5 nudges shown at once; an "and N more…" toggle expands the
+  full list. "Dismiss all" stores dismissed IDs in `sessionStorage` so
+  they stay gone for the tab session and reappear next visit if still
+  relevant.
+- Each nudge row has a `[View]` button that scrolls the matching animal
+  card into view, auto-opens the edit form, and flashes a gold glow via
+  the new `.highlight-flash` keyframe animation.
+
+### Schema additions
+- **`cattle-data.json`** — tag 215 now carries `photo_types: [""]` and
+  `primary_photo: ""` alongside the previous fields so the schema stays
+  concrete for all consumers.
