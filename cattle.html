@@ -130,6 +130,43 @@
         }
         .herd-photo:hover img { transform: scale(1.04); }
 
+        /* BRAND STRIP */
+        .brand-strip {
+            padding: 2rem 2rem 0;
+            max-width: var(--content-max);
+            margin: 0 auto;
+        }
+        .brand-inner {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            background: var(--linen);
+            padding: 1.5rem 2rem;
+            border-radius: 2px;
+        }
+        .brand-img {
+            width: 100px; height: 100px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .brand-text .section-label {
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.3em; text-transform: uppercase;
+            color: var(--sage); margin-bottom: 0.25rem;
+        }
+        .brand-text p:last-child {
+            font-size: 0.95rem; color: var(--stone);
+        }
+
+        /* PHOTO COUNT BADGE */
+        .photo-count {
+            display: inline-block;
+            margin-top: 0.5rem; margin-left: 0.5rem;
+            font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--stone); opacity: 0.6;
+        }
+
         /* ANIMAL CARD */
         .animal-card {
             background: var(--warm-white);
@@ -233,6 +270,7 @@
             .nav-links, .nav-phone { display: none; }
             .nav-toggle { display: flex; }
             .category-tabs { flex-wrap: wrap; }
+            .brand-inner { flex-direction: column; text-align: center; }
         }
         @media (min-width: 769px) { .mobile-menu { display: none !important; } }
     </style>
@@ -268,64 +306,83 @@
         <p>We raise Herefords on 160 acres of rolling pasture in Sutter Creek, California, running a working herd of around 40 head. Every animal is bred and raised with care — tracked from birth with full lineage, health, and performance records. We sell breeding stock and sale cattle throughout the year by private treaty and at auction.</p>
     </div>
 
-    <!--
-      PHASE 2: Individual animal cards go here.
+    <!-- BRAND -->
+    <div class="brand-strip reveal">
+        <div class="brand-inner">
+            <!-- Upload your brand photo to images/cattle/brand.jpg -->
+            <img src="images/cattle/brand.jpg" alt="Summers Ranch brand" class="brand-img" onerror="this.parentElement.parentElement.style.display='none'">
+            <div class="brand-text">
+                <p class="section-label">Our Brand</p>
+                <p>The mark that means Summers Ranch.</p>
+            </div>
+        </div>
+    </div>
 
-      When ready to move to Phase 2, uncomment the <div class="category-tabs">
-      block below and the <div class="cattle-section"> block with the sample
-      <div class="animal-card"> template, then duplicate the template for each
-      animal. Populate from site-config.json.
+    <!-- FILTER TABS -->
+    <div class="category-tabs">
+        <button class="tab-btn active" onclick="filterCards('all')">All</button>
+        <button class="tab-btn" onclick="filterCards('breeding')">Breeding Stock</button>
+        <button class="tab-btn" onclick="filterCards('sale')">For Sale</button>
+    </div>
 
-      Each animal needs: tag, name, born, sire, dam, breed, status
-      (breeding / sale / sold). The .animal-card, .category-tabs, and .tab-btn
-      CSS above is preserved and ready to reuse.
-
-      Photo naming convention for multi-photo animals:
-          images/cattle/tag-189-1.jpg   (primary — shown on the card)
-          images/cattle/tag-189-2.jpg   (additional angle)
-          images/cattle/tag-189-3.jpg   (additional angle)
-      The data-photos attribute below lists all photos for a tag as a
-      comma-separated list, so a Phase 2 lightbox can cycle through them.
-
-      The filterCards() JS function was removed when we switched to Phase 1.
-      Re-add it when the tabs come back — see git history for cattle.html.
-
-      --- PHASE 2 TEMPLATE (uncomment and duplicate) ---
-
-      <div class="category-tabs">
-          <button class="tab-btn active" onclick="filterCards('all')">All</button>
-          <button class="tab-btn" onclick="filterCards('breeding')">Breeding Stock</button>
-          <button class="tab-btn" onclick="filterCards('sale')">For Sale</button>
-      </div>
-
-      <section class="cattle-section">
-          <div class="cattle-grid" id="cattleGrid">
-              <div class="animal-card reveal"
-                   data-category="breeding"
-                   data-tag="189"
-                   data-photos="images/cattle/tag-189-1.jpg,images/cattle/tag-189-2.jpg,images/cattle/tag-189-3.jpg">
-                  <div class="animal-card-img">
-                      <img src="images/cattle/tag-189-1.jpg" alt="Tag #189" loading="lazy">
-                  </div>
-                  <div class="animal-card-body">
-                      <p class="animal-tag">Tag #189</p>
-                      <p class="animal-name">Animal Name</p>
-                      <dl class="animal-details">
-                          <dt>Born</dt><dd>Month YYYY</dd>
-                          <dt>Sire</dt><dd>#000</dd>
-                          <dt>Dam</dt><dd>#000</dd>
-                          <dt>Breed</dt><dd>Breed</dd>
-                      </dl>
-                      <span class="animal-status status-breeding">Breeding Stock</span>
-                  </div>
-              </div>
-          </div>
-      </section>
-
-      --- END PHASE 2 TEMPLATE ---
-    -->
-
+    <!-- INDIVIDUAL CATTLE CARDS -->
     <section class="cattle-section">
+        <div class="cattle-grid" id="cattleGrid">
+
+            <div class="animal-card reveal" data-category="breeding" data-tag="1"
+                 data-photos="images/cattle/tag-1-1.jpg,images/cattle/tag-1-2.jpg">
+                <div class="animal-card-img">
+                    <img src="images/cattle/tag-1-1.jpg" alt="Tag #1" loading="lazy">
+                </div>
+                <div class="animal-card-body">
+                    <p class="animal-tag">Tag #1</p>
+                    <p class="animal-name">—</p>
+                    <dl class="animal-details">
+                        <dt>Born</dt><dd>—</dd>
+                        <dt>Sire</dt><dd>—</dd>
+                        <dt>Dam</dt><dd>—</dd>
+                        <dt>Breed</dt><dd>Hereford</dd>
+                    </dl>
+                    <span class="animal-status status-breeding">Breeding Stock</span>
+                    <span class="photo-count">2 photos</span>
+                </div>
+            </div>
+
+            <div class="animal-card reveal" data-category="breeding" data-tag="125"
+                 data-photos="images/cattle/tag-125-1.jpg">
+                <div class="animal-card-img">
+                    <img src="images/cattle/tag-125-1.jpg" alt="Tag #125" loading="lazy">
+                </div>
+                <div class="animal-card-body">
+                    <p class="animal-tag">Tag #125</p>
+                    <p class="animal-name">—</p>
+                    <dl class="animal-details">
+                        <dt>Born</dt><dd>—</dd>
+                        <dt>Sire</dt><dd>—</dd>
+                        <dt>Dam</dt><dd>—</dd>
+                        <dt>Breed</dt><dd>Hereford</dd>
+                    </dl>
+                    <span class="animal-status status-breeding">Breeding Stock</span>
+                </div>
+            </div>
+
+            <!--
+                ADD MORE ANIMALS HERE. Copy a card block above and change:
+                - data-tag="XXX"
+                - data-category="breeding" or "sale"
+                - data-photos="images/cattle/tag-XXX-1.jpg,images/cattle/tag-XXX-2.jpg"
+                - img src to the -1.jpg photo
+                - Tag number, name, born, sire, dam, status
+                Details marked with — are placeholders for M and R to fill in.
+            -->
+
+        </div>
+    </section>
+
+    <!-- HERD GALLERY (general photos without specific tag numbers) -->
+    <section class="cattle-section" style="padding-top:0">
+        <p class="cattle-section-title">Around the Herd</p>
+        <p class="cattle-section-sub">More from the pastures and corrals.</p>
         <div class="cattle-grid reveal" id="herdGallery">
             <figure class="herd-photo">
                 <img src="images/cattle/hereford-bull.jpg" alt="Hereford bull at Summers Ranch" loading="lazy">
@@ -372,6 +429,32 @@
         const reveals = document.querySelectorAll('.reveal');
         const observer = new IntersectionObserver((entries) => { entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 80); observer.unobserve(e.target); } }); }, { threshold: 0.1 });
         reveals.forEach(el => observer.observe(el));
+
+        // Filter tabs
+        function filterCards(category) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            event.target.classList.add('active');
+            document.querySelectorAll('.animal-card').forEach(function(card) {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Click card to cycle through photos
+        document.querySelectorAll('.animal-card').forEach(function(card) {
+            var photos = (card.dataset.photos || '').split(',').filter(Boolean);
+            if (photos.length <= 1) return;
+            var idx = 0;
+            var img = card.querySelector('.animal-card-img img');
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function() {
+                idx = (idx + 1) % photos.length;
+                img.src = photos[idx];
+            });
+        });
     </script>
 </body>
 </html>
