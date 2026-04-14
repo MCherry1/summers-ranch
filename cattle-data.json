@@ -98,6 +98,43 @@
         ""
       ],
       "primary_photo": "images/cattle/tag-12345-3.jpg"
+    },
+    {
+      "tag": "ty124",
+      "name": "",
+      "born": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-ty124-1.jpg",
+        "images/cattle/tag-ty124-2.jpg",
+        "images/cattle/tag-ty124-3.jpg"
+      ],
+      "photo_dates": [
+        "2025-02-10",
+        "2025-08-26",
+        "2025-02-10"
+      ],
+      "photo_types": [
+        "",
+        "",
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-ty124-2.jpg"
     }
   ],
   "sires": [],
@@ -105,7 +142,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-14 22:23 UTC",
+    "last_updated": "2026-04-14 22:50 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
