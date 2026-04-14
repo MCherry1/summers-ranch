@@ -1,0 +1,41 @@
+name: Process Ranch Photos
+
+on:
+  push:
+    paths:
+      - 'images/inbox/**'
+      - 'images/cattle/**'
+  workflow_dispatch:
+
+jobs:
+  process-photos:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q imagemagick exiftool
+          pip install anthropic 2>/dev/null || true
+
+      - name: Process inbox photos
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 .github/scripts/process_photos.py
+
+      - name: Commit processed photos
+        run: |
+          git config user.name "Ranch Photo Bot"
+          git config user.email "photos@summersranch.com"
+          git add -A images/
+          if git diff --staged --quiet; then
+            echo "No photos to process"
+          else
+            git commit -m "Auto-process photos: resize, optimize, organize"
+            git push
+          fi
