@@ -99,3 +99,13 @@ If a photo isn't showing up, double-check:
 1. The filename matches what's in the HTML code
 2. The photo is in the correct subfolder
 3. You've waited a couple minutes for deployment
+
+---
+
+## Easiest Method: The Ranch Photos Shortcut
+
+Install the iPhone shortcut: [Tap here on your iPhone](https://www.icloud.com/shortcuts/d43741765d9c4b95bc48484ebbc3cc74)
+
+Pick General, Cattle, or Hunting → select photos → done. The server handles resizing, organizing, and updating the site automatically.
+
+See `docs/IOS-SHORTCUT-GUIDE.md` for full details.

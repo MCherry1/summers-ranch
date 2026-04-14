@@ -1,6 +1,10 @@
 # Upload Ranch Photos to GitHub — iOS Shortcut Guide
 
-Select photos on your iPhone, pick a category, and they upload automatically. A GitHub Actions pipeline handles all the heavy lifting — resizing, compressing, stripping GPS data, and organizing into the right folders. Your phone just uploads.
+Select photos on your iPhone, pick a category, and they upload automatically.
+
+**Install the shortcut directly:** [Tap here on your iPhone](https://www.icloud.com/shortcuts/d43741765d9c4b95bc48484ebbc3cc74)
+
+Or build it yourself using the steps below. A GitHub Actions pipeline handles all the heavy lifting — resizing, compressing, stripping GPS data, and organizing into the right folders. Your phone just uploads.
 
 ---
 
