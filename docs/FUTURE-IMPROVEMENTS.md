@@ -37,9 +37,6 @@ This is the gold standard for breeder websites and registered cattle. Requires r
 
 **Prerequisite:** At least a few animals need sire/dam fields populated with real data, and some reference animals added for outside genetics.
 
-### Google Calendar Sync
-Documented in `CALENDAR-SYSTEM-SPEC.md` under "Google Calendar Integration." A GitHub Action runs weekly, pulls Marty's public Google Calendar feed, and updates `ranch-calendar.json` with new events. Not needed until the volume of events justifies automation — currently a handful per year.
-
 ### Claude API Photo Classification
 The photo pipeline already supports this (the `ANTHROPIC_API_KEY` secret slot exists). When enabled, photos uploaded as "General" get analyzed by Claude and auto-categorized into cattle/hunting/family/ranch/mascot folders. Costs ~2-3 cents per photo. Set up an Anthropic API key and add it as a GitHub repo secret to activate.
 
@@ -94,6 +91,23 @@ A stretch goal: make the admin panel work offline using a Service Worker. Marty 
 
 ### Cattle Management Software Integration
 Research found CattleMax, Herdwatch, and Breedr don't offer public APIs for website embedding. If Marty adopts one of these for professional tracking, the website remains a separate public-facing layer. Data flows one direction: Marty's records → admin panel → website. The professional software is the source of truth; the website is the storefront.
+
+---
+
+## Considered — Probably Not, But We Thought About It
+
+Things we discussed, researched, and decided against for good reasons. Kept here so nobody rediscovers the idea and wastes time re-evaluating it from scratch.
+
+### Google Calendar Sync via GitHub Action
+**The idea:** Marty maintains a public Google Calendar. A weekly GitHub Action fetches the iCal feed and updates `ranch-calendar.json` automatically. Events flow from his phone's calendar app to the website with zero manual steps.
+
+**Why we passed:** Marty uses a paper calendar. Adding a Google Calendar that he has to maintain alongside his paper one is adding a step, not removing one. The admin panel Calendar tab (see High Priority above) puts event management in the same place he already manages cattle — one bookmark, one login. If he ever does adopt Google Calendar as his primary planning tool, the pipeline is straightforward: public calendar feed → GitHub Action cron → parse iCal → merge into ranch-calendar.json → commit. The `google_calendar_id` field in `ranch-calendar.json` is reserved for this. The calendar spec at `docs/CALENDAR-SYSTEM-SPEC.md` has the full architecture documented.
+
+### Embedding a Visible Calendar Widget
+We explicitly decided against any calendar grid, month view, or embeddable calendar widget on the public site. They're always ugly, always feel corporate, and always have empty date squares that make a small operation look inactive. The seasonal banner + upcoming events approach achieves the same goal (making the site feel alive) without the downsides.
+
+### .ag Domain (Antigua Country Code)
+Some agricultural businesses use `.ag` as a domain hack. We considered it but passed — cattle buyers in Amador County won't intuit the connection, and it's technically Antigua's country code. `.farm` is the better TLD if we move off `.com`.
 
 ---
 
