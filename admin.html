@@ -733,7 +733,7 @@
                 <p class="new-animal-title">New animal</p>
                 <div class="form-group">
                     <label>Tag number *</label>
-                    <input type="text" id="newTag" placeholder="e.g., 250" autocomplete="off">
+                    <input type="text" id="newTag" placeholder="e.g., 250 or TY124" autocomplete="off" style="text-transform:uppercase">
                 </div>
                 <div class="form-row2">
                     <div class="form-group">
@@ -1878,7 +1878,7 @@
         newCancelBtn.addEventListener('click', hideNewForm);
 
         newSaveBtn.addEventListener('click', async () => {
-            const tag = newTag.value.trim();
+            const tag = newTag.value.trim().toUpperCase();
             if (!tag) {
                 showToast('Tag number is required', 'error');
                 newTag.focus();

@@ -388,9 +388,10 @@ def route_by_prefix(filename):
     # Cattle: extract tag number, auto-assign sequential number
     # Shortcut formats as: cattle-tag-[125]-[20260413-203518].jpg
     # or possibly:         cattle-tag-125-20260413-203518.jpg
+    # or with letters:     cattle-tag-Ty124-20260413-171440.jpg
     cattle_match = re.match(r'cattle-tag-\[?(\w+)\]?-', name)
     if cattle_match:
-        tag_number = cattle_match.group(1)
+        tag_number = cattle_match.group(1).upper()  # Industry standard: uppercase
         seq = next_cattle_number(tag_number)
         return "cattle", f"tag-{tag_number}-{seq}.jpg"
 
@@ -556,7 +557,7 @@ def update_cattle_data():
     for photo in sorted(CATTLE_DIR.glob("tag-*-*.jpg")):
         match = re.match(r'tag-(\w+)-(\d+)\.jpg', photo.name)
         if match:
-            tag = match.group(1)
+            tag = match.group(1).upper()  # Normalize to uppercase
             if tag not in tag_photos:
                 tag_photos[tag] = []
             tag_photos[tag].append(str(photo))

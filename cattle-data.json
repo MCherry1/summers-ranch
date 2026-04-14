@@ -32,7 +32,7 @@
       "primary_photo": "images/cattle/tag-215-1.jpg"
     },
     {
-      "tag": "109a",
+      "tag": "109A",
       "name": "",
       "born": "",
       "registration": "",
@@ -52,7 +52,7 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-109a-1.jpg"
+        "images/cattle/tag-109A-1.jpg"
       ],
       "photo_dates": [
         "2026-04-05"
@@ -60,7 +60,7 @@
       "photo_types": [
         ""
       ],
-      "primary_photo": "images/cattle/tag-109a-1.jpg"
+      "primary_photo": "images/cattle/tag-109A-1.jpg"
     },
     {
       "tag": "12345",
@@ -100,7 +100,7 @@
       "primary_photo": "images/cattle/tag-12345-3.jpg"
     },
     {
-      "tag": "ty124",
+      "tag": "TY124",
       "name": "",
       "born": "",
       "registration": "",
@@ -120,9 +120,9 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-ty124-1.jpg",
-        "images/cattle/tag-ty124-2.jpg",
-        "images/cattle/tag-ty124-3.jpg"
+        "images/cattle/tag-TY124-1.jpg",
+        "images/cattle/tag-TY124-2.jpg",
+        "images/cattle/tag-TY124-3.jpg"
       ],
       "photo_dates": [
         "2025-02-10",
@@ -134,7 +134,7 @@
         "",
         ""
       ],
-      "primary_photo": "images/cattle/tag-ty124-2.jpg"
+      "primary_photo": "images/cattle/tag-TY124-2.jpg"
     }
   ],
   "sires": [],
