@@ -299,6 +299,74 @@
             padding: 0;
         }
         .lb-close:hover { background: rgba(0,0,0,0.8); }
+        /* FEATURED SHOTS row — appears above the timeline when photo_types
+           data exists. Progressive enhancement: silently absent without it. */
+        .lb-featured {
+            padding: 1.1rem 1.25rem 0.9rem;
+            background: var(--warm-white);
+            border-bottom: 1px solid rgba(61,43,31,0.06);
+        }
+        .lb-featured-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 0.6rem;
+        }
+        .lb-featured-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+        }
+        .lb-featured-thumb {
+            position: relative;
+            aspect-ratio: 1/1;
+            border-radius: 3px;
+            overflow: hidden;
+            background: var(--linen) center/cover no-repeat;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .lb-featured-thumb:hover { transform: scale(1.03); }
+        .lb-featured-thumb.active { border-color: var(--saddle); }
+        .lb-featured-thumb img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .lb-featured-caption {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            padding: 3px 6px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+            text-align: center;
+        }
+        .lb-featured-caption .lb-featured-date {
+            display: block;
+            font-weight: 400;
+            opacity: 0.85;
+            font-size: 0.55rem;
+        }
+        .lb-timeline-label {
+            position: absolute;
+            top: 10px; left: 12px;
+            padding: 3px 9px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: rgba(0,0,0,0.45);
+            border-radius: 2px;
+            z-index: 2;
+        }
         .lb-photo-wrap {
             position: relative;
             background: #1a120b;
@@ -623,11 +691,23 @@
     <div class="animal-lightbox" id="animalLightbox" aria-hidden="true" role="dialog">
         <div class="animal-lightbox-inner" id="animalLightboxInner">
             <button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+
+            <!-- Featured Shots row — populated only when photo_types data
+                 exists (progressive enhancement from the Claude pipeline). -->
+            <div class="lb-featured" id="lbFeatured" style="display:none">
+                <p class="lb-featured-label">Featured Shots</p>
+                <div class="lb-featured-grid" id="lbFeaturedGrid"></div>
+            </div>
+
             <div class="lb-photo-wrap" id="lbPhotoWrap">
                 <img id="lbPhoto" alt="">
                 <button class="lb-arrow prev" id="lbPrev" aria-label="Previous photo">&lsaquo;</button>
                 <button class="lb-arrow next" id="lbNext" aria-label="Next photo">&rsaquo;</button>
                 <span class="lb-photo-date" id="lbPhotoDate" style="display:none"></span>
+                <!-- Subtle label so users know what the section is when
+                     Featured Shots above is visible. Hidden on the fallback
+                     single-section layout. -->
+                <span class="lb-timeline-label" id="lbTimelineLabel" style="display:none">Growth Timeline</span>
             </div>
             <div class="lb-dots" id="lbDots"></div>
             <div class="lb-body">
@@ -908,28 +988,60 @@
             }
 
             // ---------- LIGHTBOX (expanded card view) ----------
-            var lb        = document.getElementById('animalLightbox');
-            var lbInner   = document.getElementById('animalLightboxInner');
-            var lbClose   = document.getElementById('lbClose');
-            var lbPhoto   = document.getElementById('lbPhoto');
-            var lbPrev    = document.getElementById('lbPrev');
-            var lbNext    = document.getElementById('lbNext');
-            var lbDate    = document.getElementById('lbPhotoDate');
-            var lbDots    = document.getElementById('lbDots');
-            var lbTag     = document.getElementById('lbTag');
-            var lbName    = document.getElementById('lbName');
-            var lbAge     = document.getElementById('lbAge');
-            var lbDetails = document.getElementById('lbDetails');
-            var lbNotes   = document.getElementById('lbNotes');
-            var lbStatus  = document.getElementById('lbStatus');
-            var lbInquire = document.getElementById('lbInquire');
+            // Progressive enhancement: when photo_types classification data
+            // exists on the animal, render a Featured Shots row above the
+            // Growth Timeline (BEHAVIOR-DRIVEN-SPEC § 3). Without the data,
+            // the layout falls back to the single-section lightbox from the
+            // cattle cards spec.
+            var lb              = document.getElementById('animalLightbox');
+            var lbInner         = document.getElementById('animalLightboxInner');
+            var lbClose         = document.getElementById('lbClose');
+            var lbPhoto         = document.getElementById('lbPhoto');
+            var lbPrev          = document.getElementById('lbPrev');
+            var lbNext          = document.getElementById('lbNext');
+            var lbDate          = document.getElementById('lbPhotoDate');
+            var lbDots          = document.getElementById('lbDots');
+            var lbTag           = document.getElementById('lbTag');
+            var lbName          = document.getElementById('lbName');
+            var lbAge           = document.getElementById('lbAge');
+            var lbDetails       = document.getElementById('lbDetails');
+            var lbNotes         = document.getElementById('lbNotes');
+            var lbStatus        = document.getElementById('lbStatus');
+            var lbInquire       = document.getElementById('lbInquire');
+            var lbFeatured      = document.getElementById('lbFeatured');
+            var lbFeaturedGrid  = document.getElementById('lbFeaturedGrid');
+            var lbTimelineLabel = document.getElementById('lbTimelineLabel');
 
-            var lbState = { photos: [], dates: [], idx: 0, timer: null };
+            // Friendly view-type labels for featured thumbnail captions.
+            var VIEW_TYPE_LABEL = {
+                'side-profile':  'Side Profile',
+                'headshot':      'Headshot',
+                'rear':          'Rear View',
+                'three-quarter': 'Three-Quarter',
+                'with-handler':  'With Handler',
+                'in-pasture':    'In Pasture',
+                'group':         'Group',
+                'other':         'Other'
+            };
+            // Priority ordering for "Featured Shots" selection
+            var VIEW_TYPE_PRIORITY = {
+                'side-profile':  1, 'headshot': 2, 'rear': 3, 'three-quarter': 4,
+                'with-handler':  5, 'in-pasture': 6, 'group': 7, 'other': 8
+            };
+
+            var lbState = {
+                photos: [],  // ordered chronologically for the Growth Timeline
+                dates:  [],  // aligned to photos
+                types:  [],  // aligned to photos
+                idx: 0,
+                timer: null,
+                pauseUntil: 0  // epoch ms; while this is in the future, auto-cycle skips
+            };
 
             function lbStop() {
                 if (lbState.timer) { clearInterval(lbState.timer); lbState.timer = null; }
             }
-            function lbShow(i) {
+            function lbShow(i, pauseMs) {
                 if (!lbState.photos.length) return;
                 lbState.idx = (i + lbState.photos.length) % lbState.photos.length;
                 lbPhoto.style.opacity = '0';
@@ -942,6 +1054,12 @@
                 dotEls.forEach(function(d, di) {
                     d.classList.toggle('active', di === lbState.idx);
                 });
+                // Featured thumb highlighting
+                var thumbEls = lbFeaturedGrid.querySelectorAll('.lb-featured-thumb');
+                thumbEls.forEach(function(el) {
+                    var thumbIdx = parseInt(el.dataset.photoIdx, 10);
+                    el.classList.toggle('active', thumbIdx === lbState.idx);
+                });
                 // Date caption
                 var dateStr = formatPhotoDate(lbState.dates[lbState.idx]);
                 if (dateStr) {
@@ -950,29 +1068,152 @@
                 } else {
                     lbDate.style.display = 'none';
                 }
+                // Pause auto-cycle for pauseMs if requested (spec: 10s for
+                // manual nav, 30s when a featured thumb is picked)
+                if (typeof pauseMs === 'number' && pauseMs > 0) {
+                    lbState.pauseUntil = Date.now() + pauseMs;
+                }
             }
             function lbStart() {
                 lbStop();
                 if (lbState.photos.length > 1) {
-                    lbState.timer = setInterval(function() { lbShow(lbState.idx + 1); }, 5000);
+                    lbState.timer = setInterval(function() {
+                        if (Date.now() < lbState.pauseUntil) return; // honoring pause
+                        lbShow(lbState.idx + 1);
+                    }, 5000);
                 }
             }
+
+            // Build the Growth Timeline photo list in chronological order.
+            // We re-sort by ISO date (oldest first) if photo_dates exist.
+            // Photos with no date sort to the end but preserve their order.
+            function buildTimeline(photos, dates, types) {
+                var n = photos.length;
+                var entries = [];
+                for (var i = 0; i < n; i++) {
+                    entries.push({
+                        photo: photos[i],
+                        date:  (dates && dates[i]) || '',
+                        type:  (types && types[i]) || '',
+                        orig:  i
+                    });
+                }
+                entries.sort(function(a, b) {
+                    // Undated photos go last, in original order
+                    if (!a.date && !b.date) return a.orig - b.orig;
+                    if (!a.date) return 1;
+                    if (!b.date) return -1;
+                    if (a.date < b.date) return -1;
+                    if (a.date > b.date) return 1;
+                    return a.orig - b.orig;
+                });
+                return {
+                    photos: entries.map(function(e) { return e.photo; }),
+                    dates:  entries.map(function(e) { return e.date; }),
+                    types:  entries.map(function(e) { return e.type; })
+                };
+            }
+
+            // Choose up to 3 featured photos: most-recent side-profile,
+            // most-recent headshot, and a third from rear → three-quarter →
+            // anything classified. Returns an array of { photoIdx } objects
+            // keyed to positions in the timeline-sorted photos array.
+            function pickFeatured(timeline) {
+                var photos = timeline.photos, types = timeline.types, dates = timeline.dates;
+                var anyTyped = types.some(function(t) { return t && VIEW_TYPE_PRIORITY[t]; });
+                if (!anyTyped) return [];
+
+                function mostRecentOfType(t) {
+                    // Timeline is oldest-first, so walk from the end for "most recent"
+                    for (var i = photos.length - 1; i >= 0; i--) {
+                        if (types[i] === t) return i;
+                    }
+                    return -1;
+                }
+                var picks = [];
+                var taken = {};
+                function take(idx) {
+                    if (idx < 0 || taken[idx]) return;
+                    taken[idx] = true;
+                    picks.push(idx);
+                }
+                take(mostRecentOfType('side-profile'));
+                take(mostRecentOfType('headshot'));
+                if (picks.length < 3) take(mostRecentOfType('rear'));
+                if (picks.length < 3) take(mostRecentOfType('three-quarter'));
+                if (picks.length < 3) {
+                    // Fall back to any remaining classified photo, most recent first
+                    for (var i = photos.length - 1; i >= 0 && picks.length < 3; i--) {
+                        if (types[i] && VIEW_TYPE_PRIORITY[types[i]] && !taken[i]) {
+                            take(i);
+                        }
+                    }
+                }
+                return picks;
+            }
+
             function openLightbox(animal, today) {
-                var photos = (animal.photos && animal.photos.length) ? animal.photos : ['images/cattle/brand.jpg'];
-                lbState.photos = photos.slice();
-                lbState.dates  = (animal.photo_dates || []).slice();
+                var srcPhotos = (animal.photos && animal.photos.length)
+                    ? animal.photos
+                    : ['images/cattle/brand.jpg'];
+                var srcDates = (animal.photo_dates || []).slice();
+                var srcTypes = (animal.photo_types || []).slice();
+
+                // Growth Timeline: chronological by ISO date (oldest first)
+                var timeline = buildTimeline(srcPhotos, srcDates, srcTypes);
+                lbState.photos = timeline.photos;
+                lbState.dates  = timeline.dates;
+                lbState.types  = timeline.types;
                 lbState.idx    = 0;
+                lbState.pauseUntil = 0;
+
+                // Featured Shots row (progressive enhancement)
+                var featured = pickFeatured(timeline);
+                lbFeaturedGrid.innerHTML = '';
+                if (featured.length > 0) {
+                    featured.forEach(function(photoIdx) {
+                        var type = timeline.types[photoIdx];
+                        var thumb = document.createElement('button');
+                        thumb.type = 'button';
+                        thumb.className = 'lb-featured-thumb';
+                        thumb.dataset.photoIdx = String(photoIdx);
+                        thumb.setAttribute('aria-label', 'Jump to ' + (VIEW_TYPE_LABEL[type] || 'photo'));
+                        var img = document.createElement('img');
+                        img.src = timeline.photos[photoIdx];
+                        img.alt = '';
+                        thumb.appendChild(img);
+                        var cap = document.createElement('span');
+                        cap.className = 'lb-featured-caption';
+                        var dateStr = formatPhotoDate(timeline.dates[photoIdx]);
+                        cap.innerHTML = (VIEW_TYPE_LABEL[type] || 'Photo') +
+                            (dateStr ? '<span class="lb-featured-date">' + dateStr + '</span>' : '');
+                        thumb.appendChild(cap);
+                        thumb.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            // Jump to this photo in the timeline and pause
+                            // auto-cycle for 30s so users can study it
+                            lbStart();
+                            lbShow(photoIdx, 30000);
+                        });
+                        lbFeaturedGrid.appendChild(thumb);
+                    });
+                    lbFeatured.style.display = '';
+                    lbTimelineLabel.style.display = '';
+                } else {
+                    lbFeatured.style.display = 'none';
+                    lbTimelineLabel.style.display = 'none';
+                }
 
                 // Build dot nav
                 lbDots.innerHTML = '';
-                if (photos.length > 1) {
-                    photos.forEach(function(_, di) {
+                if (timeline.photos.length > 1) {
+                    timeline.photos.forEach(function(_, di) {
                         var b = document.createElement('button');
                         b.className = 'lb-dot' + (di === 0 ? ' active' : '');
                         b.setAttribute('aria-label', 'Photo ' + (di + 1));
                         b.addEventListener('click', function(e) {
                             e.stopPropagation();
-                            lbStart(); lbShow(di);
+                            lbShow(di, 10000); // pause 10s per spec
                         });
                         lbDots.appendChild(b);
                     });
@@ -1053,17 +1294,22 @@
             });
             lbPrev.addEventListener('click', function(e) {
                 e.stopPropagation();
-                lbStart(); lbShow(lbState.idx - 1);
+                lbShow(lbState.idx - 1, 10000);
             });
             lbNext.addEventListener('click', function(e) {
                 e.stopPropagation();
-                lbStart(); lbShow(lbState.idx + 1);
+                lbShow(lbState.idx + 1, 10000);
             });
             document.addEventListener('keydown', function(e) {
                 if (!lb.classList.contains('open')) return;
                 if (e.key === 'Escape')      closeLightbox();
-                else if (e.key === 'ArrowLeft')  { lbStart(); lbShow(lbState.idx - 1); }
-                else if (e.key === 'ArrowRight') { lbStart(); lbShow(lbState.idx + 1); }
+                else if (e.key === 'ArrowLeft')  { lbShow(lbState.idx - 1, 10000); }
+                else if (e.key === 'ArrowRight') { lbShow(lbState.idx + 1, 10000); }
+            });
+            // Tapping the growth-timeline photo itself pauses for 10s too
+            lbPhoto.addEventListener('click', function(e) {
+                e.stopPropagation();
+                lbState.pauseUntil = Date.now() + 10000;
             });
             // Touch swipe (mobile)
             (function() {
@@ -1078,9 +1324,8 @@
                     if (!t) return;
                     var dx = t.clientX - startX, dy = t.clientY - startY;
                     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-                        lbStart();
-                        if (dx < 0) lbShow(lbState.idx + 1);
-                        else        lbShow(lbState.idx - 1);
+                        if (dx < 0) lbShow(lbState.idx + 1, 10000);
+                        else        lbShow(lbState.idx - 1, 10000);
                     } else if (dy > 80 && Math.abs(dy) > Math.abs(dx)) {
                         closeLightbox();
                     }

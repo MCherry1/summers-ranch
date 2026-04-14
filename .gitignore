@@ -1,0 +1,12 @@
+# Python bytecode / caches — generated when scripts in .github/scripts/
+# get imported for local testing. Never belongs in git.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Editor / OS scratch files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

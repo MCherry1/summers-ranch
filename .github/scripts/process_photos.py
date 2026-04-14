@@ -41,6 +41,27 @@ HERO_DIR = Path("images/hero")
 # to populate each animal's photo_dates array in lockstep with photos[].
 PHOTO_DATES = {}
 
+# Cache of "photo-path -> view-type string" populated during process_inbox
+# by Claude API classification (side-profile / headshot / rear / etc.).
+# Used by update_cattle_data() to populate animal.photo_types in lockstep
+# with animal.photos, and to pick the best primary_photo by priority.
+# See docs/BEHAVIOR-DRIVEN-SPEC.md § 2.
+PHOTO_TYPES = {}
+
+# View-type priority table from the spec. Lower number = better primary
+# photo candidate. Unknown types rank last.
+VIEW_TYPE_PRIORITY = {
+    "side-profile":  1,
+    "headshot":      2,
+    "rear":          3,
+    "three-quarter": 4,
+    "with-handler":  5,
+    "in-pasture":    6,
+    "group":         7,
+    "other":         8,
+}
+VALID_VIEW_TYPES = set(VIEW_TYPE_PRIORITY.keys())
+
 # Max width for processed photos
 MAX_WIDTH = 1200
 JPEG_QUALITY = 82
@@ -147,6 +168,122 @@ Use lowercase, hyphens, no spaces in filename. Keep it short (2-4 words)."""
     except Exception as e:
         print(f"  Claude classification failed: {e}")
         return None, None
+
+
+def classify_cattle_view(filepath):
+    """
+    Ask Claude to classify a cattle photo's view type per the spec
+    (docs/BEHAVIOR-DRIVEN-SPEC.md § 2). Returns one of the strings in
+    VALID_VIEW_TYPES, or None if classification failed / no API key / the
+    anthropic SDK is unavailable. The caller should tolerate None and leave
+    the photo uncategorized rather than guessing.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+    except ImportError:
+        print("  anthropic package not available, skipping view-type classification")
+        return None
+    except Exception as e:
+        print(f"  Error initializing Anthropic client for view-type: {e}")
+        return None
+
+    try:
+        with open(filepath, "rb") as f:
+            image_data = base64.standard_b64encode(f.read()).decode("utf-8")
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=100,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_data,
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "Classify this cattle photo. Respond with ONLY a JSON object, "
+                            "no markdown, no backticks:\n\n"
+                            '{"type": "one of: side-profile, headshot, rear, '
+                            'three-quarter, with-handler, in-pasture, group, other"}\n\n'
+                            "Definitions:\n"
+                            "- side-profile: Full body visible from the side, showing the animal's build/conformation\n"
+                            "- headshot: The animal's face or head is the main subject\n"
+                            "- rear: Viewed from behind, showing width and muscling\n"
+                            "- three-quarter: Angled between side and front, partial body visible\n"
+                            "- with-handler: A person is actively handling, showing, or standing with the animal\n"
+                            "- in-pasture: Casual shot of the animal grazing, walking, or standing in the field\n"
+                            "- group: Multiple animals visible, no single subject\n"
+                            "- other: None of the above"
+                        ),
+                    },
+                ],
+            }],
+        )
+
+        text = response.content[0].text.strip()
+        text = re.sub(r'^```json\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+        result = json.loads(text)
+        view_type = result.get("type", "").strip().lower()
+        if view_type not in VALID_VIEW_TYPES:
+            print(f"  Unknown view type from Claude: {view_type!r}")
+            return None
+        return view_type
+    except Exception as e:
+        print(f"  Claude view-type classification failed: {e}")
+        return None
+
+
+def pick_primary_photo(photos, photo_types, photo_dates):
+    """
+    Choose the best primary photo for an animal from the spec priority table:
+    most-recent side-profile > most-recent headshot > rear > three-quarter >
+    with-handler > in-pasture > group > other. Falls back to the first photo
+    in the array when no types exist.
+
+    Tie-breaking rules (in order):
+      1. Lower priority value wins (side-profile beats headshot).
+      2. Within same priority, newer ISO date wins.
+      3. Within same priority + same (or missing) date, the earlier photo in
+         the array wins — this matches the spec's "fall back to the first
+         photo" rule when nothing discriminates.
+
+    Returns the chosen photo path, or None if there are no photos.
+    """
+    if not photos:
+        return None
+
+    def priority_of(i):
+        vt = photo_types[i] if i < len(photo_types) else ""
+        return VIEW_TYPE_PRIORITY.get(vt, 99)
+
+    def date_of(i):
+        return photo_dates[i] if i < len(photo_dates) else ""
+
+    best_i = 0
+    for i in range(1, len(photos)):
+        p_i, p_best = priority_of(i), priority_of(best_i)
+        if p_i < p_best:
+            best_i = i
+        elif p_i == p_best:
+            d_i, d_best = date_of(i), date_of(best_i)
+            if d_i > d_best:
+                best_i = i
+            # Equal priority AND equal/missing dates: keep the earlier index
+            # (the first-photo fallback). Do nothing.
+    return photos[best_i]
 
 
 def get_target_dir(category):
@@ -316,6 +453,15 @@ def process_inbox():
         if captured_date and category == "cattle":
             PHOTO_DATES[str(target)] = captured_date
 
+        # Step 4 (cattle only): ask Claude for a view-type classification
+        # so the lightbox's Featured Shots section has metadata to work with
+        # and the primary photo can be auto-selected by quality.
+        if category == "cattle":
+            view_type = classify_cattle_view(target)
+            if view_type:
+                print(f"  View type: {view_type}")
+                PHOTO_TYPES[str(target)] = view_type
+
     print("\nInbox processing complete.")
 
 
@@ -391,36 +537,58 @@ def update_cattle_data():
                 "calves_manual": False,
                 "notes": "",
                 "photos": [],
-                "photo_dates": []
+                "photo_dates": [],
+                "photo_types": [],
+                "primary_photo": ""
             })
             existing_tags.add(tag)
             changed = True
 
-    # Update photo arrays for all animals. Keep photo_dates in lockstep with
-    # photos: look up this run's fresh dates from PHOTO_DATES, and carry over
-    # any existing dates stored in the JSON for photos we're not touching.
+    # Update photo arrays for all animals. Keep photo_dates + photo_types
+    # in lockstep with photos: look up this run's fresh dates/types from the
+    # in-memory caches, and carry over anything already stored in the JSON
+    # for photos we're not touching.
     for animal in animals:
         tag = animal["tag"]
         photos = tag_photos.get(tag, [])
         old_photos = animal.get("photos", [])
         old_dates  = animal.get("photo_dates", [])
-        # Build a lookup from the old arrays so we can preserve dates that
-        # were already recorded (e.g. from a previous run).
-        old_lookup = {}
+        old_types  = animal.get("photo_types", [])
+        date_lookup = {}
+        type_lookup = {}
         for i, p in enumerate(old_photos):
             if i < len(old_dates):
-                old_lookup[p] = old_dates[i]
+                date_lookup[p] = old_dates[i]
+            if i < len(old_types):
+                type_lookup[p] = old_types[i]
         new_dates = []
+        new_types = []
         for p in photos:
             if p in PHOTO_DATES:
                 new_dates.append(PHOTO_DATES[p])
-            elif p in old_lookup and old_lookup[p]:
-                new_dates.append(old_lookup[p])
+            elif p in date_lookup and date_lookup[p]:
+                new_dates.append(date_lookup[p])
             else:
                 new_dates.append("")
-        if photos != old_photos or new_dates != old_dates:
+            if p in PHOTO_TYPES:
+                new_types.append(PHOTO_TYPES[p])
+            elif p in type_lookup and type_lookup[p]:
+                new_types.append(type_lookup[p])
+            else:
+                new_types.append("")
+
+        # Recompute primary_photo whenever photos or classifications move.
+        new_primary = pick_primary_photo(photos, new_types, new_dates) or ""
+        old_primary = animal.get("primary_photo", "")
+
+        if (photos != old_photos
+            or new_dates != old_dates
+            or new_types != old_types
+            or new_primary != old_primary):
             animal["photos"] = photos
             animal["photo_dates"] = new_dates
+            animal["photo_types"] = new_types
+            animal["primary_photo"] = new_primary
             changed = True
 
     # Rebuild sires/dams from the breeding_stock flag + sex.
