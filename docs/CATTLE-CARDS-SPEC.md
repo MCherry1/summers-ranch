@@ -360,13 +360,92 @@ This is the conversion path. A buyer sees a nice animal, taps one button, and Ma
 
 ## Priority Order for Implementation
 
-1. **Expanded card view with lightbox** — Biggest UX improvement, needed before adding more detail fields
-2. **Stop auto-cycling on grid, add hover cycle** — Quick fix, improves page feel dramatically
-3. **Registration number + weight fields in schema** — Buyer-critical data, add to JSON and expanded view
-4. **Status workflow, sold ribbon, and remove-from-herd flow** — Needed before handing off to Marty
-5. **"Inquire About This Animal" CTA on sale cards** — The conversion path for buyers
-6. **Calves count + auto-increment** — Wire up with admin panel
-7. **Reference animals and outside sires** — Can wait until lineage data is entered
-8. **Photo date extraction in pipeline** — Enhancement, not blocking
-9. **Manual calves override UI** — Admin panel refinement
-10. **Breed detail field for crossbreds** — Edge case, add when needed
+1. ✅ **Expanded card view with lightbox** — Biggest UX improvement, needed before adding more detail fields
+2. ✅ **Stop auto-cycling on grid, add hover cycle** — Quick fix, improves page feel dramatically
+3. ✅ **Registration number + weight fields in schema** — Buyer-critical data, add to JSON and expanded view
+4. ✅ **Status workflow, sold ribbon, and remove-from-herd flow** — Needed before handing off to Marty
+5. ✅ **"Inquire About This Animal" CTA on sale cards** — The conversion path for buyers
+6. ✅ **Calves count + auto-increment** — Wire up with admin panel
+7. ✅ **Reference animals and outside sires** — Schema + admin support shipped; card rendering filters them out
+8. ✅ **Photo date extraction in pipeline** — Pulls the date from the iOS Shortcut's filename timestamp
+9. ✅ **Manual calves override UI** — Admin panel refinement
+10. ✅ **Breed detail field for crossbreds** — Shown on card/lightbox when populated
+
+---
+
+## Implementation Notes
+
+The spec was implemented end-to-end in a single pass. Code locations:
+
+### `cattle.html` (public herd page)
+- **Expanded lightbox** — `#animalLightbox` DOM at the end of `<body>`, styles
+  in the `.animal-lightbox*` / `.lb-*` CSS block, and the `openLightbox()` /
+  `closeLightbox()` / `lbShow()` functions inside the main IIFE.
+- **Grid hover cycle** — `buildCard()` checks `matchMedia('(hover: hover)')`
+  and attaches a per-card `mouseenter` / `mouseleave` handler that slowly
+  cycles photos (4s interval). No global auto-cycle on the grid anymore.
+- **Click-to-open** — every card has a click handler that calls
+  `openLightbox(animal, today)`.
+- **Sold ribbon** — `.sold-ribbon` CSS + `buildCard()` emits it when
+  `animal.status === 'sold'`. Card stays full-color.
+- **Hidden statuses** — the fetch-then-render block filters out
+  `culled` / `deceased` / `reference` animals and any with
+  `source === 'reference'` before appending cards.
+- **Sort** — `sold` and `retired` animals get pushed to the end of the grid.
+- **New detail rows on the grid card** — registration (shown as `Reg #…`),
+  `breed_detail` preferred over `breed`, `calves` shown when > 0 with the
+  label flipping between "Calves" and "Calves Sired" by sex.
+- **Lightbox details** — adds birth/weaning/yearling weights, notes (italic
+  with left border), status chip, and the **Inquire About This Animal** CTA
+  when `status === 'sale'` (links to `contact.html?animal=<tag>`).
+- **Lightbox photo behavior** — 5s auto-cycle with 0.4s crossfade, dot nav
+  below the photo, prev/next arrows on desktop, swipe left/right on mobile,
+  swipe down to dismiss, ESC/arrow keys, backdrop-click to close. Photo
+  date caption (`Mon YYYY`) is read from `animal.photo_dates[i]`.
+
+### `admin.html` (herd editor)
+- **Expanded status dropdown** — `statusOptions()` now lists `breeding`,
+  `sale`, `sold`, `retired`, `culled`, `deceased`, and `reference`.
+- **New form fields** — `buildAnimalElement()` renders inputs for
+  `registration`, `breed_detail`, `source`, `source_ranch` (auto-hidden
+  when source is "herd"), and a collapsible "Weights" group with three
+  number inputs.
+- **Calves stepper** — `.calves-stepper` with ◄ / number / ► and an
+  "Edit manually" checkbox. The stepper is disabled by default; checking
+  the box enables the arrows and the input. `calves_manual: true` tells
+  the auto-increment logic to leave this animal alone.
+- **Auto-increment** — `saveAnimal()` compares the edited sire/dam against
+  the original. If either transitions from empty (or changes), the parent's
+  `calves` field is incremented in the same commit, but only if the parent's
+  `calves_manual` is false.
+- **Remove from Herd** — clicking the inline red-outline button next to the
+  status dropdown opens a `window.confirm()` dialog with the spec's copy.
+  The save button refuses to save a newly-removed animal until the user
+  has clicked through that confirmation.
+- **Reference animals in datalists** — `rebuildDatalists()` appends
+  reference animals to the sire/dam autocomplete lists with an "outside"
+  label so they're visually grouped. `recomputeBreeders()` skips them so
+  they don't pollute the main breeder counts.
+
+### `cattle-data.json`
+- Tag 215 is now the canonical empty-schema animal. Every new field defined
+  in the spec has a default value so consumers can rely on the shape being
+  present even when the field is empty.
+
+### `contact.html`
+- A small script at the top of the existing `<script>` block parses
+  `?animal=` out of the URL, fetches `cattle-data.json`, looks up the
+  animal, and prefills the message body + the `_subject` hidden field
+  (new) so the Formspree email lands with a meaningful subject line.
+
+### `.github/scripts/process_photos.py`
+- `extract_iso_date()` parses the Shortcut's YYYYMMDD timestamp out of the
+  original inbox filename. Called before EXIF is stripped.
+- `PHOTO_DATES` module-level cache maps the final target path to the ISO
+  date of the source upload.
+- `update_cattle_data()` now writes a `photo_dates` array in lockstep with
+  `photos`, pulling fresh dates from the cache and preserving any dates
+  already recorded in the JSON for older photos.
+- New-animal auto-insertion writes the full expanded schema (registration,
+  source, calves, weights, photo_dates) so records stay consistent with
+  what the admin form expects.
