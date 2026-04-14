@@ -176,6 +176,73 @@ This is documented for later implementation. The idea:
 
 ---
 
+## Cattle Birthdays & New Arrivals (cattle page only)
+
+Herd birthdays do NOT go in the site-wide banner rotation. With 40 head and a tight calving window, that would mean banners firing every few days during spring — it stops being special and starts being noise. The site-wide banner stays reserved for the humans (Marty, Roianne, Theodore).
+
+Instead, cattle birthdays and new arrivals are handled **on the cattle page itself**, using the `born` field already in `cattle-data.json`.
+
+### On Every Animal Card: Dynamic Age
+
+Calculate and display the animal's age from the `born` date. Show it in the card body as a quiet detail: "2 years old" or "6 months old." If `born` is empty, don't show anything. This is free since the data's already there.
+
+### Birthday Hat on the Card (on the animal's actual birthday)
+
+When today matches an animal's birth month and day, add a small birthday hat icon to the top-right corner of the card's photo area.
+
+**Design constraints — walk the line carefully:**
+- Size: 20–24px. Small enough to be a detail, not a focal point.
+- Position: top-right corner of the `.animal-card-img` div, 8px from edges.
+- Opacity: 0.85. Not fully opaque — it should feel like it's resting there gently.
+- Use a simple SVG party hat or the 🎂 emoji at small size. NOT a giant cartoon hat. NOT animated. NOT bouncing. Just sitting there quietly.
+- On mobile: same size, same position. Don't scale it up.
+
+The vibe is: someone notices it and smiles. Not: the card is screaming "BIRTHDAY!"
+
+### Birthday Glow on the Card
+
+On the animal's birthday, give the card a subtle warm glow. This is the "pop" that makes it stand out without being garish.
+
+**Implementation:**
+```css
+.animal-card.birthday {
+    box-shadow: 0 0 20px rgba(198, 168, 75, 0.25);  /* warm gold, very faint */
+    border-color: rgba(198, 168, 75, 0.3);
+}
+```
+
+That's it. No sparkles, no animation, no pulsing. Just a faint warm gold shadow that makes the card look ever so slightly different from its neighbors. Someone browsing the page might notice one card has a warm quality the others don't, and then they see the little hat, and they get it.
+
+**Do NOT attempt:** Sparkle animations, confetti, particle effects, CSS shimmer, or anything that moves. These always look cheap in CSS. The gold glow is the ceiling.
+
+### "New Arrivals" Section (during calving season)
+
+When the current date falls within calving season (Feb 15 – Apr 30, per the seasons data), and there are animals in `cattle-data.json` born within the last 60 days, show a "New Arrivals" highlight section at the top of the cattle cards area, before the main grid.
+
+**Design:**
+- Small section label: "New Arrivals" in the same style as other section labels (sage green, uppercase, letter-spaced)
+- Show just the new calves' cards in a compact row
+- Each new calf card gets a small "New" badge — sage green pill, white text, 0.65rem
+- When calving season ends or no animals are under 60 days old, the entire section disappears. No empty states.
+
+**Implementation:**
+- Filter `cattle-data.json` animals where `born` is within the last 60 days
+- Only show this section if the current date is within calving season AND there are qualifying animals
+- These animals ALSO appear in the main grid below — the New Arrivals section is a highlight, not a separate location
+
+---
+
+## Tone: Professional but Warm and Family
+
+This site represents a working family ranch. The tone is:
+- **Professional** enough that a cattle buyer takes it seriously
+- **Warm** enough that family friends smile when they visit
+- **Personal** enough that it feels like the Summers family, not a corporate ag operation
+
+The birthday hat and the gold glow are exactly the right level of personality. They say "we know each of our animals and we care about them." That's the brand.
+
+---
+
 ## Content Guidance
 
 When populating the JSON, keep these tone guidelines:
