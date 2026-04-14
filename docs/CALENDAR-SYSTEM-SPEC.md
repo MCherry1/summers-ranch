@@ -225,6 +225,20 @@ When the current date falls within calving season (Feb 15 – Apr 30, per the se
 - Each new calf card gets a small "New" badge — sage green pill, white text, 0.65rem
 - When calving season ends or no animals are under 60 days old, the entire section disappears. No empty states.
 
+### Boy/Girl Corner Band (new arrivals only)
+
+New arrival cards get a small diagonal ribbon across the top-left corner of the photo — blue for bulls/steers, pink for heifers. Like a hospital nursery band.
+
+**Design:**
+- A CSS ribbon/banner angled across the top-left corner at 45 degrees
+- Blue: `#6B9BC7` (dusty blue, not neon). Pink: `#D4869C` (dusty rose, not hot pink).
+- Text: "Bull Calf" or "Heifer" in white, ~0.55rem, uppercase
+- Width: ~90px across the diagonal
+- Only appears on cards where `born` is within the last 60 days AND `sex` field is populated
+- If sex is not set, no band — don't guess
+
+This is the same visual language as the birthday gold glow and hat: a small, warm detail that rewards people who are actually looking at the cards. It says "this is a family that celebrates new life on the ranch."
+
 **Implementation:**
 - Filter `cattle-data.json` animals where `born` is within the last 60 days
 - Only show this section if the current date is within calving season AND there are qualifying animals
