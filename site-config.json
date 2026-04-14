@@ -25,7 +25,7 @@
       "nickname": "Uncle Chicken",
       "role": "Elder Ranch Hand",
       "bio": "Marty's family has called Sutter Creek home for generations. He worked cattle as a young man, then spent a long career as a heavy-machinery mechanic at Folsom State Prison before recently retiring. Now he gets to do what he's always wanted \u2014 spend his days with cows and grandsons.",
-      "birthday": "YYYY-MM-DD",
+      "birthday": "1965-04-14",
       "photo": "images/mascot/theodore-main.jpg"
     },
     {
@@ -64,7 +64,7 @@
   "cattle": [],
   "formspree_id": "mzdybyjl",
   "todos_for_owners": [
-    "Marty's birthday (add to birthdayData span in index.html + family[0].birthday here)",
+    "Verify Marty's birthday: currently set to 1965-04-14 as a placeholder so the banner fires for tonight's demo. Update to the real year once confirmed.",
     "Real herd / cattle photos (cattle.html and 4 remaining Unsplash gallery items are waiting for these)",
     "Landscape / ranch-scenery photos for hero backgrounds",
     "Confirm mcherry@gmail.com vs. a dedicated ranch email address",
