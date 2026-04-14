@@ -1178,14 +1178,29 @@
             const removeBtn = el.querySelector('[data-role="remove-herd"]');
             const originalStatus = animal.status || 'breeding';
             let confirmedRemove = REMOVED_STATUSES.has(originalStatus); // pre-confirmed if already removed
+            const REMOVE_BTN_LABEL = 'Remove from Herd';
+            const REMOVE_BTN_CONFIRMED_LABEL = 'Removal confirmed — tap Save';
+            function resetRemoveBtn() {
+                removeBtn.textContent = REMOVE_BTN_LABEL;
+                removeBtn.disabled = false;
+            }
             statusSelect.addEventListener('change', () => {
                 if (REMOVED_STATUSES.has(statusSelect.value)) {
                     removeBtn.classList.add('show');
-                    // If newly changed to a removed status (not pre-confirmed), force confirmation before save
-                    if (statusSelect.value !== originalStatus) confirmedRemove = false;
+                    if (statusSelect.value !== originalStatus) {
+                        // New removal — need a fresh confirmation click
+                        confirmedRemove = false;
+                        resetRemoveBtn();
+                    } else {
+                        // Reverted to the status the record already had — no
+                        // new confirmation needed
+                        confirmedRemove = true;
+                        resetRemoveBtn();
+                    }
                 } else {
                     removeBtn.classList.remove('show');
                     confirmedRemove = true; // not a removal, nothing to confirm
+                    resetRemoveBtn();
                 }
             });
             removeBtn.addEventListener('click', e => {
@@ -1197,8 +1212,10 @@
                 );
                 if (ok) {
                     confirmedRemove = true;
-                    removeBtn.textContent = 'Removal confirmed — tap Save';
-                    removeBtn.disabled = true;
+                    removeBtn.textContent = REMOVE_BTN_CONFIRMED_LABEL;
+                    // Keep the button enabled so that if the user later
+                    // changes the status again, the change handler can
+                    // reset/re-enable it for a fresh confirmation.
                 }
             });
             // Store on the element for save() to read
@@ -1379,9 +1396,17 @@
                     }
                 });
 
-                // Photo order: move the marked primary to index 0
+                // Photo order: move the marked primary to index 0, and keep
+                // photo_dates in lockstep so cattle.html's lightbox shows the
+                // correct date caption for each image after reordering.
                 const picks = el.querySelectorAll('.photo-pick');
                 if (picks.length > 0) {
+                    const oldPhotos = originalAnimal.photos || [];
+                    const oldDates  = originalAnimal.photo_dates || [];
+                    const dateByPath = {};
+                    oldPhotos.forEach((p, i) => {
+                        if (i < oldDates.length) dateByPath[p] = oldDates[i];
+                    });
                     const ordered = [];
                     let primary = null;
                     picks.forEach(p => {
@@ -1390,35 +1415,44 @@
                     });
                     if (primary) ordered.unshift(primary);
                     edited.photos = ordered;
+                    edited.photo_dates = ordered.map(p =>
+                        Object.prototype.hasOwnProperty.call(dateByPath, p) ? dateByPath[p] : ''
+                    );
                 }
 
-                // Auto-increment parents' calves count when a sire or dam is
-                // newly assigned (was empty before, now populated). Only bump
-                // if the parent doesn't have calves_manual set — manual override
-                // wins so the user's typed number isn't stomped.
+                // Auto-update parents' calves count when the sire or dam
+                // assignment changes. Newly-assigned parents get +1; if an
+                // editor corrects lineage, the previous parent gets -1 so
+                // totals stay balanced across repeated edits. Parents with
+                // calves_manual set are skipped — the user's typed number
+                // always wins. clamps below zero so we never go negative.
                 const newSire = (edited.sire || '').toString().trim();
                 const newDam  = (edited.dam  || '').toString().trim();
                 const oldSire = (originalAnimal.sire || '').toString().trim();
                 const oldDam  = (originalAnimal.dam  || '').toString().trim();
-                const bumpSire = newSire && newSire !== oldSire;
-                const bumpDam  = newDam  && newDam  !== oldDam;
+                const sireChanged = newSire !== oldSire;
+                const damChanged  = newDam  !== oldDam;
+
+                function adjustCalves(d, tag, delta) {
+                    if (!tag) return;
+                    const p = d.animals.find(a => String(a.tag) === tag);
+                    if (!p || p.calves_manual) return;
+                    const cur = (typeof p.calves === 'number') ? p.calves : 0;
+                    p.calves = Math.max(0, cur + delta);
+                }
 
                 await commitCattleData(d => {
                     const idx = d.animals.findIndex(a => a.tag === originalAnimal.tag);
                     if (idx === -1) throw new Error('Animal disappeared from data file');
                     d.animals[idx] = edited;
 
-                    if (bumpSire) {
-                        const s = d.animals.find(a => String(a.tag) === newSire);
-                        if (s && !s.calves_manual) {
-                            s.calves = (typeof s.calves === 'number' ? s.calves : 0) + 1;
-                        }
+                    if (sireChanged) {
+                        adjustCalves(d, oldSire, -1);
+                        adjustCalves(d, newSire, +1);
                     }
-                    if (bumpDam) {
-                        const m = d.animals.find(a => String(a.tag) === newDam);
-                        if (m && !m.calves_manual) {
-                            m.calves = (typeof m.calves === 'number' ? m.calves : 0) + 1;
-                        }
+                    if (damChanged) {
+                        adjustCalves(d, oldDam, -1);
+                        adjustCalves(d, newDam, +1);
                     }
 
                     return edited.name
