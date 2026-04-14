@@ -202,7 +202,7 @@
                     rgba(61,43,31,0.5) 75%,
                     rgba(61,43,31,0.85) 100%
                 ),
-                url('images/hero/pasture-wide.jpg') center/cover no-repeat;
+                var(--hero-image, url('images/hero/pasture-wide.jpg')) center/cover no-repeat;
         }
 
         .hero-content {
@@ -426,9 +426,9 @@
         }
 
         /* ============================================
-           BIRTHDAY BANNER
+           SITE BANNER (birthdays / events / seasons)
            ============================================ */
-        .birthday-banner {
+        .site-banner {
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 1100;
@@ -442,15 +442,87 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.15);
             animation: slideDown 0.6s ease forwards;
         }
-        .birthday-banner strong { font-weight: 700; }
+        .site-banner strong { font-weight: 700; }
 
-        /* Push nav down when birthday banner is showing */
-        body.has-birthday .nav { top: 40px; }
-        body.has-birthday .hero { margin-top: 40px; }
+        /* Push nav down when site banner is showing */
+        body.has-banner .nav { top: 40px; }
+        body.has-banner .hero { margin-top: 40px; }
 
         @keyframes slideDown {
             from { transform: translateY(-100%); }
             to   { transform: translateY(0); }
+        }
+
+        /* ============================================
+           RANCH STATUS LINE (below intro)
+           ============================================ */
+        .ranch-status {
+            display: none;
+            text-align: center;
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--stone);
+            margin: -1.5rem auto 2rem;
+            max-width: 640px;
+            padding: 0 1.5rem;
+        }
+        .ranch-status.visible { display: block; }
+
+        /* ============================================
+           UPCOMING SECTION
+           ============================================ */
+        .upcoming-section {
+            display: none;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 3rem 2rem 1rem;
+        }
+        .upcoming-section.visible { display: block; }
+        .upcoming-section .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sage);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .upcoming-list { list-style: none; padding: 0; margin: 0; }
+        .upcoming-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .upcoming-item::before {
+            content: '';
+            position: absolute;
+            left: 5px; top: 0; bottom: -1.5rem;
+            width: 2px;
+            background: var(--linen);
+        }
+        .upcoming-item:last-child::before { display: none; }
+        .upcoming-dot {
+            position: absolute;
+            left: 0; top: 6px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--sage);
+            background: var(--cream);
+        }
+        .upcoming-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--earth);
+            margin: 0 0 0.15rem;
+        }
+        .upcoming-date {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sage);
         }
 
         /* ============================================
@@ -683,6 +755,9 @@
 </head>
 <body>
 
+    <!-- SITE BANNER (auto-shown via JS for birthdays, events, or seasonal notes) -->
+    <div class="site-banner" id="siteBanner" style="display:none"></div>
+
     <!-- NAVIGATION -->
     <nav class="nav" id="nav">
         <a href="index.html" class="nav-logo">
@@ -745,6 +820,13 @@
             </p>
             <div class="intro-rule"></div>
         </div>
+        <p class="ranch-status" id="ranchStatus"></p>
+    </section>
+
+    <!-- UPCOMING (populated by calendar system when events are within 90 days) -->
+    <section class="upcoming-section reveal" id="upcoming">
+        <p class="section-label">Coming Up</p>
+        <ul class="upcoming-list" id="upcomingList"></ul>
     </section>
 
     <!-- THREE CARDS -->
@@ -790,22 +872,6 @@
             </a>
         </div>
     </section>
-
-    <!-- BIRTHDAY BANNER (auto-shown via JS when it's someone's birthday) -->
-    <div class="birthday-banner" id="birthdayBanner" style="display:none">
-        <span>🎂</span> <span id="birthdayMessage"></span> <span>🎂</span>
-    </div>
-
-    <!--
-        BIRTHDAY DATA: Add each family member here. Claude Code will fill these in.
-        Format: data-name="First Name" data-birthday="YYYY-MM-DD" data-role="title"
-        The mascot entry also powers the auto-age calculation in the mascot section.
-    -->
-    <div id="birthdayData" style="display:none">
-        <span data-name="Marty" data-birthday="1965-05-20" data-role="owner"></span>
-        <span data-name="Roianne" data-birthday="1975-06-28" data-role="owner"></span>
-        <span data-name="Theodore" data-birthday="2025-01-11" data-role="mascot"></span>
-    </div>
 
     <!-- MASCOT / JUNIOR RANCH HAND -->
     <section class="mascot reveal" id="mascotSection" data-birthday="2025-01-11" data-name="Theodore">
@@ -898,60 +964,8 @@
         }, { threshold: 0.15 });
         reveals.forEach(el => observer.observe(el));
 
-        // Birthday system — checks all family members
-        (function() {
-            const entries = document.querySelectorAll('#birthdayData span');
-            const today = new Date();
-            const todayMonth = today.getMonth();
-            const todayDate = today.getDate();
-            const birthdayNames = [];
-
-            entries.forEach(function(entry) {
-                const bday = entry.dataset.birthday;
-                const name = entry.dataset.name;
-                const role = entry.dataset.role;
-                if (!bday || bday === 'YYYY-MM-DD') return;
-
-                const birthday = new Date(bday + 'T00:00:00');
-                const isBirthday = todayMonth === birthday.getMonth() && todayDate === birthday.getDate();
-
-                // Calculate age for mascot section
-                if (role === 'mascot') {
-                    let age = today.getFullYear() - birthday.getFullYear();
-                    const m = todayMonth - birthday.getMonth();
-                    if (m < 0 || (m === 0 && todayDate < birthday.getDate())) age--;
-                    const ageEl = document.getElementById('mascotAge');
-                    if (ageEl) ageEl.textContent = age === 1 ? 'a year' : age + ' years';
-                }
-
-                if (isBirthday) {
-                    birthdayNames.push({ name: name, role: role });
-                }
-            });
-
-            // Show birthday banner if anyone has a birthday today
-            if (birthdayNames.length > 0) {
-                var msg = '';
-                if (birthdayNames.length === 1) {
-                    var p = birthdayNames[0];
-                    if (p.role === 'mascot') {
-                        msg = 'Happy Birthday to our Junior Ranch Hand, <strong>' + p.name + '</strong>!';
-                    } else {
-                        msg = 'Happy Birthday to <strong>' + p.name + '</strong> from the Summers Ranch family!';
-                    }
-                } else {
-                    var names = birthdayNames.map(function(p) { return p.name; });
-                    msg = 'Happy Birthday to <strong>' + names.join('</strong> and <strong>') + '</strong>!';
-                }
-                var banner = document.getElementById('birthdayBanner');
-                var msgEl = document.getElementById('birthdayMessage');
-                if (msgEl) msgEl.innerHTML = msg;
-                if (banner) {
-                    banner.style.display = '';
-                    document.body.classList.add('has-birthday');
-                }
-            }
-        })();
+        // Ranch calendar system is loaded from js/ranch-calendar.js
     </script>
+    <script src="js/ranch-calendar.js"></script>
 </body>
 </html>

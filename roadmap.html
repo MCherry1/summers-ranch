@@ -198,9 +198,73 @@
             .nav-toggle { display: flex; }
         }
         @media (min-width: 769px) { .mobile-menu { display: none !important; } }
+
+        /* SITE BANNER */
+        .site-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1100;
+            background: linear-gradient(135deg, var(--saddle), var(--rust));
+            color: var(--warm-white); text-align: center;
+            padding: 0.65rem 2rem; font-size: 0.9rem; font-weight: 400;
+            letter-spacing: 0.03em; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            animation: slideDown 0.6s ease forwards;
+        }
+        .site-banner strong { font-weight: 700; }
+        body.has-banner .nav { top: 40px; }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to   { transform: translateY(0); }
+        }
+
+        /* UPCOMING (shares visual vocabulary with .milestone) */
+        .upcoming-section {
+            display: none;
+            max-width: 760px;
+            margin: 0 auto 3rem;
+            padding: 0 2rem;
+        }
+        .upcoming-section.visible { display: block; }
+        .upcoming-section .section-label {
+            font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--sage); margin-bottom: 1.5rem;
+            display: block;
+        }
+        .upcoming-list { list-style: none; padding: 0; margin: 0; }
+        .upcoming-item {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .upcoming-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: -1.5rem;
+            width: 2px; background: var(--linen);
+        }
+        .upcoming-item:last-child::before { display: none; }
+        .upcoming-dot {
+            position: absolute;
+            left: -5px; top: 4px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--sage);
+            background: var(--cream);
+        }
+        .upcoming-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem; font-weight: 600;
+            color: var(--earth);
+            margin: 0 0 0.2rem;
+        }
+        .upcoming-date {
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--sage);
+        }
     </style>
 </head>
 <body>
+    <div class="site-banner" id="siteBanner" style="display:none"></div>
     <nav class="nav" id="nav">
         <a href="index.html" class="nav-logo">Summers Ranch<span>Est. 2001</span></a>
         <ul class="nav-links">
@@ -221,6 +285,12 @@
         <h1>What's Next</h1>
         <p>We're just getting started. Here's what we're working on and where we're headed.</p>
     </div>
+
+    <!-- UPCOMING (populated by calendar system when events are within 90 days) -->
+    <section class="upcoming-section reveal" id="upcoming">
+        <span class="section-label">Coming Up</span>
+        <ul class="upcoming-list" id="upcomingList"></ul>
+    </section>
 
     <div class="roadmap">
 
@@ -320,5 +390,6 @@
         const observer = new IntersectionObserver((entries) => { entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 100); observer.unobserve(e.target); } }); }, { threshold: 0.15 });
         reveals.forEach(el => observer.observe(el));
     </script>
+    <script src="js/ranch-calendar.js"></script>
 </body>
 </html>
