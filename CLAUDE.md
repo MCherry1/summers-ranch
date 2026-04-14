@@ -228,9 +228,115 @@ See `spec/design-spec.md` for the full aesthetic specification. Key points:
 
 ---
 
+## Admin Panel
+
+The owners edit their herd data via a mobile-friendly admin page at
+`/admin.html`. The page is password-protected but publicly reachable — there's
+a subtle "Admin" link in the footer of every page. Anyone with the password
+can edit the herd.
+
+### How auth works (encrypted-PAT-plus-password)
+
+Writing to `cattle-data.json` on `main` requires a GitHub Personal Access
+Token. We don't want the owners copy-pasting long tokens on every phone reset,
+so we store an **encrypted** PAT in the repo itself, unlockable by a password
+the owners actually remember.
+
+- `admin-key.json` — committed to the repo, holds the encrypted PAT blob.
+  Schema: `{ algorithm, iterations, salt, iv, ciphertext, hint }`. Encryption
+  is PBKDF2-SHA256 (600k iterations) → AES-GCM. The unencrypted token never
+  touches disk or localStorage; it lives in a closure variable on `admin.html`
+  while the session is active, and is dropped on "Sign out" or page reload.
+- `admin-setup.html` — one-time setup page. The builder:
+  1. Generates a fine-grained GitHub PAT with **Contents: Read and write** on
+     `mcherry1/summers-ranch` only, 1-year expiration.
+  2. Opens `admin-setup.html`, pastes the PAT, picks a password, optionally
+     adds a hint.
+  3. Copies the generated JSON blob into `admin-key.json` and commits.
+  4. Never shows the PAT to anyone.
+- `admin.html` — password gate → animal list → inline edit form → save. On
+  unlock, it fetches `admin-key.json`, derives the key from the typed
+  password, decrypts, and keeps the PAT in memory. Wrong passwords return an
+  error without leaking state.
+
+### Security honest-talk
+
+The encrypted blob is in a public repo. Security rests on password strength
+plus the PBKDF2 work factor (600k iterations ≈ 200 ms per guess on a phone,
+few ms on GPU). A 3+ word passphrase takes years to brute-force; a weak
+password like `marty2001` falls in minutes.
+
+Blast radius if the password is cracked: attacker can vandalize
+`cattle-data.json` and commit arbitrary HTML to the repo. Recovery:
+
+1. Revoke the old PAT on GitHub.
+2. Generate a fresh PAT.
+3. Re-run `admin-setup.html` with a stronger password.
+4. Commit the new `admin-key.json`.
+5. Revert any bad commits via `git revert`.
+
+Total recovery time: ~5 minutes. No permanent damage because the token's
+scope is one public repo.
+
+### Edit scope
+
+The admin form writes these fields per animal:
+
+- `name` — text
+- `born` — free-form text (e.g., "Spring 2024", "March 2021")
+- `sex` — dropdown: bull / cow / heifer / steer / calf
+- `sire` — dropdown populated from `data.sires` (with an "unknown" option)
+- `dam` — dropdown populated from `data.dams` (with an "unknown" option)
+- `status` — dropdown: breeding / sale / sold
+- `notes` — textarea
+- `photos` — reorder only (tap any photo to mark as primary; primary moves
+  to index 0 so `cattle.html` shows it on the card)
+
+The form **never** creates new animals or deletes them. New animals are
+created by the photo pipeline (iOS Shortcut → `images/inbox/` → Action →
+`process_photos.py` auto-adds new `tag-*` entries to `cattle-data.json`).
+Deletion, if ever needed, is a manual edit of `cattle-data.json` on GitHub.
+
+### Save flow (one commit per animal)
+
+When the user taps Save on an animal:
+
+1. Re-fetch `cattle-data.json` via `GET /repos/mcherry1/summers-ranch/contents/cattle-data.json?ref=main`
+   → gets the fresh content and SHA.
+2. Merge the edited fields into the fetched copy.
+3. Rebuild `data.sires` / `data.dams` from the updated `sex` field.
+4. Update `data.meta.last_updated` to the current UTC timestamp.
+5. `PUT` the file back with a commit message like `Update tag #125 (Bessie)`.
+6. On 409/422 conflict (stale SHA): retry once with the freshest SHA. If it
+   still fails, show a "Reload" toast.
+
+Every save is one commit. No batching, no dirty state. Clean git history.
+
+### Recovery if things go wrong
+
+- **Forgot the password**: re-run `admin-setup.html` with a new password and
+  commit the new `admin-key.json`. Old password is dead.
+- **Token expired or revoked**: generate a new PAT, re-run setup.
+- **Bad edit**: revert the commit on GitHub. Each save is a single,
+  self-contained commit identified by the animal's tag in the message.
+- **cattle-data.json corrupted**: `git log cattle-data.json` + `git checkout`
+  to a known-good version.
+
+### Files
+
+- `admin.html` — the panel itself (password gate + animal list + edit form)
+- `admin-setup.html` — the one-time PAT encryption page
+- `admin-key.json` — the encrypted PAT blob (committed, public)
+- `cattle-data.json` — the data being edited (NOT to be manually edited while
+  the admin panel is open, will cause a save conflict)
+
+---
+
 ## Reference Docs in This Repo
 
 - `spec/design-spec.md` — Full design specification with color palette, typography, page layouts
 - `docs/PHOTO-GUIDE.md` — How to add/update photos (for the ranch owners after handoff)
 - `docs/IOS-SHORTCUT-GUIDE.md` — Building an iOS Shortcut for one-tap photo uploads
 - `site-config.json` — Content configuration template
+- `cattle-data.json` — Herd data (edited via `admin.html`)
+- `admin.html` / `admin-setup.html` / `admin-key.json` — Admin panel (see section above)

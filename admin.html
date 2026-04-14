@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Herd Admin — Summers Ranch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --earth: #3D2B1F; --saddle: #8B6914; --sage: #6B7F5E; --rust: #A0522D;
+            --cream: #FAF6F0; --linen: #F0EBE3; --charcoal: #2C2C2C; --stone: #7A756F;
+            --warm-white: #FFFDF9; --gold: #C6A84B;
+            --font-display: 'Cormorant Garamond', 'Georgia', serif;
+            --font-body: 'Lato', 'Segoe UI', sans-serif;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            color: var(--charcoal);
+            background: var(--cream);
+            line-height: 1.65;
+            font-weight: 300;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; cursor: pointer; border: none; }
+        img { display: block; max-width: 100%; }
+
+        /* TOP BAR */
+        .topbar {
+            background: var(--earth);
+            color: var(--warm-white);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .topbar-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+        .topbar-title small {
+            display: block;
+            font-size: 0.55em;
+            letter-spacing: 0.25em;
+            opacity: 0.6;
+            font-weight: 400;
+            text-transform: uppercase;
+            font-family: var(--font-body);
+        }
+        .signout-btn {
+            background: transparent;
+            color: rgba(255,253,249,0.7);
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255,253,249,0.25);
+            border-radius: 2px;
+        }
+        .signout-btn:hover { color: var(--warm-white); border-color: var(--warm-white); }
+
+        /* GATE (password screen) */
+        .gate {
+            min-height: calc(100vh - 3.75rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.25rem;
+        }
+        .gate-card {
+            max-width: 420px;
+            width: 100%;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 4px;
+            padding: 2rem 1.75rem;
+            text-align: center;
+        }
+        .gate-card .section-label {
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.3em; text-transform: uppercase;
+            color: var(--sage); margin-bottom: 0.4rem;
+        }
+        .gate-card h1 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--earth);
+            margin-bottom: 0.75rem;
+        }
+        .gate-card p.lead {
+            color: var(--stone);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .gate-card input[type="password"] {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: 17px;
+            padding: 1rem 1rem;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 2px;
+            background: var(--cream);
+            color: var(--charcoal);
+            outline: none;
+            text-align: center;
+            letter-spacing: 0.05em;
+            transition: border-color 0.3s;
+            margin-bottom: 0.75rem;
+        }
+        .gate-card input[type="password"]:focus { border-color: var(--saddle); }
+        .gate-card .hint {
+            font-size: 0.82rem;
+            color: var(--stone);
+            font-style: italic;
+            margin-bottom: 1rem;
+        }
+        .gate-card .error {
+            display: none;
+            background: rgba(160,82,45,0.08);
+            color: var(--rust);
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid var(--rust);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .gate-card .error.show { display: block; }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            background: var(--earth);
+            border: 1px solid var(--earth);
+            border-radius: 2px;
+            min-height: 52px;
+            transition: all 0.3s;
+        }
+        .btn:hover:not(:disabled) { background: var(--rust); border-color: var(--rust); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary {
+            background: transparent;
+            color: var(--earth);
+        }
+        .btn-secondary:hover:not(:disabled) { background: var(--linen); }
+        .btn-inline { width: auto; padding: 0.75rem 1.25rem; min-height: 44px; font-size: 0.75rem; }
+
+        /* MAIN PANEL */
+        .panel {
+            display: none;
+            padding: 1.5rem 1rem 4rem;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        .panel.show { display: block; }
+        .panel-header {
+            margin-bottom: 1.5rem;
+            padding: 0 0.25rem;
+        }
+        .panel-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--earth);
+            margin-bottom: 0.2rem;
+        }
+        .panel-header p {
+            font-size: 0.85rem;
+            color: var(--stone);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(200%);
+            background: var(--earth);
+            color: var(--warm-white);
+            padding: 0.85rem 1.5rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            z-index: 2000;
+            transition: transform 0.4s ease;
+            max-width: calc(100% - 2rem);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: var(--sage); }
+        .toast.error { background: var(--rust); }
+
+        /* ANIMAL CARDS */
+        .animal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .animal {
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            transition: box-shadow 0.3s;
+        }
+        .animal:hover { box-shadow: 0 4px 20px rgba(61,43,31,0.08); }
+        .animal-summary {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            cursor: pointer;
+            min-height: 72px;
+        }
+        .animal-thumb {
+            width: 64px; height: 64px;
+            border-radius: 3px;
+            background: var(--linen) center/cover no-repeat;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+        .animal-main { flex: 1; min-width: 0; }
+        .animal-tag-line {
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--sage);
+        }
+        .animal-name-line {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--earth);
+            margin-top: 0.1rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .animal-name-line.unnamed { color: var(--stone); font-style: italic; font-weight: 400; }
+        .animal-status-chip {
+            display: inline-block;
+            margin-top: 0.25rem;
+            font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 0.14em; text-transform: uppercase;
+            padding: 0.18rem 0.5rem;
+            border-radius: 2px;
+        }
+        .status-breeding { background: rgba(139,105,20,0.12); color: var(--saddle); }
+        .status-sale { background: rgba(107,127,94,0.15); color: var(--sage); }
+        .status-sold { background: rgba(122,117,111,0.15); color: var(--stone); }
+        .chev {
+            font-size: 1.4rem;
+            color: var(--stone);
+            transition: transform 0.3s;
+            padding-left: 0.5rem;
+            flex-shrink: 0;
+        }
+        .animal.open .chev { transform: rotate(90deg); }
+
+        /* EDIT FORM */
+        .animal-form {
+            display: none;
+            padding: 0.5rem 1rem 1.25rem;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            background: var(--cream);
+        }
+        .animal.open .animal-form { display: block; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--stone); margin-bottom: 0.35rem;
+        }
+        .form-group input[type="text"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: 16px;
+            padding: 0.85rem 0.9rem;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 2px;
+            background: var(--warm-white);
+            color: var(--charcoal);
+            outline: none;
+            transition: border-color 0.3s;
+            min-height: 48px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237A756F' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { border-color: var(--saddle); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 480px) {
+            .form-row2 { grid-template-columns: 1fr; }
+        }
+        .photo-picker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.2rem;
+        }
+        .photo-pick {
+            width: 70px; height: 70px;
+            border-radius: 3px;
+            background: var(--linen) center/cover no-repeat;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .photo-pick:hover { transform: scale(1.04); }
+        .photo-pick.primary { border-color: var(--gold); }
+        .photo-pick.primary::after {
+            content: 'PRIMARY';
+            position: absolute;
+            bottom: -1px; left: -2px; right: -2px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            background: var(--gold);
+            color: var(--earth);
+            padding: 1px 0;
+            text-align: center;
+        }
+        .photo-picker-empty {
+            font-size: 0.82rem;
+            color: var(--stone);
+            font-style: italic;
+        }
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+        }
+        .form-actions .btn { width: auto; flex: 1; }
+
+        @media (min-width: 640px) {
+            .panel { padding: 2rem 1.5rem 4rem; }
+            .animal-summary { padding: 1rem 1.25rem; }
+            .animal-thumb { width: 80px; height: 80px; }
+            .animal-name-line { font-size: 1.3rem; }
+            .animal-form { padding: 0.5rem 1.25rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-title">
+            Summers Ranch
+            <small>Herd Admin</small>
+        </div>
+        <button class="signout-btn" id="signoutBtn" style="display:none">Sign out</button>
+    </div>
+
+    <!-- GATE -->
+    <div class="gate" id="gate">
+        <div class="gate-card">
+            <p class="section-label">Restricted</p>
+            <h1>Enter password</h1>
+            <p class="lead">This lets you edit the herd records on the public site.</p>
+            <p class="hint" id="hintText"></p>
+            <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Password" autofocus>
+            <div class="error" id="gateError"></div>
+            <button class="btn" id="unlockBtn">Unlock</button>
+        </div>
+    </div>
+
+    <!-- PANEL -->
+    <div class="panel" id="panel">
+        <div class="panel-header">
+            <h2>Your herd</h2>
+            <p id="herdMeta">Loading…</p>
+        </div>
+        <div class="animal-list" id="animalList"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============================================================
+        // Summers Ranch Admin Panel
+        //
+        // Data flow:
+        //   1. Password unlocks admin-key.json -> PBKDF2 -> AES-GCM decrypt -> PAT in closure
+        //   2. GitHub API GET cattle-data.json (main branch) -> in-memory state
+        //   3. User edits inline, taps Save
+        //   4. GitHub API PUT cattle-data.json with new contents + sha
+        //   5. On conflict, refetch once and retry
+        // ============================================================
+
+        const REPO = 'mcherry1/summers-ranch';
+        const BRANCH = 'main';
+        const DATA_PATH = 'cattle-data.json';
+        const API_URL = `https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`;
+
+        const $ = id => document.getElementById(id);
+        const gate = $('gate');
+        const panel = $('panel');
+        const passwordInput = $('passwordInput');
+        const unlockBtn = $('unlockBtn');
+        const gateError = $('gateError');
+        const hintText = $('hintText');
+        const signoutBtn = $('signoutBtn');
+        const herdMeta = $('herdMeta');
+        const animalList = $('animalList');
+        const toast = $('toast');
+
+        // Session state — lives in closure, never in localStorage
+        let token = null;       // GitHub PAT after decryption
+        let data = null;        // cattle-data.json contents
+        let dataSha = null;     // latest SHA for writes
+        let hintCache = '';     // password hint from admin-key.json
+
+        // ---------- Toast ----------
+        let toastTimer = null;
+        function showToast(msg, kind) {
+            toast.className = 'toast';
+            toast.classList.add(kind || '');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        // ---------- Utilities ----------
+        function b64decode(b64) {
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+        }
+        function b64encode(bytes) {
+            let bin = '';
+            const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+            for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+            return btoa(bin);
+        }
+        function utf8encode(s) { return new TextEncoder().encode(s); }
+        function utf8decode(buf) { return new TextDecoder().decode(buf); }
+
+        // ---------- Hint fetch on load ----------
+        (async function loadHint() {
+            try {
+                const res = await fetch('admin-key.json?t=' + Date.now());
+                if (!res.ok) return;
+                const blob = await res.json();
+                if (blob.hint) {
+                    hintCache = blob.hint;
+                    hintText.textContent = 'Hint: ' + blob.hint;
+                }
+            } catch {}
+        })();
+
+        // ---------- Unlock ----------
+        async function unlock() {
+            const pw = passwordInput.value;
+            if (!pw) {
+                gateError.textContent = 'Type your password.';
+                gateError.classList.add('show');
+                return;
+            }
+            gateError.classList.remove('show');
+            unlockBtn.disabled = true;
+            unlockBtn.textContent = 'Unlocking…';
+
+            try {
+                const res = await fetch('admin-key.json?t=' + Date.now());
+                if (!res.ok) throw new Error('Could not load admin-key.json');
+                const blob = await res.json();
+                if (!blob.ciphertext) {
+                    throw new Error('Admin not configured yet. Run admin-setup.html first.');
+                }
+
+                const salt = b64decode(blob.salt);
+                const iv = b64decode(blob.iv);
+                const ciphertext = b64decode(blob.ciphertext);
+
+                const material = await crypto.subtle.importKey(
+                    'raw', utf8encode(pw), 'PBKDF2', false, ['deriveKey']
+                );
+                const key = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt, iterations: blob.iterations || 600000, hash: 'SHA-256' },
+                    material,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['decrypt']
+                );
+
+                const plain = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv },
+                    key,
+                    ciphertext
+                );
+                token = utf8decode(plain);
+
+                // Clear password input immediately
+                passwordInput.value = '';
+
+                // Fetch the herd data
+                await loadCattleData();
+
+                gate.style.display = 'none';
+                panel.classList.add('show');
+                signoutBtn.style.display = 'inline-block';
+                render();
+            } catch (e) {
+                console.error(e);
+                if (e.name === 'OperationError') {
+                    gateError.textContent = 'Wrong password.';
+                } else {
+                    gateError.textContent = e.message || 'Could not unlock.';
+                }
+                gateError.classList.add('show');
+                passwordInput.focus();
+                passwordInput.select();
+            } finally {
+                unlockBtn.disabled = false;
+                unlockBtn.textContent = 'Unlock';
+            }
+        }
+
+        unlockBtn.addEventListener('click', unlock);
+        passwordInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') unlock();
+        });
+
+        // ---------- Sign out ----------
+        signoutBtn.addEventListener('click', () => {
+            token = null;
+            data = null;
+            dataSha = null;
+            animalList.innerHTML = '';
+            panel.classList.remove('show');
+            gate.style.display = 'flex';
+            signoutBtn.style.display = 'none';
+            passwordInput.value = '';
+            passwordInput.focus();
+        });
+
+        // ---------- Load cattle data ----------
+        async function loadCattleData() {
+            const res = await fetch(API_URL + '?ref=' + BRANCH, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/vnd.github+json'
+                }
+            });
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('Token rejected (401). Re-run admin-setup.html with a fresh token.');
+                if (res.status === 404) throw new Error('cattle-data.json not found in the repo.');
+                throw new Error('GitHub API error: ' + res.status);
+            }
+            const body = await res.json();
+            dataSha = body.sha;
+            // content is base64 with newlines
+            const contentBytes = b64decode(body.content.replace(/\n/g, ''));
+            const json = utf8decode(contentBytes);
+            data = JSON.parse(json);
+        }
+
+        // ---------- Render ----------
+        function render() {
+            const animals = (data.animals || []).slice();
+            animals.sort((a, b) => {
+                const an = parseInt(a.tag, 10);
+                const bn = parseInt(b.tag, 10);
+                if (!isNaN(an) && !isNaN(bn)) return an - bn;
+                return String(a.tag).localeCompare(String(b.tag));
+            });
+
+            const named = animals.filter(a => a.name).length;
+            const lastUpdated = (data.meta && data.meta.last_updated) || 'unknown';
+            herdMeta.textContent = `${animals.length} animals · ${named} named · updated ${lastUpdated}`;
+
+            animalList.innerHTML = '';
+            animals.forEach(animal => {
+                animalList.appendChild(buildAnimalElement(animal));
+            });
+
+            if (animals.length === 0) {
+                animalList.innerHTML = '<p style="text-align:center;color:var(--stone);padding:2rem">No animals yet. Upload a photo via the shortcut to add one.</p>';
+            }
+        }
+
+        function primaryPhoto(animal) {
+            const photos = animal.photos || [];
+            return photos[0] || 'images/cattle/brand.jpg';
+        }
+
+        function buildAnimalElement(animal) {
+            const el = document.createElement('div');
+            el.className = 'animal';
+            el.dataset.tag = animal.tag;
+
+            const statusClass = animal.status === 'sale' ? 'status-sale' : animal.status === 'sold' ? 'status-sold' : 'status-breeding';
+            const statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
+
+            el.innerHTML = `
+                <div class="animal-summary">
+                    <div class="animal-thumb" style="background-image: url('${primaryPhoto(animal)}?t=${Date.now()}')"></div>
+                    <div class="animal-main">
+                        <p class="animal-tag-line">Tag #${escapeHtml(animal.tag)}</p>
+                        <p class="animal-name-line${animal.name ? '' : ' unnamed'}">${escapeHtml(animal.name || 'Unnamed')}</p>
+                        <span class="animal-status-chip ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="chev">&rsaquo;</div>
+                </div>
+                <div class="animal-form">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" data-field="name" value="${escapeAttr(animal.name || '')}" placeholder="e.g., Bessie">
+                    </div>
+                    <div class="form-row2">
+                        <div class="form-group">
+                            <label>Born</label>
+                            <input type="text" data-field="born" value="${escapeAttr(animal.born || '')}" placeholder="e.g., Spring 2024">
+                        </div>
+                        <div class="form-group">
+                            <label>Sex</label>
+                            <select data-field="sex">
+                                ${sexOptions(animal.sex)}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row2">
+                        <div class="form-group">
+                            <label>Sire</label>
+                            <select data-field="sire">
+                                ${tagOptions(data.sires, animal.sire, animal.tag)}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Dam</label>
+                            <select data-field="dam">
+                                ${tagOptions(data.dams, animal.dam, animal.tag)}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select data-field="status">
+                            ${statusOptions(animal.status)}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea data-field="notes" placeholder="Anything worth remembering">${escapeHtml(animal.notes || '')}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Photos · tap to set primary</label>
+                        ${photoPicker(animal)}
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" data-action="cancel">Cancel</button>
+                        <button class="btn" data-action="save">Save</button>
+                    </div>
+                </div>
+            `;
+
+            // Expand/collapse on summary click
+            el.querySelector('.animal-summary').addEventListener('click', () => {
+                const wasOpen = el.classList.contains('open');
+                document.querySelectorAll('.animal.open').forEach(a => a.classList.remove('open'));
+                if (!wasOpen) el.classList.add('open');
+            });
+
+            // Photo primary picker
+            el.querySelectorAll('.photo-pick').forEach(pick => {
+                pick.addEventListener('click', e => {
+                    e.stopPropagation();
+                    el.querySelectorAll('.photo-pick').forEach(p => p.classList.remove('primary'));
+                    pick.classList.add('primary');
+                });
+            });
+
+            // Action buttons
+            el.querySelector('[data-action="cancel"]').addEventListener('click', e => {
+                e.stopPropagation();
+                el.classList.remove('open');
+                // Re-render this one to drop unsaved field edits
+                const fresh = buildAnimalElement(animal);
+                el.replaceWith(fresh);
+            });
+            el.querySelector('[data-action="save"]').addEventListener('click', async e => {
+                e.stopPropagation();
+                await saveAnimal(el, animal);
+            });
+
+            return el;
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function escapeAttr(s) { return escapeHtml(s); }
+
+        function sexOptions(current) {
+            const opts = [
+                { v: '', label: '—' },
+                { v: 'bull', label: 'Bull' },
+                { v: 'cow', label: 'Cow' },
+                { v: 'heifer', label: 'Heifer' },
+                { v: 'steer', label: 'Steer' },
+                { v: 'calf', label: 'Calf' }
+            ];
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === (current || '') ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
+        function statusOptions(current) {
+            const opts = [
+                { v: 'breeding', label: 'Breeding Stock' },
+                { v: 'sale',     label: 'For Sale' },
+                { v: 'sold',     label: 'Sold' }
+            ];
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === (current || 'breeding') ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
+        function tagOptions(list, current, excludeTag) {
+            const tags = (list || []).filter(t => t !== excludeTag);
+            let html = '<option value="">— unknown —</option>';
+            tags.forEach(t => {
+                const sel = t === current ? ' selected' : '';
+                html += `<option value="${escapeAttr(t)}"${sel}>#${escapeHtml(t)}</option>`;
+            });
+            // If current is not in list (historical), still show it
+            if (current && !tags.includes(current) && current !== excludeTag) {
+                html += `<option value="${escapeAttr(current)}" selected>#${escapeHtml(current)} (historical)</option>`;
+            }
+            return html;
+        }
+
+        function photoPicker(animal) {
+            const photos = animal.photos || [];
+            if (photos.length === 0) {
+                return '<p class="photo-picker-empty">No photos yet. Upload via the iOS shortcut — it routes by tag number.</p>';
+            }
+            const html = photos.map((p, i) =>
+                `<div class="photo-pick${i === 0 ? ' primary' : ''}" data-photo="${escapeAttr(p)}" style="background-image: url('${escapeAttr(p)}')"></div>`
+            ).join('');
+            return '<div class="photo-picker">' + html + '</div>';
+        }
+
+        // ---------- Save ----------
+        async function saveAnimal(el, originalAnimal) {
+            const saveBtn = el.querySelector('[data-action="save"]');
+            const cancelBtn = el.querySelector('[data-action="cancel"]');
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+            saveBtn.textContent = 'Saving…';
+
+            try {
+                // Build the edited animal from form values
+                const edited = Object.assign({}, originalAnimal);
+                el.querySelectorAll('[data-field]').forEach(input => {
+                    edited[input.dataset.field] = input.value.trim();
+                });
+
+                // Photo order: move the marked primary to index 0
+                const picks = el.querySelectorAll('.photo-pick');
+                if (picks.length > 0) {
+                    const ordered = [];
+                    let primary = null;
+                    picks.forEach(p => {
+                        if (p.classList.contains('primary')) primary = p.dataset.photo;
+                        else ordered.push(p.dataset.photo);
+                    });
+                    if (primary) ordered.unshift(primary);
+                    edited.photos = ordered;
+                }
+
+                // Try once, retry on 409/conflict
+                let ok = false;
+                let attempts = 0;
+                while (!ok && attempts < 2) {
+                    attempts++;
+                    // Refresh dataSha (critical for the retry case)
+                    if (attempts > 1) await loadCattleData();
+
+                    // Merge the edit into the freshest copy of data
+                    const idx = data.animals.findIndex(a => a.tag === originalAnimal.tag);
+                    if (idx === -1) throw new Error('Animal disappeared from data file');
+                    data.animals[idx] = edited;
+
+                    // Update meta
+                    if (!data.meta) data.meta = {};
+                    data.meta.last_updated = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+
+                    // Rebuild sires/dams lists from sex
+                    data.sires = [...new Set(data.animals.filter(a => !a.sex || a.sex === 'bull' || a.sex === 'steer').map(a => a.tag))].sort();
+                    data.dams  = [...new Set(data.animals.filter(a => !a.sex || a.sex === 'cow' || a.sex === 'heifer').map(a => a.tag))].sort();
+
+                    const jsonStr = JSON.stringify(data, null, 2) + '\n';
+                    const contentB64 = b64encode(utf8encode(jsonStr));
+
+                    const commitMsg = edited.name
+                        ? `Update tag #${edited.tag} (${edited.name})`
+                        : `Update tag #${edited.tag}`;
+
+                    const res = await fetch(API_URL, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Accept': 'application/vnd.github+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: commitMsg,
+                            content: contentB64,
+                            sha: dataSha,
+                            branch: BRANCH
+                        })
+                    });
+
+                    if (res.ok) {
+                        const body = await res.json();
+                        dataSha = body.content.sha;
+                        ok = true;
+                    } else if (res.status === 409 || res.status === 422) {
+                        // Stale SHA — refetch and retry once
+                        if (attempts >= 2) throw new Error('Save conflict — someone edited this since you started. Reload the page.');
+                        continue;
+                    } else if (res.status === 401) {
+                        throw new Error('Token rejected (401). Regenerate via admin-setup.html.');
+                    } else {
+                        const errBody = await res.text();
+                        throw new Error(`Save failed (${res.status}): ${errBody.slice(0, 120)}`);
+                    }
+                }
+
+                showToast(`Saved #${edited.tag}`, 'success');
+                // Re-render the one animal to reflect cleaned-up state
+                const fresh = buildAnimalElement(edited);
+                el.replaceWith(fresh);
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'Save failed', 'error');
+                saveBtn.disabled = false;
+                cancelBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        }
+    </script>
+</body>
+</html>
