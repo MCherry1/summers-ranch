@@ -59,6 +59,23 @@
             text-transform: uppercase;
             font-family: var(--font-body);
         }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .topbar-link {
+            color: rgba(255,253,249,0.7);
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255,253,249,0.25);
+            border-radius: 2px;
+            text-decoration: none;
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .topbar-link:hover { color: var(--warm-white); border-color: var(--warm-white); }
         .signout-btn {
             background: transparent;
             color: rgba(255,253,249,0.7);
@@ -451,7 +468,10 @@
             Summers Ranch
             <small>Herd Admin</small>
         </div>
-        <button class="signout-btn" id="signoutBtn" style="display:none">Sign out</button>
+        <div class="topbar-actions">
+            <a href="index.html" class="topbar-link">&larr; Site</a>
+            <button class="signout-btn" id="signoutBtn" style="display:none">Sign out</button>
+        </div>
     </div>
 
     <!-- GATE -->
