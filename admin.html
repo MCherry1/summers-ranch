@@ -1105,50 +1105,51 @@
                 out.push({
                     id: 'empty-herd',
                     icon: '🐄',
+                    priority: 'high',
                     text: 'Your herd is empty — add your first animal!'
                 });
                 return out;
             }
             const isVisible = a => a.status !== 'culled' && a.status !== 'deceased'
                                    && a.status !== 'reference' && a.source !== 'reference';
+
+            // Count how many animals are missing basic info (for summary)
+            let missingDetailsCount = 0;
+
             animals.forEach(a => {
                 if (!isVisible(a)) return;
                 const tag = a.tag;
                 const label = a.name ? `Tag #${tag} (${a.name})` : `Tag #${tag}`;
 
-                // Missing key fields — only flag herd animals, and only the
-                // fields the admin form captures.
-                const missing = [];
-                if (!a.born) missing.push('birth date');
-                if (!a.sex)  missing.push('sex');
-                if (!a.breed && !a.breed_detail) missing.push('breed');
-                if (missing.length) {
-                    out.push({
-                        id: 'missing-' + tag,
-                        tag: tag,
-                        icon: '⚠️',
-                        text: `${label} is missing ${missing.join(' and ')}`
-                    });
-                }
-
-                const photoDates = (a.photo_dates || []).filter(Boolean);
-                const newestPhotoDays = photoDates.length
-                    ? Math.min.apply(null, photoDates.map(daysSinceIso))
+                // Grace period: don't nag about missing fields on entries
+                // created in the last 7 days (they just uploaded photos, give
+                // them time to fill in details).
+                const photosDates = (a.photo_dates || []).filter(Boolean);
+                const newestPhotoDays = photosDates.length
+                    ? Math.min.apply(null, photosDates.map(daysSinceIso))
                     : Infinity;
+                const bornDays = daysSinceIso(a.born);
+                const entryAge = Math.min(
+                    isFinite(newestPhotoDays) ? newestPhotoDays : Infinity,
+                    isFinite(bornDays) ? bornDays : Infinity
+                );
+                const isNew = entryAge < 7;
 
-                // Stale photo: >6 months (183 days) since newest photo.
-                // Only nudge if the animal actually has photos to compare.
-                if ((a.photos || []).length > 0 && newestPhotoDays > 183 && isFinite(newestPhotoDays)) {
-                    const months = Math.floor(newestPhotoDays / 30);
-                    out.push({
-                        id: 'stale-' + tag,
-                        tag: tag,
-                        icon: '📷',
-                        text: `${label} hasn't been photographed in ${months} months`
-                    });
+                // Missing key fields — only flag after grace period.
+                // Only flag the essentials: born, sex, breed.
+                // Don't nag about registration, weights, calving ease, disposition,
+                // notes, name, or other "nice to have" fields.
+                if (!isNew) {
+                    const missing = [];
+                    if (!a.born) missing.push('birth date');
+                    if (!a.sex)  missing.push('sex');
+                    if (!a.breed && !a.breed_detail) missing.push('breed');
+                    if (missing.length) {
+                        missingDetailsCount++;
+                    }
                 }
 
-                // Sale without recent photo: >60 days old
+                // IMPORTANT: Sale without recent photo — this is revenue.
                 if (a.status === 'sale' && (a.photos || []).length > 0 &&
                     newestPhotoDays > 60 && isFinite(newestPhotoDays)) {
                     const months = Math.floor(newestPhotoDays / 30);
@@ -1159,13 +1160,38 @@
                         id: 'sale-stale-' + tag,
                         tag: tag,
                         icon: '🏷️',
+                        priority: 'high',
                         text: `${label} is for sale but photos are ${agePhrase} — buyers want current shots`
                     });
                 }
 
-                // No side-profile (requires photo_types data from the pipeline).
-                // Only nudge once classification exists — the check is a no-op
-                // for animals that haven't been through Claude yet.
+                // Sale with no photos at all
+                if (a.status === 'sale' && (a.photos || []).length === 0) {
+                    out.push({
+                        id: 'sale-nophoto-' + tag,
+                        tag: tag,
+                        icon: '🏷️',
+                        priority: 'high',
+                        text: `${label} is for sale with no photos — this should be your best-looking shot`
+                    });
+                }
+
+                // Stale photo: >6 months since newest photo. Lower priority.
+                // Only nudge if the animal actually has photos to compare.
+                if ((a.photos || []).length > 0 && newestPhotoDays > 183 && isFinite(newestPhotoDays)
+                    && a.status !== 'sale') {  // sale animals get the more urgent nudge above
+                    const months = Math.floor(newestPhotoDays / 30);
+                    out.push({
+                        id: 'stale-' + tag,
+                        tag: tag,
+                        icon: '📷',
+                        priority: 'low',
+                        text: `${label} hasn't been photographed in ${months} months`
+                    });
+                }
+
+                // No side-profile — low priority suggestion, only when
+                // classification data exists from the pipeline.
                 const types = a.photo_types || [];
                 const hasAnyClassification = types.some(t => t && t !== '');
                 if (hasAnyClassification && !types.includes('side-profile')) {
@@ -1173,10 +1199,27 @@
                         id: 'no-side-' + tag,
                         tag: tag,
                         icon: '📐',
+                        priority: 'low',
                         text: `${label} has no side profile — this is the #1 photo buyers want`
                     });
                 }
             });
+
+            // Summarize missing details as ONE nudge instead of 15 individual ones
+            if (missingDetailsCount > 0) {
+                const plural = missingDetailsCount === 1 ? 'animal needs' : 'animals need';
+                out.unshift({
+                    id: 'missing-details-summary',
+                    icon: '⚠️',
+                    priority: 'medium',
+                    text: `${missingDetailsCount} ${plural} basic details (birth date, sex, or breed)`
+                });
+            }
+
+            // Sort: high priority first, then medium, then low
+            const pOrder = { high: 0, medium: 1, low: 2 };
+            out.sort((a, b) => (pOrder[a.priority] || 1) - (pOrder[b.priority] || 1));
+
             return out;
         }
 
