@@ -280,6 +280,9 @@
                 configured email address.
             -->
             <form class="contact-form" action="https://formspree.io/f/mzdybyjl" method="POST">
+                <!-- Hidden _subject lets Formspree set the email subject line.
+                     Prefilled by the cattle-page "Inquire" CTA when present. -->
+                <input type="hidden" name="_subject" id="formSubject" value="New message from the Summers Ranch website">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="name">Name</label>
@@ -340,6 +343,38 @@
         const reveals = document.querySelectorAll('.reveal');
         const observer = new IntersectionObserver((entries) => { entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 120); observer.unobserve(e.target); } }); }, { threshold: 0.15 });
         reveals.forEach(el => observer.observe(el));
+
+        // Prefill the form when arriving from a cattle card's "Inquire About
+        // This Animal" CTA (cattle.html appends ?animal=<tag> to the URL).
+        // We look up the animal in cattle-data.json and drop a short draft
+        // into the message field plus a descriptive email subject.
+        (function() {
+            var qs = new URLSearchParams(window.location.search);
+            var tag = qs.get('animal');
+            if (!tag) return;
+            var subjEl = document.getElementById('formSubject');
+            var msgEl  = document.getElementById('message');
+            // Provisional fill — replaced once JSON lookup resolves
+            if (subjEl) subjEl.value = 'Inquiry about Tag #' + tag;
+            if (msgEl && !msgEl.value) {
+                msgEl.value = "Hi — I'm interested in Tag #" + tag +
+                    ". Could you tell me more about availability and price?\n\n";
+            }
+            fetch('cattle-data.json')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var animals = (data && data.animals) || [];
+                    var a = animals.find(function(x) { return String(x.tag) === String(tag); });
+                    if (!a) return;
+                    var label = a.name ? '#' + a.tag + ' — ' + a.name : '#' + a.tag;
+                    if (subjEl) subjEl.value = 'Inquiry about Tag ' + label;
+                    if (msgEl) {
+                        msgEl.value = "Hi — I'm interested in Tag " + label +
+                            ". Could you tell me more about availability and price?\n\n";
+                    }
+                })
+                .catch(function() { /* fall back to the provisional fill */ });
+        })();
     </script>
     <script src="js/ranch-calendar.js"></script>
 </body>
