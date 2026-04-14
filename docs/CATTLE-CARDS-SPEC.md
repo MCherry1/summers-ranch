@@ -358,10 +358,11 @@ Each empty field is a quiet professional development lesson. He doesn't have to 
 
 **Admin input types for new fields:**
 - `calving_ease`: Dropdown with labeled options: "1 — No assistance", "2 — Easy pull", "3 — Hard pull", "4 — Surgical", "5 — Abnormal presentation"
-- `disposition`: Dropdown: "Docile", "Calm", "Moderate", "Aggressive" (using plain words, not the technical 1-6 scale — Marty will relate better to words)
+- `disposition`: Dropdown using the BIF (Beef Improvement Federation) standard 1–6 scale: "1 — Docile", "2 — Restless", "3 — Nervous", "4 — Flighty", "5 — Aggressive", "6 — Very Aggressive". Both the number and the word display everywhere — on the admin panel, on the public expanded card. Buyers know the scale; Marty learns the terminology.
 - `pregnancy_status`: Dropdown: "—", "Open", "Bred", "Confirmed pregnant". Only shown for females.
 - `expected_calving`: Text input, accepts loose formats ("Spring 2026", "March 2026", "2026-03-15")
 - `date_entered`: Date input, auto-populated with today's date for new animals
+- `born`: **Use `<input type="date">` for the native iPhone date wheel picker.** The AHA (American Hereford Association) requires an exact birth date for registration — "Spring 2024" is not accepted. Even when Marty estimates (finds a 2-day-old calf on March 17, enters March 15), a specific date is the industry standard. The iPhone date wheel makes this fast — spin to the approximate date, tap done. This also gives us clean data for: age calculation on the card, birthday celebrations, calving season detection, and the New Arrivals section. Do NOT use a text input for `born` — a date picker enforces the format we need for calculations.
 
 ### What Goes on the Public Site vs. What Stays Private
 
