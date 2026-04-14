@@ -261,6 +261,7 @@ Here's the complete schema with all new fields:
       "tag": "189",
       "name": "Bessie",
       "born": "2024-03-15",
+      "date_entered": "2024-03-15",
       "registration": "AHA-43567890",
       "sire": "12",
       "dam": "45",
@@ -273,6 +274,10 @@ Here's the complete schema with all new fields:
       "birth_weight": 78,
       "weaning_weight": 540,
       "yearling_weight": null,
+      "calving_ease": 1,
+      "disposition": "docile",
+      "pregnancy_status": "",
+      "expected_calving": "",
       "calves": 3,
       "calves_manual": false,
       "notes": "Good milker, calm temperament",
@@ -283,6 +288,7 @@ Here's the complete schema with all new fields:
       "tag": "427",
       "name": "",
       "born": "",
+      "date_entered": "",
       "registration": "",
       "sire": "",
       "dam": "",
@@ -295,6 +301,10 @@ Here's the complete schema with all new fields:
       "birth_weight": null,
       "weaning_weight": null,
       "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
       "calves": 0,
       "calves_manual": false,
       "notes": "Neighbor's bull, got in summer 2025",
@@ -310,30 +320,62 @@ Here's the complete schema with all new fields:
 | Field | Type | Description |
 |-------|------|-------------|
 | `registration` | string | Breed registry number, e.g. "AHA-43567890". Display as "Reg #43567890" on card. If blank, don't show. This is the single most important field for buyers — they can look up the full record on hereford.org. |
+| `date_entered` | string | ISO date when the animal entered the herd (born here or purchased). For herd-born animals, same as `born`. For purchased animals, the acquisition date. |
 | `source` | string | `"herd"`, `"reference"`, or `"purchased"` |
 | `source_ranch` | string | Name of origin ranch (for reference/purchased animals) |
 | `breed_detail` | string | For crossbreds or partial breeds: "Hereford x Angus cross" or "3/4 Hereford 1/4 Angus". Only shown if populated. |
 | `birth_weight` | number/null | Birth weight in pounds. Shown on expanded card view only. |
 | `weaning_weight` | number/null | Weaning weight (adjusted 205-day) in pounds. Shown on expanded card view only. |
 | `yearling_weight` | number/null | Yearling weight in pounds. Optional. Shown on expanded card view only. |
+| `calving_ease` | number/null | Score 1–5 (1 = unassisted, 2 = easy pull, 3 = hard pull, 4 = surgical, 5 = abnormal). For dams, their most recent calving. For bulls, the average of their calves. One of the first things buyers ask about. |
+| `disposition` | string | Temperament: "docile", "calm", "moderate", "wild". Dropdown in admin. Increasingly important to buyers — nobody wants a dangerous animal. |
+| `pregnancy_status` | string | For females: "open", "bred", "confirmed", "". Only relevant for sale animals. Shows on expanded card when status is `sale` and field is populated. |
+| `expected_calving` | string | ISO date or "Spring 2026" etc. Shows on expanded card when `pregnancy_status` is "bred" or "confirmed". |
 | `calves` | number | Total offspring count |
 | `calves_manual` | boolean | If true, auto-increment is bypassed for this animal |
 | `photo_dates` | array | ISO dates corresponding to each photo, for timeline display |
 | `notes` | string | Free-text notes shown on expanded card view |
 
+### Admin Panel: Show All Fields, Even Empty
+
+**This is a deliberate design decision.** On the public cattle page, empty fields are hidden — visitors don't see "Calving Ease: —" cluttering every card. Clean and professional.
+
+But on the admin panel, EVERY field is always visible, even when empty. The blank field is the nudge. Marty opens an animal's edit card and sees:
+
+```
+Tag #189 — Bessie
+Born:            March 15, 2024
+Registration:    _______________     ← "I should register her"
+Sire:            #12
+Dam:             #45
+Birth Weight:    78 lb
+Weaning Weight:  _______________     ← "I should weigh calves at weaning"
+Calving Ease:    _______________     ← "I should note this next time"
+Disposition:     _______________     ← "I'll put 'docile' — she's gentle"
+```
+
+Each empty field is a quiet professional development lesson. He doesn't have to fill them all in — but he sees what a complete record looks like. Over months of using the admin panel, he'll naturally start filling in more fields because they're right there. The site grows into its potential as Marty grows into the business.
+
+**Admin input types for new fields:**
+- `calving_ease`: Dropdown with labeled options: "1 — No assistance", "2 — Easy pull", "3 — Hard pull", "4 — Surgical", "5 — Abnormal presentation"
+- `disposition`: Dropdown: "Docile", "Calm", "Moderate", "Aggressive" (using plain words, not the technical 1-6 scale — Marty will relate better to words)
+- `pregnancy_status`: Dropdown: "—", "Open", "Bred", "Confirmed pregnant". Only shown for females.
+- `expected_calving`: Text input, accepts loose formats ("Spring 2026", "March 2026", "2026-03-15")
+- `date_entered`: Date input, auto-populated with today's date for new animals
+
 ### What Goes on the Public Site vs. What Stays Private
 
-| Show on website | Keep in Marty's paper logs / professional software |
-|---|---|
-| Tag number, name, photos | Health records, vaccination history |
-| Registration number | Breeding dates, heat cycles |
-| Birth date, sire, dam | Treatment records |
-| Breed and breed detail | Purchase price, sale price |
-| Birth weight, weaning weight | Detailed culling reasons |
-| Offspring count | Veterinary notes |
-| Status, notes (curated) | Financial records |
-
-The website shows the animal's best public face. Detailed production and health data goes to a buyer privately on request.
+| Show on website (when populated) | Admin panel only (not public) | Keep in paper logs only |
+|---|---|---|
+| Tag number, name, photos | Date entered herd | Vaccination records |
+| Registration number | All fields shown (even empty) | Treatment records |
+| Birth date, sire, dam | | Breeding dates, heat cycles |
+| Breed and breed detail | | Purchase/sale prices |
+| Birth weight, weaning weight | | Detailed culling reasons |
+| Calving ease, disposition | | Veterinary notes |
+| Pregnancy status (sale animals) | | Financial records |
+| Offspring count | | |
+| Status, notes (curated) | | |
 
 ### EPDs (Expected Progeny Differences) — Do NOT Display
 
