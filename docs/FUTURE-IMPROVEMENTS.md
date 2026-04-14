@@ -1,0 +1,102 @@
+# Future Improvements & Pipeline Ideas
+
+*Things we've discussed and decided to defer. Reference this instead of scrolling through chat history.*
+
+*Last updated: April 2026*
+
+---
+
+## High Priority — Build When Data Exists
+
+### Pedigree / Family Tree View
+When enough lineage data is entered (sire/dam chains going back 2-3 generations), add a **"Pedigree" tab or expandable section** inside the animal's expanded card view. Show a simple 3-generation family tree:
+
+```
+                  ┌─ Grandsire (paternal)
+        ┌─ Sire ──┤
+        │         └─ Granddam (paternal)
+Animal ─┤
+        │         ┌─ Grandsire (maternal)
+        └─ Dam ──┤
+                  └─ Granddam (maternal)
+```
+
+This is the gold standard for breeder websites and registered cattle. Requires reference animals to be populated for ancestors not in the herd. Implementation: read the `sire`/`dam` chains from `cattle-data.json` and render a simple tree. No new data structure needed — the existing fields support it.
+
+**Prerequisite:** At least a few animals need sire/dam fields populated with real data, and some reference animals added for outside genetics.
+
+### Google Calendar Sync
+Documented in `CALENDAR-SYSTEM-SPEC.md` under "Google Calendar Integration." A GitHub Action runs weekly, pulls Marty's public Google Calendar feed, and updates `ranch-calendar.json` with new events. Not needed until the volume of events justifies automation — currently a handful per year.
+
+### Claude API Photo Classification
+The photo pipeline already supports this (the `ANTHROPIC_API_KEY` secret slot exists). When enabled, photos uploaded as "General" get analyzed by Claude and auto-categorized into cattle/hunting/family/ranch/mascot folders. Costs ~2-3 cents per photo. Set up an Anthropic API key and add it as a GitHub repo secret to activate.
+
+---
+
+## Medium Priority — Quality of Life
+
+### Dedicated Ranch Email
+Set up `info@mrsummersranch.com` via Porkbun free email forwarding (20 forwards included with domain). Forward to Marty's personal email. Takes 2 minutes in Porkbun dashboard. For replies FROM the ranch domain, Porkbun hosted email is $24/year per mailbox. Update the contact page and site-config.json once set up.
+
+### Dedicated Ranch Phone Number
+Google Voice personal account — free, gives a local 209 area code number. Rings on Marty's existing iPhone via the Google Voice app. His real number stays private. If the ranch scales up and needs business texting, upgrade to Google Workspace + Voice at $10/month.
+
+### Domain Strategy
+Consider acquiring `summersranch.farm` or `mrs.farm` — either would be the ideal domain for a cattle operation. Check availability on Porkbun. Currently using `mrsummersranch.com` (primary) and `mrsranch.com` (redirect). The `.farm` TLD immediately communicates what the site is. Redirect whichever isn't primary.
+
+### Brand Logo SVG
+The MRS brand mark needs a proper vector trace. Steps:
+1. Best source: photograph the actual brand iron on a plain white/gray background with good lighting
+2. Upload to Vectorizer.AI (vectorizer.ai) — best AI tracer for this
+3. Crop tight, max contrast before uploading
+4. Hand the output SVG to Claude Code to clean up (smooth paths, remove fur texture noise)
+5. Use the final SVG as: website logo, favicon, Open Graph image, and eventually business cards/hats/decals
+
+### GitHub Organization
+Create a GitHub org (e.g., `SummersRanchCA`), transfer the repo there. Separates personal GitHub profile from the ranch site. Free, 5-minute setup. Do this before sharing the repo URL publicly.
+
+---
+
+## Low Priority — Nice to Have
+
+### Seasonal Hero Photos
+The calendar system supports `hero_image` per season, but we only have one hero photo currently. Ideal set:
+- `spring-calves.jpg` — calves in green pasture (calving season)
+- `summer-pasture.jpg` — herd on summer grass (breeding season)
+- `fall-roundup.jpg` — golden hills, fall colors (roundup season)
+- `winter-ranch.jpg` — ranch in fog or frost (winter)
+
+These can be taken throughout the year as the seasons happen. Upload via the shortcut as General, then Claude Code wires them into the calendar JSON.
+
+### Print-Friendly Animal Pedigree
+Generate a printable pedigree certificate from the expanded card view — PDF with the animal's photo, lineage chart, registration number, weights, and breed info. Useful when selling registered stock. Buyers often need a physical pedigree document. Build when the pedigree tree feature exists.
+
+### Gallery Page Auto-Population
+Currently the gallery page has hardcoded photos. Could be wired to auto-populate from `images/gallery/` the same way cattle cards populate from JSON. Lower priority since the gallery changes less frequently than the cattle page.
+
+### Cattle Page Filters by Sex/Age
+Add filter tabs beyond just "All / Breeding Stock / For Sale" — could include "Bulls," "Cows," "Heifers," "Calves" based on the `sex` and `born` fields. Only valuable once the herd is fully populated (20+ animals on the page).
+
+### Offline Admin Panel
+A stretch goal: make the admin panel work offline using a Service Worker. Marty could add animal data in the field with no service, and it syncs when he's back on WiFi. Complex to build, but would solve the no-cell-service problem for data entry (not just photos).
+
+### Cattle Management Software Integration
+Research found CattleMax, Herdwatch, and Breedr don't offer public APIs for website embedding. If Marty adopts one of these for professional tracking, the website remains a separate public-facing layer. Data flows one direction: Marty's records → admin panel → website. The professional software is the source of truth; the website is the storefront.
+
+---
+
+## Completed (For Reference)
+
+- ✅ Photo pipeline (GitHub Actions: resize, strip EXIF, route by prefix, auto-number)
+- ✅ iOS Shortcut (3 categories: General, Cattle, Hunting)
+- ✅ Dynamic cattle page (renders from cattle-data.json)
+- ✅ Admin panel (password-protected, add/edit animals)
+- ✅ Calendar/events system (banners, seasons, birthdays, upcoming)
+- ✅ Birthday system merged into calendar
+- ✅ Brand photo with lightbox
+- ✅ Cattle tag auto-numbering pipeline
+- ✅ Auto-population of cattle-data.json from pipeline
+- ✅ All real photos, zero stock images
+- ✅ Formspree contact form
+- ✅ GitHub Pages hosting with custom domain
+- ✅ mrsranch.com redirect to mrsummersranch.com
