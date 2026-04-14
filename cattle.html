@@ -201,6 +201,89 @@
         .animal-card-img {
             aspect-ratio: 4/3;
             overflow: hidden;
+            position: relative;
+        }
+        /* Birthday gold glow on the card */
+        .animal-card.birthday {
+            box-shadow: 0 0 20px rgba(198,168,75,0.25);
+            border-color: rgba(198,168,75,0.3);
+        }
+        /* Small birthday emoji in the photo corner */
+        .animal-card .birthday-hat {
+            position: absolute;
+            top: 8px; right: 8px;
+            font-size: 20px;
+            opacity: 0.85;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 2;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        /* Boy/girl corner ribbon for new arrivals */
+        .calf-ribbon {
+            position: absolute;
+            top: 14px; left: -32px;
+            transform: rotate(-45deg);
+            width: 118px;
+            text-align: center;
+            padding: 3px 0;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--warm-white);
+            z-index: 2;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .calf-ribbon.bull   { background: #6B9BC7; }
+        .calf-ribbon.heifer { background: #D4869C; }
+        /* New Arrivals highlight section */
+        .new-arrivals {
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+            padding: 0 2rem;
+        }
+        .new-arrivals .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sage);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .new-arrivals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+        .new-badge {
+            display: inline-block;
+            background: var(--sage);
+            color: var(--warm-white);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 2px 10px;
+            border-radius: 999px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        /* SITE BANNER */
+        .site-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1100;
+            background: linear-gradient(135deg, var(--saddle), var(--rust));
+            color: var(--warm-white); text-align: center;
+            padding: 0.65rem 2rem; font-size: 0.9rem; font-weight: 400;
+            letter-spacing: 0.03em; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            animation: slideDown 0.6s ease forwards;
+        }
+        .site-banner strong { font-weight: 700; }
+        body.has-banner .nav { top: 40px; }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to   { transform: translateY(0); }
         }
         .animal-card-img img {
             width: 100%; height: 100%;
@@ -295,6 +378,7 @@
     </style>
 </head>
 <body>
+    <div class="site-banner" id="siteBanner" style="display:none"></div>
     <nav class="nav" id="nav">
         <a href="index.html" class="nav-logo">Summers Ranch<span>Est. 2001</span></a>
         <ul class="nav-links">
@@ -346,6 +430,12 @@
         <button class="tab-btn" onclick="filterCards('sale')">For Sale</button>
     </div>
 
+    <!-- NEW ARRIVALS — shown only during calving season when animals born in last 60 days -->
+    <section class="new-arrivals" id="newArrivals" style="display:none">
+        <p class="section-label">New Arrivals</p>
+        <div class="new-arrivals-grid" id="newArrivalsGrid"></div>
+    </section>
+
     <!-- CATTLE CARDS — rendered dynamically from cattle-data.json -->
     <section class="cattle-section">
         <div class="cattle-grid" id="cattleGrid">
@@ -396,6 +486,7 @@
         <p class="footer-copy">&copy; 2026 Summers Ranch. All rights reserved.</p>
     </footer>
 
+    <script src="js/ranch-calendar.js"></script>
     <script>
         // Nav
         const nav = document.getElementById('nav');
@@ -430,6 +521,123 @@
             var grid = document.getElementById('cattleGrid');
             if (!grid) return;
 
+            // Parse a free-form `born` string into a Date. Returns null if unparseable.
+            // Accepts "YYYY-MM-DD", "YYYY/MM/DD", or anything Date.parse handles.
+            function parseBorn(s) {
+                if (!s) return null;
+                var m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(s);
+                if (m) return new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0);
+                var t = Date.parse(s);
+                return isNaN(t) ? null : new Date(t);
+            }
+            function formatAge(born, today) {
+                if (!born) return null;
+                var months = (today.getFullYear() - born.getFullYear()) * 12 + (today.getMonth() - born.getMonth());
+                if (today.getDate() < born.getDate()) months--;
+                if (months < 0) return null;
+                if (months < 1)  return 'newborn';
+                if (months < 12) return months + (months === 1 ? ' month old' : ' months old');
+                var years = Math.floor(months / 12);
+                return years === 1 ? '1 year old' : years + ' years old';
+            }
+            function isBirthday(born, today) {
+                if (!born) return false;
+                return born.getMonth() === today.getMonth() && born.getDate() === today.getDate();
+            }
+            function daysSince(born, today) {
+                if (!born) return Infinity;
+                return Math.round((today - born) / 86400000);
+            }
+
+            // Build a card element for an animal. Called once for the main grid,
+            // and again for the New Arrivals row (fresh DOM each time).
+            function buildCard(animal, today, opts) {
+                var photos = animal.photos || [];
+                var primaryPhoto = photos.length > 0 ? photos[0] : 'images/cattle/brand.jpg';
+                var statusClass = animal.status === 'sale' ? 'status-available' : 'status-breeding';
+                var statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
+
+                var born = parseBorn(animal.born);
+                var age = formatAge(born, today);
+                var birthday = isBirthday(born, today);
+                var days = daysSince(born, today);
+                var isNewArrival = born && days >= 0 && days <= 60;
+
+                var card = document.createElement('div');
+                card.className = 'animal-card reveal' + (birthday ? ' birthday' : '');
+                card.dataset.category = animal.status === 'sale' ? 'sale' : 'breeding';
+                card.dataset.tag = animal.tag;
+
+                var detailRows = '';
+                if (animal.born) detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
+                if (age)         detailRows += '<dt>Age</dt><dd>' + age + '</dd>';
+                if (animal.sire) detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
+                if (animal.dam)  detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
+                detailRows += '<dt>Breed</dt><dd>' + (animal.breed || 'Hereford') + '</dd>';
+                if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + animal.sex + '</dd>';
+
+                var photoCountHtml = photos.length > 1
+                    ? '<span class="photo-count">' + photos.length + ' photos — tap to cycle</span>'
+                    : '';
+
+                // New-arrival ribbon (bull/heifer) — only in new-arrivals row to keep
+                // the main grid calm. Birthday hat shows everywhere.
+                var ribbonHtml = '';
+                if (opts && opts.showRibbon && isNewArrival && animal.sex) {
+                    var sex = String(animal.sex).toLowerCase();
+                    if (sex === 'bull' || sex === 'steer' || sex === 'bull calf') {
+                        ribbonHtml = '<span class="calf-ribbon bull">Bull Calf</span>';
+                    } else if (sex === 'heifer' || sex === 'cow' || sex === 'heifer calf') {
+                        ribbonHtml = '<span class="calf-ribbon heifer">Heifer</span>';
+                    }
+                }
+                var hatHtml = birthday ? '<span class="birthday-hat" aria-label="Birthday">🎂</span>' : '';
+                var newBadge = (opts && opts.showNewBadge && isNewArrival) ? '<span class="new-badge">New</span>' : '';
+
+                card.innerHTML =
+                    '<div class="animal-card-img">' +
+                        ribbonHtml +
+                        hatHtml +
+                        '<img src="' + primaryPhoto + '" alt="Tag #' + animal.tag + '" loading="lazy">' +
+                    '</div>' +
+                    '<div class="animal-card-body">' +
+                        '<p class="animal-tag">Tag #' + animal.tag + newBadge + '</p>' +
+                        '<p class="animal-name">' + (animal.name || '—') + '</p>' +
+                        (detailRows ? '<dl class="animal-details">' + detailRows + '</dl>' : '') +
+                        '<span class="animal-status ' + statusClass + '">' + statusText + '</span>' +
+                        photoCountHtml +
+                    '</div>';
+
+                // Photo cycling — tap to advance, auto-cycle every 5 seconds
+                if (photos.length > 1) {
+                    (function(cardEl, photoList) {
+                        var idx = 0;
+                        var img = cardEl.querySelector('.animal-card-img img');
+                        cardEl.style.cursor = 'pointer';
+                        cardEl.addEventListener('click', function() {
+                            idx = (idx + 1) % photoList.length;
+                            img.style.opacity = '0';
+                            setTimeout(function() {
+                                img.src = photoList[idx];
+                                img.style.opacity = '1';
+                            }, 200);
+                        });
+                        setInterval(function() {
+                            idx = (idx + 1) % photoList.length;
+                            img.style.opacity = '0';
+                            setTimeout(function() {
+                                img.src = photoList[idx];
+                                img.style.opacity = '1';
+                            }, 200);
+                        }, 5000 + Math.random() * 2000);
+                    })(card, photos);
+                }
+                return { card: card, born: born, isNewArrival: isNewArrival };
+            }
+
+            // Read "today" via the ranch calendar module so ?date= override works here too.
+            var today = (window.__ranchCalendar && window.__ranchCalendar.today) || new Date();
+
             fetch('cattle-data.json')
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -440,79 +648,38 @@
                 }
 
                 grid.innerHTML = '';
+                var newArrivalAnimals = [];
 
                 animals.forEach(function(animal) {
-                    var photos = animal.photos || [];
-                    var primaryPhoto = photos.length > 0 ? photos[0] : 'images/cattle/brand.jpg';
-                    var statusClass = animal.status === 'sale' ? 'status-available' : 'status-breeding';
-                    var statusText = animal.status === 'sale' ? 'For Sale' : animal.status === 'sold' ? 'Sold' : 'Breeding Stock';
-
-                    var card = document.createElement('div');
-                    card.className = 'animal-card reveal';
-                    card.dataset.category = animal.status === 'sale' ? 'sale' : 'breeding';
-                    card.dataset.tag = animal.tag;
-
-                    var detailRows = '';
-                    if (animal.born) detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
-                    if (animal.sire) detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
-                    if (animal.dam) detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
-                    detailRows += '<dt>Breed</dt><dd>' + (animal.breed || 'Hereford') + '</dd>';
-                    if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + animal.sex + '</dd>';
-
-                    var photoCountHtml = photos.length > 1
-                        ? '<span class="photo-count">' + photos.length + ' photos — tap to cycle</span>'
-                        : '';
-
-                    card.innerHTML =
-                        '<div class="animal-card-img">' +
-                            '<img src="' + primaryPhoto + '" alt="Tag #' + animal.tag + '" loading="lazy">' +
-                        '</div>' +
-                        '<div class="animal-card-body">' +
-                            '<p class="animal-tag">Tag #' + animal.tag + '</p>' +
-                            '<p class="animal-name">' + (animal.name || '—') + '</p>' +
-                            (detailRows ? '<dl class="animal-details">' + detailRows + '</dl>' : '') +
-                            '<span class="animal-status ' + statusClass + '">' + statusText + '</span>' +
-                            photoCountHtml +
-                        '</div>';
-
-                    // Photo cycling — tap to advance, auto-cycle every 5 seconds
-                    if (photos.length > 1) {
-                        (function(cardEl, photoList) {
-                            var idx = 0;
-                            var img = cardEl.querySelector('.animal-card-img img');
-                            cardEl.style.cursor = 'pointer';
-
-                            // Tap to cycle
-                            cardEl.addEventListener('click', function() {
-                                idx = (idx + 1) % photoList.length;
-                                img.style.opacity = '0';
-                                setTimeout(function() {
-                                    img.src = photoList[idx];
-                                    img.style.opacity = '1';
-                                }, 200);
-                            });
-
-                            // Auto-cycle every 5 seconds
-                            setInterval(function() {
-                                idx = (idx + 1) % photoList.length;
-                                img.style.opacity = '0';
-                                setTimeout(function() {
-                                    img.src = photoList[idx];
-                                    img.style.opacity = '1';
-                                }, 200);
-                            }, 5000 + Math.random() * 2000); // Stagger so they don't all change at once
-                        })(card, photos);
-                    }
-
-                    grid.appendChild(card);
+                    var built = buildCard(animal, today, { showRibbon: false, showNewBadge: false });
+                    grid.appendChild(built.card);
+                    if (built.isNewArrival) newArrivalAnimals.push(animal);
                 });
 
-                // Add fade transition to all card images
                 document.querySelectorAll('.animal-card-img img').forEach(function(img) {
                     img.style.transition = 'opacity 0.3s ease';
                 });
 
-                // Re-run scroll reveal for new cards
+                // New Arrivals section: only during calving season, only if any
+                // animals qualify. Wait for the calendar module to tell us whether
+                // today falls inside calving season.
+                if (newArrivalAnimals.length > 0 && window.__ranchCalendar) {
+                    window.__ranchCalendar.promise.then(function(state) {
+                        var season = state && state.activeSeason;
+                        if (!season || !/calving/i.test(season.name || '')) return;
+                        var naGrid = document.getElementById('newArrivalsGrid');
+                        var naSection = document.getElementById('newArrivals');
+                        if (!naGrid || !naSection) return;
+                        naGrid.innerHTML = '';
+                        newArrivalAnimals.forEach(function(animal) {
+                            var built = buildCard(animal, today, { showRibbon: true, showNewBadge: true });
+                            naGrid.appendChild(built.card);
+                        });
+                        naSection.style.display = '';
+                        setupReveal();
+                    });
+                }
+
                 setupReveal();
             })
             .catch(function(err) {
