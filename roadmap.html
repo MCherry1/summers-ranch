@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="What's coming next for the Summers Ranch website — features, updates, and plans.">
+    <title>What's Next — Summers Ranch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --earth: #3D2B1F; --saddle: #8B6914; --sage: #6B7F5E; --rust: #A0522D;
+            --cream: #FAF6F0; --linen: #F0EBE3; --charcoal: #2C2C2C; --stone: #7A756F;
+            --warm-white: #FFFDF9; --gold: #C6A84B;
+            --font-display: 'Cormorant Garamond', 'Georgia', serif;
+            --font-body: 'Lato', 'Segoe UI', sans-serif;
+            --section-pad: clamp(3rem, 8vw, 7rem);
+            --content-max: 800px;
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--font-body); color: var(--charcoal); background: var(--cream); line-height: 1.65; font-weight: 300; -webkit-font-smoothing: antialiased; }
+        img { display: block; max-width: 100%; height: auto; }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; cursor: pointer; border: none; }
+
+        /* NAV */
+        .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; background: rgba(61,43,31,0.95); backdrop-filter: blur(10px); box-shadow: 0 2px 20px rgba(0,0,0,0.15); transition: padding 0.3s; }
+        .nav.scrolled { padding: 0.75rem 2rem; }
+        .nav-logo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--warm-white); letter-spacing: 0.08em; text-transform: uppercase; }
+        .nav-logo span { display: block; font-size: 0.55em; font-weight: 400; letter-spacing: 0.25em; opacity: 0.7; font-style: italic; text-transform: none; }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a { font-size: 0.85rem; color: var(--warm-white); letter-spacing: 0.1em; text-transform: uppercase; position: relative; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 1px; background: var(--gold); transform: scaleX(0); transition: transform 0.3s; }
+        .nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); }
+        .nav-phone { font-size: 0.85rem; color: var(--gold); }
+        .nav-phone svg { width: 14px; height: 14px; vertical-align: -1px; margin-right: 4px; fill: currentColor; }
+        .nav-toggle { display: none; flex-direction: column; gap: 5px; background: none; padding: 4px; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: var(--warm-white); transition: transform 0.3s, opacity 0.3s; }
+        .nav-toggle.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .nav-toggle.active span:nth-child(2) { opacity: 0; }
+        .nav-toggle.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        .mobile-menu { display: none; position: fixed; inset: 0; background: rgba(61,43,31,0.97); z-index: 999; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu a { font-family: var(--font-display); font-size: 2rem; color: var(--warm-white); }
+        .mobile-menu a:hover { color: var(--gold); }
+
+        /* CONTENT */
+        .page-header {
+            background: var(--earth);
+            padding: 8rem 2rem 3rem;
+            text-align: center;
+        }
+        .page-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 700; color: var(--warm-white);
+        }
+        .page-header p {
+            font-size: 1rem; color: rgba(255,253,249,0.6);
+            margin-top: 0.75rem; max-width: 500px; margin-left: auto; margin-right: auto;
+        }
+
+        .roadmap {
+            max-width: var(--content-max);
+            margin: 0 auto;
+            padding: var(--section-pad) 2rem;
+        }
+
+        .milestone {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        .milestone::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: -3rem;
+            width: 2px;
+            background: var(--linen);
+        }
+        .milestone:last-child::before { bottom: 0; }
+        .milestone-dot {
+            position: absolute;
+            left: -5px; top: 4px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--sage);
+            background: var(--cream);
+        }
+        .milestone.done .milestone-dot {
+            background: var(--sage);
+            border-color: var(--sage);
+        }
+        .milestone.active .milestone-dot {
+            background: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 0 0 4px rgba(198,168,75,0.2);
+        }
+        .milestone h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem; font-weight: 600;
+            color: var(--earth); margin-bottom: 0.3rem;
+        }
+        .milestone-status {
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+        .status-done { color: var(--sage); }
+        .status-active { color: var(--gold); }
+        .status-upcoming { color: var(--stone); }
+
+        .milestone p {
+            font-size: 0.95rem; color: var(--stone);
+            line-height: 1.8; margin-bottom: 0.5rem;
+        }
+        .milestone ul {
+            list-style: none; padding: 0; margin-top: 0.5rem;
+        }
+        .milestone li {
+            font-size: 0.9rem; color: var(--stone);
+            padding: 0.4rem 0; padding-left: 1.2rem;
+            position: relative; line-height: 1.6;
+        }
+        .milestone li::before {
+            content: '';
+            position: absolute; left: 0; top: 0.75rem;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--linen);
+        }
+        .milestone.done li::before { background: var(--sage); }
+
+        /* IDEAS SECTION */
+        .ideas {
+            background: var(--linen);
+            padding: var(--section-pad) 2rem;
+        }
+        .ideas-inner {
+            max-width: var(--content-max);
+            margin: 0 auto;
+        }
+        .ideas h2 {
+            font-family: var(--font-display);
+            font-size: 1.8rem; font-weight: 600;
+            color: var(--earth); margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .ideas > .ideas-inner > p {
+            text-align: center; font-size: 0.95rem;
+            color: var(--stone); margin-bottom: 2rem;
+        }
+        .idea-card {
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 2px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .idea-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem; font-weight: 600;
+            color: var(--earth); margin-bottom: 0.4rem;
+        }
+        .idea-card p {
+            font-size: 0.9rem; color: var(--stone); line-height: 1.7;
+        }
+
+        /* CTA */
+        .cta-strip {
+            background: var(--earth);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        .cta-strip p {
+            font-family: var(--font-display);
+            font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+            font-weight: 600; color: var(--warm-white);
+            font-style: italic; max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* FOOTER */
+        .footer { background: #2A1F17; padding: 2.5rem 2rem; text-align: center; }
+        .footer-logo { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: rgba(255,253,249,0.4); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem; }
+        .footer-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.5rem; list-style: none; margin-bottom: 1.5rem; }
+        .footer-links a { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,253,249,0.35); }
+        .footer-links a:hover { color: rgba(255,253,249,0.7); }
+        .footer-copy { font-size: 0.75rem; color: rgba(255,253,249,0.2); }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        @media (max-width: 768px) {
+            .nav-links, .nav-phone { display: none; }
+            .nav-toggle { display: flex; }
+        }
+        @media (min-width: 769px) { .mobile-menu { display: none !important; } }
+    </style>
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <a href="index.html" class="nav-logo">Summers Ranch<span>Est. 2001</span></a>
+        <ul class="nav-links">
+            <li><a href="about.html">About</a></li>
+            <li><a href="cattle.html">Our Cattle</a></li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <a href="tel:+12095555555" class="nav-phone"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>(209) 555-5555</a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </nav>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="about.html">About</a><a href="cattle.html">Our Cattle</a><a href="gallery.html">Gallery</a><a href="contact.html">Contact</a>
+    </div>
+
+    <div class="page-header">
+        <h1>What's Next</h1>
+        <p>We're just getting started. Here's what we're working on and where we're headed.</p>
+    </div>
+
+    <div class="roadmap">
+
+        <div class="milestone done reveal">
+            <div class="milestone-dot"></div>
+            <h2>Launch the Website</h2>
+            <p class="milestone-status status-done">Complete</p>
+            <p>Get Summers Ranch online with a professional web presence — our story, our family, and a way for people to find us and get in touch.</p>
+            <ul>
+                <li>Ranch story and family introduction</li>
+                <li>Photo gallery with ranch life and hunting trips</li>
+                <li>Contact form and phone for inquiries</li>
+                <li>Mobile-friendly — works great on a phone in the field</li>
+            </ul>
+        </div>
+
+        <div class="milestone active reveal">
+            <div class="milestone-dot"></div>
+            <h2>Individual Cattle Listings</h2>
+            <p class="milestone-status status-active">In Progress</p>
+            <p>Photograph and catalog our herd so buyers can browse individual animals online — each with their tag number, lineage, breed info, and photos. If you're interested in our cattle right now, give us a call and we'll tell you what's available.</p>
+        </div>
+
+        <div class="milestone reveal">
+            <div class="milestone-dot"></div>
+            <h2>How to Buy</h2>
+            <p class="milestone-status status-upcoming">Coming Soon</p>
+            <p>A clear guide to how purchasing works — when our sale season is, whether we're selling by private treaty or auction, what ages we sell at, and how to visit the ranch. We want buying from Summers Ranch to be straightforward and easy.</p>
+        </div>
+
+        <div class="milestone reveal">
+            <div class="milestone-dot"></div>
+            <h2>Availability Notifications</h2>
+            <p class="milestone-status status-upcoming">Coming Soon</p>
+            <p>Sign up to get notified when we have sale cattle available. We'll send an email when new animals are ready — no spam, just cattle.</p>
+        </div>
+
+        <div class="milestone reveal">
+            <div class="milestone-dot"></div>
+            <h2>Breeding & Genetics Detail</h2>
+            <p class="milestone-status status-upcoming">Planned</p>
+            <p>Detailed information about our breeding program — what we select for, our Hereford genetics, EPD data, and why our cattle are built the way they are. For buyers who care about the numbers behind the animals.</p>
+        </div>
+
+        <div class="milestone reveal">
+            <div class="milestone-dot"></div>
+            <h2>Ranch Cam</h2>
+            <p class="milestone-status status-upcoming">Someday</p>
+            <p>A live camera feed from the pastures so you can watch the herd graze in real time. Because sometimes you just want to watch cows be cows.</p>
+        </div>
+
+    </div>
+
+    <section class="ideas">
+        <div class="ideas-inner">
+            <h2>Ideas We're Thinking About</h2>
+            <p>No promises — just things we're kicking around.</p>
+
+            <div class="idea-card reveal">
+                <h3>Buyer References</h3>
+                <p>Testimonials from folks who've bought cattle from us. If you've purchased from Summers Ranch and want to share your experience, we'd love to hear from you.</p>
+            </div>
+
+            <div class="idea-card reveal">
+                <h3>Seasonal Updates</h3>
+                <p>Short posts a few times a year — calving season news, sale announcements, ranch updates. Not a blog, just a way to keep things current.</p>
+            </div>
+
+            <div class="idea-card reveal">
+                <h3>Ranch Store</h3>
+                <p>Down the road, we may offer Summers Ranch beef or branded merchandise. We're a long way from that, but it's fun to think about.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-strip reveal">
+        <p>"The best time to plant a tree was twenty years ago. The second best time is now."</p>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-logo">Summers Ranch</div>
+        <ul class="footer-links">
+            <li><a href="index.html">Home</a></li><li><a href="about.html">About</a></li>
+            <li><a href="cattle.html">Our Cattle</a></li><li><a href="gallery.html">Gallery</a></li>
+            <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <p class="footer-copy">&copy; 2026 Summers Ranch. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
+        const toggle = document.getElementById('navToggle'), mobileMenu = document.getElementById('mobileMenu');
+        toggle.addEventListener('click', () => { toggle.classList.toggle('active'); mobileMenu.classList.toggle('open'); document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : ''; });
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => { entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i * 100); observer.unobserve(e.target); } }); }, { threshold: 0.15 });
+        reveals.forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
