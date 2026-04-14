@@ -25,7 +25,7 @@
       "nickname": "Uncle Chicken",
       "role": "Elder Ranch Hand",
       "bio": "Marty's family has called Sutter Creek home for generations. He worked cattle as a young man, then spent a long career as a heavy-machinery mechanic at Folsom State Prison before recently retiring. Now he gets to do what he's always wanted \u2014 spend his days with cows and grandsons.",
-      "birthday": "YYYY-MM-DD",
+      "birthday": "1965-04-14",
       "photo": "images/mascot/theodore-main.jpg"
     },
     {
@@ -34,7 +34,8 @@
       "role": "Logistics (Party Planning)",
       "bio": "Roianne is Filipina-Mexican, born in San Francisco to a Mexican mother from South Texas and a Filipino father who immigrated to the Bay Area with his large family. She grew up a city girl before meeting Marty and trading the Bay for the foothills. She keeps the ranch \u2014 and the family \u2014 running.",
       "birthday": "1975-06-28",
-      "photo": "images/about/roianne.jpg"
+      "photo": "images/about/roianne.jpg",
+      "photo_alternatives_considered": ["gallery/thanksgiving.jpg", "hunting/roianne-buck.jpg"]
     }
   ],
   "mascot": {
@@ -63,14 +64,13 @@
   "cattle": [],
   "formspree_id": "mzdybyjl",
   "todos_for_owners": [
-    "Marty's birthday (add to birthdayData span in index.html + family[0].birthday here)",
-    "Upload the 5 real photos referenced by the HTML: images/mascot/theodore-main.jpg, images/hunting/marty-buck.jpg, images/hunting/roianne-buck.jpg, images/hunting/elk.jpg, images/gallery/ranch-cat.jpg",
-    "Solo / non-hunting Roianne photo for the family grid on about.html (currently Unsplash placeholder)",
-    "Real herd photos (images/gallery/, images/hero/, images/cattle/) to replace remaining Unsplash placeholders on cattle.html and gallery.html",
-    "Landscape / ranch-scenery photos for hero backgrounds and remaining gallery items",
+    "Verify Marty's birthday: currently set to 1965-04-14 as a placeholder so the banner fires for tonight's demo. Update to the real year once confirmed.",
+    "Real herd / cattle photos (cattle.html and 4 remaining Unsplash gallery items are waiting for these)",
+    "Landscape / ranch-scenery photos for hero backgrounds",
     "Confirm mcherry@gmail.com vs. a dedicated ranch email address",
     "Confirm phone number (currently (209) 555-5555 placeholder)",
     "Verify year_established (2001)",
     "Paste YouTube video IDs into gallery.html video section"
-  ]
+  ],
+  "photo_pipeline_notes": "iOS Shortcut on main branch uploads raw photos as images/gallery/photo-[YYYYMMDD-HHMMSS].jpg. Claude reviews, renames semantically, optimizes with Pillow (max 1200px wide, JPEG q=58-82, EXIF stripped, orientation applied), moves to the appropriate subdir, and deletes the raw file in the same commit. See /tmp/optimize_photos.py on the feature branch workstation for the template."
 }
