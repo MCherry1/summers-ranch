@@ -231,18 +231,63 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-THEO-4.jpg",
         "images/cattle/tag-THEO-1.jpg",
+        "images/cattle/tag-THEO-10.jpg",
+        "images/cattle/tag-THEO-11.jpg",
+        "images/cattle/tag-THEO-12.jpg",
+        "images/cattle/tag-THEO-13.jpg",
+        "images/cattle/tag-THEO-14.jpg",
+        "images/cattle/tag-THEO-15.jpg",
+        "images/cattle/tag-THEO-16.jpg",
+        "images/cattle/tag-THEO-17.jpg",
+        "images/cattle/tag-THEO-18.jpg",
+        "images/cattle/tag-THEO-19.jpg",
         "images/cattle/tag-THEO-2.jpg",
-        "images/cattle/tag-THEO-3.jpg"
+        "images/cattle/tag-THEO-3.jpg",
+        "images/cattle/tag-THEO-4.jpg",
+        "images/cattle/tag-THEO-5.jpg",
+        "images/cattle/tag-THEO-6.jpg",
+        "images/cattle/tag-THEO-7.jpg",
+        "images/cattle/tag-THEO-8.jpg",
+        "images/cattle/tag-THEO-9.jpg"
       ],
       "photo_dates": [
         "2026-04-12",
+        "2025-07-29",
+        "2025-07-30",
+        "2025-08-06",
+        "2025-08-11",
+        "2025-08-14",
+        "2025-09-07",
+        "2025-09-07",
+        "2025-09-08",
+        "2025-10-23",
+        "2025-10-25",
         "2026-04-12",
         "2026-04-12",
-        "2026-04-12"
+        "2026-04-12",
+        "",
+        "",
+        "",
+        "",
+        "2025-07-28"
       ],
       "photo_types": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
         "",
         "",
         "",
@@ -252,9 +297,39 @@
         50,
         50,
         50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
+        50,
         50,
         50,
         50,
@@ -264,9 +339,39 @@
         null,
         null,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null
       ],
       "photo_quality": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
         "",
         "",
         "",
@@ -348,24 +453,31 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-207-1.jpg"
+        "images/cattle/tag-207-1.jpg",
+        "images/cattle/tag-207-2.jpg"
       ],
       "photo_dates": [
-        "2023-06-11"
+        "2023-06-11",
+        ""
       ],
       "photo_types": [
+        "",
         ""
       ],
       "photo_focus_x": [
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
         50
       ],
       "photo_boxes": [
+        null,
         null
       ],
       "photo_quality": [
+        "",
         ""
       ],
       "primary_photo": "images/cattle/tag-207-1.jpg"
@@ -397,6 +509,214 @@
       "notes": "",
       "photos": [],
       "photo_dates": []
+    },
+    {
+      "tag": "1245",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-1245-1.jpg",
+        "images/cattle/tag-1245-2.jpg",
+        "images/cattle/tag-1245-3.jpg",
+        "images/cattle/tag-1245-4.jpg",
+        "images/cattle/tag-1245-5.jpg"
+      ],
+      "photo_dates": [
+        "",
+        "",
+        "",
+        "2025-10-25",
+        "2025-10-25"
+      ],
+      "photo_types": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "photo_focus_x": [
+        50,
+        50,
+        50,
+        50,
+        50
+      ],
+      "photo_focus_y": [
+        50,
+        50,
+        50,
+        50,
+        50
+      ],
+      "photo_boxes": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "photo_quality": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-1245-4.jpg"
+    },
+    {
+      "tag": "214",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-214-1.jpg"
+      ],
+      "photo_dates": [
+        "2025-01-01"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-214-1.jpg"
+    },
+    {
+      "tag": "228",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-228-1.jpg"
+      ],
+      "photo_dates": [
+        "2025-02-05"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-228-1.jpg"
+    },
+    {
+      "tag": "CANDY",
+      "name": "",
+      "born": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "branded": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-CANDY-1.jpg"
+      ],
+      "photo_dates": [
+        "2025-10-25"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus": [],
+      "primary_photo": "images/cattle/tag-CANDY-1.jpg"
     }
   ],
   "sires": [],
@@ -404,7 +724,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 19:09 UTC",
+    "last_updated": "2026-04-15 19:16 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
