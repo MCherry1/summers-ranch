@@ -1013,7 +1013,7 @@
                     '</div>' +
                     '<div class="animal-card-body">' +
                         '<p class="animal-tag">Tag #' + animal.tag + newBadge + '</p>' +
-                        '<p class="animal-name">' + (animal.name || '—') + '</p>' +
+                        (animal.name ? '<p class="animal-name">' + animal.name + '</p>' : '') +
                         (detailRows ? '<dl class="animal-details">' + detailRows + '</dl>' : '') +
                         '<span class="animal-status ' + meta.cls + '">' + meta.text + '</span>' +
                         photoCountHtml +
@@ -1318,7 +1318,7 @@
                 var born = parseBorn(animal.born);
                 var age  = formatAge(born, today);
                 lbTag.textContent  = 'Tag #' + animal.tag;
-                lbName.textContent = animal.name || '—';
+                lbName.textContent = animal.name || ''; lbName.style.display = animal.name ? '' : 'none';
                 lbAge.textContent  = age || '';
                 lbAge.style.display = age ? '' : 'none';
 
