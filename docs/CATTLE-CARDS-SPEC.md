@@ -492,3 +492,29 @@ The spec was implemented end-to-end in a single pass. Code locations:
 - New-animal auto-insertion writes the full expanded schema (registration,
   source, calves, weights, photo_dates) so records stay consistent with
   what the admin form expects.
+
+### Aspirational fields (added in a follow-up pass)
+
+The "aspirational" field set defined in § 6 (`date_entered`, `calving_ease`,
+`disposition`, `pregnancy_status`, `expected_calving`) was spec'd after the
+initial implementation and shipped separately:
+
+- **`admin.html` form** — `buildAnimalElement()` renders a `date_entered`
+  date input alongside `calving_ease` (1–5 labeled dropdown), a full-width
+  `disposition` dropdown using the BIF 1–6 scale, and a final row with
+  `pregnancy_status` (dropdown) and `expected_calving` (loose text).
+  Helper functions `calvingEaseOptions()`, `dispositionOptions()`, and
+  `pregnancyStatusOptions()` generate the option lists.
+- **`saveAnimal()`** adds `calving_ease` to its `numericFields` set so the
+  form value round-trips as a Number (or null when blank).
+- **New-animal add flow** auto-populates `date_entered` with today's ISO
+  date and initializes the other aspirational fields to their empty
+  defaults (`null` for `calving_ease`, `""` for the strings).
+- **`cattle.html` public lightbox** — `openLightbox()` appends detail rows
+  for `calving_ease`, `disposition`, `pregnancy_status` (sale-only), and
+  `expected_calving` (only when bred/confirmed). Empty values are silently
+  omitted per the "public hides empty" rule. New helpers `calvingEaseLabel()`,
+  `dispositionLabel()`, and `prettyPregnancy()` render the labels.
+- **Schema** — `cattle-data.json` tag 215 and the pipeline auto-insert in
+  `.github/scripts/process_photos.py` both carry the new fields at their
+  empty defaults so consumers have a stable shape.

@@ -858,6 +858,38 @@
                 var s = String(sex || '').toLowerCase();
                 return (s === 'bull' || s === 'steer') ? 'Calves Sired' : 'Calves';
             }
+            // Calving-ease 1-5 scale -> "1 — No assistance" style label.
+            // Accepts either a number or a numeric string.
+            function calvingEaseLabel(v) {
+                var map = {
+                    '1': '1 — No assistance',
+                    '2': '2 — Easy pull',
+                    '3': '3 — Hard pull',
+                    '4': '4 — Surgical',
+                    '5': '5 — Abnormal presentation'
+                };
+                return map[String(v)] || String(v);
+            }
+            // BIF disposition 1-6 scale -> "1 — Docile" style label.
+            function dispositionLabel(v) {
+                var map = {
+                    '1': '1 — Docile',
+                    '2': '2 — Restless',
+                    '3': '3 — Nervous',
+                    '4': '4 — Flighty',
+                    '5': '5 — Aggressive',
+                    '6': '6 — Very Aggressive'
+                };
+                return map[String(v)] || String(v);
+            }
+            function prettyPregnancy(v) {
+                switch (v) {
+                    case 'open':      return 'Open';
+                    case 'bred':      return 'Bred';
+                    case 'confirmed': return 'Confirmed pregnant';
+                    default:          return v;
+                }
+            }
             // Status -> badge class + label (extended per spec § 4)
             function statusMeta(status) {
                 switch (status) {
@@ -1246,6 +1278,28 @@
                 if (animal.birth_weight)    rows += '<dt>Birth wt</dt><dd>' + animal.birth_weight + ' lb</dd>';
                 if (animal.weaning_weight)  rows += '<dt>Weaning wt</dt><dd>' + animal.weaning_weight + ' lb</dd>';
                 if (animal.yearling_weight) rows += '<dt>Yearling wt</dt><dd>' + animal.yearling_weight + ' lb</dd>';
+                // Aspirational fields (CATTLE-CARDS-SPEC § 6). Public site
+                // hides empty values — only shown here when the admin has
+                // filled them in. Empty = clean; populated = informative.
+                if (animal.calving_ease) {
+                    rows += '<dt>Calving ease</dt><dd>' + calvingEaseLabel(animal.calving_ease) + '</dd>';
+                }
+                if (animal.disposition) {
+                    rows += '<dt>Disposition</dt><dd>' + dispositionLabel(animal.disposition) + '</dd>';
+                }
+                // Pregnancy fields are sale-only AND female-only. The admin
+                // form exposes them for any animal, but showing "Bred"
+                // under a sale bull or steer is nonsense — restrict to
+                // cow / heifer / calf sexes so the public card never
+                // leaks impossible data.
+                var _sex = String(animal.sex || '').toLowerCase();
+                var _isFemale = _sex === 'cow' || _sex === 'heifer' || _sex === 'calf' || _sex === 'heifer calf';
+                if (animal.status === 'sale' && _isFemale && animal.pregnancy_status) {
+                    rows += '<dt>Pregnancy</dt><dd>' + prettyPregnancy(animal.pregnancy_status) + '</dd>';
+                    if ((animal.pregnancy_status === 'bred' || animal.pregnancy_status === 'confirmed') && animal.expected_calving) {
+                        rows += '<dt>Expected calving</dt><dd>' + animal.expected_calving + '</dd>';
+                    }
+                }
                 if (animal.source === 'purchased' && animal.source_ranch) {
                     rows += '<dt>Acquired</dt><dd>' + animal.source_ranch + '</dd>';
                 }
