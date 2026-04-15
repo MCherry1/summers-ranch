@@ -1285,7 +1285,8 @@
                     <div class="form-group">
                         <label>Status</label>
                         <select id="newStatus">
-                            <option value="breeding" selected>Breeding Stock</option>
+                            <option value="" selected>—</option>
+                            <option value="breeding">Breeding Stock</option>
                             <option value="sale">For Sale</option>
                             <option value="sold">Sold</option>
                         </select>
@@ -2029,8 +2030,8 @@
                 deceased:  'Deceased',
                 reference: 'Reference'
             };
-            const statusClass = 'status-' + (animal.status || 'breeding');
-            const statusText  = statusLabels[animal.status] || 'Breeding Stock';
+            const statusClass = animal.status ? ('status-' + animal.status) : 'status-none';
+            const statusText  = statusLabels[animal.status] || '';
 
             const calvesVal = (typeof animal.calves === 'number') ? animal.calves : 0;
             const calvesManual = !!animal.calves_manual;
@@ -2253,7 +2254,7 @@
             // Status dropdown → show/hide "Remove from Herd" button
             const statusSelect = el.querySelector('[data-role="status-select"]');
             const removeBtn = el.querySelector('[data-role="remove-herd"]');
-            const originalStatus = animal.status || 'breeding';
+            const originalStatus = animal.status || '';
             // Starts true — nothing to confirm until the user actively changes
             // the status to a REMOVED_STATUS it didn't start in. The change
             // handler below flips it to false only in that specific case; a
@@ -2343,6 +2344,7 @@
 
         function statusOptions(current) {
             const opts = [
+                { v: '',          label: '—' },
                 { v: 'breeding',  label: 'Breeding Stock' },
                 { v: 'sale',      label: 'For Sale' },
                 { v: 'sold',      label: 'Sold' },
@@ -2352,7 +2354,7 @@
                 { v: 'reference', label: 'Reference (outside / lineage only)' }
             ];
             return opts.map(o =>
-                `<option value="${o.v}"${o.v === (current || 'breeding') ? ' selected' : ''}>${o.label}</option>`
+                `<option value="${o.v}"${o.v === (current || '') ? ' selected' : ''}>${o.label}</option>`
             ).join('');
         }
 
@@ -2671,7 +2673,7 @@
             newName.value = '';
             newSex.value = '';
             newBorn.value = '';
-            newStatus.value = 'breeding';
+            newStatus.value = '';
             newBreedingStock.checked = false;
         }
 
@@ -2725,11 +2727,11 @@
                 registration: '',
                 sire: '',
                 dam: '',
-                breed: 'Hereford',
+                breed: '',
                 breed_detail: '',
                 sex: newSex.value,
-                status: newStatus.value || 'breeding',
-                source: 'herd',
+                status: newStatus.value,
+                source: '',
                 source_ranch: '',
                 breeding_stock: newBreedingStock.checked,
                 birth_weight: null,

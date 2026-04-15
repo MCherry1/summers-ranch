@@ -908,11 +908,11 @@
             // Status -> badge class + label (extended per spec § 4)
             function statusMeta(status) {
                 switch (status) {
+                    case 'breeding': return { cls: 'status-breeding',  text: 'Breeding Stock' };
                     case 'sale':     return { cls: 'status-available', text: 'For Sale' };
                     case 'sold':     return { cls: 'status-sold',      text: 'Sold' };
                     case 'retired':  return { cls: 'status-sold',      text: 'Retired' };
-                    case 'breeding':
-                    default:         return { cls: 'status-breeding',  text: 'Breeding Stock' };
+                    default:         return { cls: '',                 text: '' };
                 }
             }
             // "2024-03-15" -> "Mar 2024". Returns "" if not parseable.
@@ -957,17 +957,17 @@
 
                 var card = document.createElement('div');
                 card.className = 'animal-card reveal' + (birthday ? ' birthday' : '');
-                card.dataset.category = animal.status === 'sale' ? 'sale' : 'breeding';
+                card.dataset.category = animal.status || 'uncategorized';
                 card.dataset.tag = animal.tag;
 
-                var breedDisplay = animal.breed_detail || animal.breed || 'Hereford';
+                var breedDisplay = animal.breed_detail || animal.breed || '';
                 var detailRows = '';
                 if (animal.born)         detailRows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
                 if (age)                 detailRows += '<dt>Age</dt><dd>' + age + '</dd>';
                 if (animal.registration) detailRows += '<dt>Reg #</dt><dd>' + animal.registration + '</dd>';
                 if (animal.sire)         detailRows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
                 if (animal.dam)          detailRows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
-                detailRows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
+                if (breedDisplay) detailRows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
                 if (animal.sex) detailRows += '<dt>Sex</dt><dd>' + prettySex(animal.sex) + '</dd>';
                 if (typeof animal.calves === 'number' && animal.calves > 0) {
                     detailRows += '<dt>' + calvesLabel(animal.sex) + '</dt><dd>' + animal.calves + '</dd>';
@@ -1322,13 +1322,13 @@
                 lbAge.textContent  = age || '';
                 lbAge.style.display = age ? '' : 'none';
 
-                var breedDisplay = animal.breed_detail || animal.breed || 'Hereford';
+                var breedDisplay = animal.breed_detail || animal.breed || '';
                 var rows = '';
                 if (animal.born)         rows += '<dt>Born</dt><dd>' + animal.born + '</dd>';
                 if (animal.registration) rows += '<dt>Reg #</dt><dd>' + animal.registration + '</dd>';
                 if (animal.sire)         rows += '<dt>Sire</dt><dd>#' + animal.sire + '</dd>';
                 if (animal.dam)          rows += '<dt>Dam</dt><dd>#' + animal.dam + '</dd>';
-                rows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
+                if (breedDisplay) rows += '<dt>Breed</dt><dd>' + breedDisplay + '</dd>';
                 if (animal.sex)          rows += '<dt>Sex</dt><dd>' + prettySex(animal.sex) + '</dd>';
                 if (typeof animal.calves === 'number' && animal.calves > 0) {
                     rows += '<dt>' + calvesLabel(animal.sex) + '</dt><dd>' + animal.calves + '</dd>';
