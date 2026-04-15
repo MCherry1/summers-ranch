@@ -207,17 +207,17 @@
     },
     {
       "tag": "THEO",
-      "name": "",
-      "born": "",
+      "name": "Theo",
+      "born": "2025-01-11",
       "date_entered": "",
       "registration": "",
-      "sire": "",
-      "dam": "",
+      "sire": "Matthew",
+      "dam": "Orianna",
       "breed": "",
       "breed_detail": "",
-      "sex": "",
-      "status": "",
-      "source": "",
+      "sex": "bull",
+      "status": "sale",
+      "source": "herd",
       "source_ranch": "",
       "breeding_stock": false,
       "birth_weight": null,
@@ -231,10 +231,10 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
+        "images/cattle/tag-THEO-4.jpg",
         "images/cattle/tag-THEO-1.jpg",
         "images/cattle/tag-THEO-2.jpg",
-        "images/cattle/tag-THEO-3.jpg",
-        "images/cattle/tag-THEO-4.jpg"
+        "images/cattle/tag-THEO-3.jpg"
       ],
       "photo_dates": [
         "2026-04-12",
@@ -376,7 +376,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 04:49 UTC",
+    "last_updated": "2026-04-15 18:56 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
