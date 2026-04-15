@@ -201,7 +201,87 @@ In short: recent wins unless the photo is genuinely unusable. The nudge handles 
 
 ## Implementation Priority
 
-1. **Smart focal point** — Biggest visual improvement, just add 2 fields to the API prompt
-2. **Tag letters verification** — Probably already works, just needs testing
-3. **Gallery captions** — Nice to have, creates gallery-data.json
-4. **Quality assessment** — Low priority, enhances nudges
+1. ✅ **Smart focal point** — Biggest visual improvement, just add 2 fields to the API prompt
+2. ✅ **Tag letters verification** — `\w+` regex already handles alphanumeric tags like `A12` / `R5`; the glob + sort work with no code change, but the cattle-photo glob now explicitly skips `-thumb.jpg` siblings.
+3. ✅ **Gallery captions** — Creates `gallery-data.json` and upgrades the gallery page to render captions from it.
+4. ✅ **Quality assessment** — Claude prompt now returns `quality` and `pick_primary_photo()` skips `poor`-rated photos.
+
+---
+
+## Implementation Notes
+
+All four enhancements shipped in one pass. Code locations:
+
+### `.github/scripts/process_photos.py`
+- **`classify_cattle_view()`** — prompt now asks for
+  `{type, focus_x, focus_y, box, quality}` in one call. Returns a dict
+  (or `None` on failure) so the caller can take `type` for the
+  existing behavior-driven features AND stash the focal point and
+  quality for the new enhancements. Clamps percentages to 0–100 and
+  validates the bounding box shape.
+- **`crop_to_subject(source_path, thumb_path, box, padding_pct=20)`** —
+  uses ImageMagick (`identify` + `convert -crop`) to auto-crop a
+  cattle photo around the animal with 20% padding on each side. PIL
+  isn't available in this environment and ImageMagick is already a
+  pipeline dependency, so this is one subprocess instead of a new
+  Python package.
+- **`PHOTO_META`** module cache maps target path →
+  `{focus_x, focus_y, box, quality}`. Populated in `process_inbox()`
+  after a cattle photo is moved, right next to the existing
+  `PHOTO_TYPES` cache.
+- **`process_inbox()` cattle branch** — after the classification call,
+  generates `tag-XXX-N-thumb.jpg` by calling `crop_to_subject()` with
+  the Claude box. The thumb is a sibling of the full image, same stem.
+- **`process_inbox()` gallery branch** — `classify_with_claude()` now
+  also returns the caption. When a photo routes to the gallery folder
+  (or hunting), the caption + category + date are stashed in
+  `GALLERY_META` for the later `update_gallery_data()` step.
+- **`update_cattle_data()`** — photos-array loop now rebuilds
+  `photo_focus_x`, `photo_focus_y`, `photo_boxes`, and `photo_quality`
+  in lockstep with `photos[]`, using the same "fresh from cache, fall
+  back to previous JSON entry" pattern already used for dates and
+  types. `primary_photo` is recomputed with quality awareness.
+- **`update_gallery_data()`** — new step in the `__main__` chain that
+  merges `GALLERY_META` into `gallery-data.json`, creating the file
+  if it doesn't exist. Preserves existing entries and only touches
+  photos that went through the classifier on this run.
+- **Cattle-photo glob** — `CATTLE_DIR.glob("tag-*-*.jpg")` now skips
+  files whose stem ends in `-thumb` so the pipeline doesn't treat
+  auto-cropped thumbnails as separate animal photos. The regex still
+  uses `\w+` so alphanumeric tags (`A12`, `R5`, `125B`) work.
+- **`pick_primary_photo(photos, photo_types, photo_dates, photo_quality)`** —
+  new optional `photo_quality` param. First pass filters out
+  `quality == "poor"` candidates; falls back to all candidates if the
+  entire set is rated poor so something still represents the animal.
+  Existing type/date tie-break rules are preserved. Verified against
+  8 unit cases including `skip-poor`, `all-poor`, `fair-ok`, and the
+  original single-untyped / no-types / side-profile-wins cases.
+
+### `cattle-data.json`
+- Tag 215 placeholder now carries `photo_focus_x: [50]`,
+  `photo_focus_y: [50]`, `photo_boxes: [null]`, `photo_quality: [""]`
+  in lockstep with the existing `photos: [...]` array.
+- Auto-inserted new animals in `update_cattle_data()` ship with the
+  same empty-list defaults.
+
+### `cattle.html`
+- **`toThumbPath(src)`** helper turns `tag-189-1.jpg` into
+  `tag-189-1-thumb.jpg`. `buildCard()` prefers the thumb for the
+  grid image and falls back to the full image via `<img onerror>`
+  when the pipeline hasn't generated a thumb yet (older photos).
+- **`object-position: X% Y%`** is applied inline on the card `<img>`
+  using `animal.photo_focus_x[primary_idx]` and `photo_focus_y[...]`.
+  Defaults to `50% 50%` when the focal point data is missing.
+- **`buildTimeline()`** now threads `focusX[]` / `focusY[]` alongside
+  `photos[]` / `dates[]` / `types[]` so they stay in lockstep with
+  the chronological sort.
+- **Lightbox `lbState`** gains `focusX` / `focusY` arrays; `lbShow()`
+  applies `lbPhoto.style.objectPosition` after each src swap so the
+  animal stays roughly centered in the 60vh photo area.
+
+### `gallery.html`
+- Progressive enhancement script at the bottom fetches
+  `gallery-data.json`, upgrades captions on existing `.gallery-item`
+  tiles whose `data-full` matches, and appends new tiles for
+  pipeline-uploaded photos. Safe no-op when the JSON doesn't exist
+  yet (manually-placed gallery items still work).

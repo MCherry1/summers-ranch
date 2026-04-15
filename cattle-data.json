@@ -34,6 +34,18 @@
       "photo_types": [
         ""
       ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
       "primary_photo": "images/cattle/tag-215-1.jpg"
     },
     {
@@ -63,6 +75,18 @@
         "2026-04-05"
       ],
       "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
         ""
       ],
       "primary_photo": "images/cattle/tag-109A-1.jpg"
@@ -102,6 +126,26 @@
         "",
         ""
       ],
+      "photo_focus_x": [
+        50,
+        50,
+        50
+      ],
+      "photo_focus_y": [
+        50,
+        50,
+        50
+      ],
+      "photo_boxes": [
+        null,
+        null,
+        null
+      ],
+      "photo_quality": [
+        "",
+        "",
+        ""
+      ],
       "primary_photo": "images/cattle/tag-12345-3.jpg"
     },
     {
@@ -135,6 +179,26 @@
         "2025-02-10"
       ],
       "photo_types": [
+        "",
+        "",
+        ""
+      ],
+      "photo_focus_x": [
+        50,
+        50,
+        50
+      ],
+      "photo_focus_y": [
+        50,
+        50,
+        50
+      ],
+      "photo_boxes": [
+        null,
+        null,
+        null
+      ],
+      "photo_quality": [
         "",
         "",
         ""

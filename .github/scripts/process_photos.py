@@ -49,6 +49,20 @@ PHOTO_DATES = {}
 # See docs/BEHAVIOR-DRIVEN-SPEC.md § 2.
 PHOTO_TYPES = {}
 
+# Cache of "photo-path -> {focus_x, focus_y, box, quality}" populated during
+# process_inbox from Claude's focal-point + bounding-box + quality response
+# per docs/PHOTO-PIPELINE-SPEC.md § 1 and § 4. Used to generate -thumb.jpg
+# crops, to drive CSS object-position on the public card, and to skip
+# "poor"-quality photos in primary selection.
+PHOTO_META = {}
+
+# Cache of "photo-path -> {caption, category, date}" populated during
+# process_inbox from Claude's classification response for gallery photos.
+# Used to build/update gallery-data.json so gallery.html can render real
+# captions instead of the current hardcoded placeholders.
+# See docs/PHOTO-PIPELINE-SPEC.md § 2.
+GALLERY_META = {}
+
 # View-type priority table from the spec. Lower number = better primary
 # photo candidate. Unknown types rank last.
 VIEW_TYPE_PRIORITY = {
@@ -114,21 +128,24 @@ def strip_and_resize(filepath, max_width=MAX_WIDTH, quality=JPEG_QUALITY):
 def classify_with_claude(filepath):
     """
     Send image to Claude API for classification.
-    Returns (category, suggested_name) or (None, None) on failure.
+    Returns (category, suggested_name, caption) or (None, None, None) on
+    failure. caption is the short descriptive text Claude wrote for the
+    photo — used to populate gallery-data.json per
+    docs/PHOTO-PIPELINE-SPEC.md § 2.
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
-        return None, None
+        return None, None, None
 
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
     except ImportError:
         print("  anthropic package not available, skipping classification")
-        return None, None
+        return None, None, None
     except Exception as e:
         print(f"  Error initializing Anthropic client: {e}")
-        return None, None
+        return None, None, None
 
     try:
         with open(filepath, "rb") as f:
@@ -161,7 +178,8 @@ Categories:
 - ranch: Landscapes, property, buildings, fences, equipment, ranch scenery
 - mascot: Photos clearly featuring a toddler/baby as the main subject
 
-Use lowercase, hyphens, no spaces in filename. Keep it short (2-4 words)."""
+Use lowercase, hyphens, no spaces in filename. Keep it short (2-4 words).
+Keep the caption to one short sentence — it shows below the photo on the gallery page."""
                     }
                 ]
             }]
@@ -175,6 +193,7 @@ Use lowercase, hyphens, no spaces in filename. Keep it short (2-4 words)."""
 
         category = result.get("category", "gallery")
         filename = result.get("filename", None)
+        caption  = (result.get("caption") or "").strip()
 
         # Validate category
         valid = {"cattle", "hunting", "family", "ranch", "mascot"}
@@ -185,20 +204,32 @@ Use lowercase, hyphens, no spaces in filename. Keep it short (2-4 words)."""
         if category in ("family", "ranch"):
             category = "gallery"
 
-        return category, filename
+        return category, filename, caption
 
     except Exception as e:
         print(f"  Claude classification failed: {e}")
-        return None, None
+        return None, None, None
+
+
+VALID_QUALITIES = {"excellent", "good", "fair", "poor"}
 
 
 def classify_cattle_view(filepath):
     """
-    Ask Claude to classify a cattle photo's view type per the spec
-    (docs/BEHAVIOR-DRIVEN-SPEC.md § 2). Returns one of the strings in
-    VALID_VIEW_TYPES, or None if classification failed / no API key / the
-    anthropic SDK is unavailable. The caller should tolerate None and leave
-    the photo uncategorized rather than guessing.
+    Ask Claude to classify a cattle photo's view type, focal point, bounding
+    box, and quality. Returns a dict with keys:
+        type       : one of VALID_VIEW_TYPES, or None
+        focus_x    : int 0-100 (% of frame width), or 50 fallback
+        focus_y    : int 0-100 (% of frame height), or 50 fallback
+        box        : [left, top, right, bottom] as ints 0-100, or None
+        quality    : one of VALID_QUALITIES, or None
+
+    Returns None on API failure / missing key / SDK unavailable. Any valid
+    response is returned even if only some fields are present — the caller
+    handles missing fields gracefully (center fallback, no thumb, etc.).
+
+    Spec references: BEHAVIOR-DRIVEN-SPEC § 2 (view type),
+    PHOTO-PIPELINE-SPEC § 1 (focal point + box) and § 4 (quality).
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
@@ -220,7 +251,7 @@ def classify_cattle_view(filepath):
 
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=100,
+            max_tokens=200,
             messages=[{
                 "role": "user",
                 "content": [
@@ -237,9 +268,18 @@ def classify_cattle_view(filepath):
                         "text": (
                             "Classify this cattle photo. Respond with ONLY a JSON object, "
                             "no markdown, no backticks:\n\n"
-                            '{"type": "one of: side-profile, headshot, rear, '
-                            'three-quarter, with-handler, in-pasture, group, other"}\n\n'
-                            "Definitions:\n"
+                            '{"type": "side-profile|headshot|rear|three-quarter|'
+                            'with-handler|in-pasture|group|other",'
+                            ' "focus_x": 50, "focus_y": 50,'
+                            ' "box": [15, 20, 85, 90],'
+                            ' "quality": "excellent|good|fair|poor"}\n\n'
+                            "Field definitions:\n"
+                            "- type: Classify the camera angle (see below).\n"
+                            "- focus_x: Horizontal center of the main animal as a percentage (0=left, 100=right).\n"
+                            "- focus_y: Vertical center of the main animal as a percentage (0=top, 100=bottom).\n"
+                            "- box: Bounding box around the main animal as [left%, top%, right%, bottom%]. Include the whole animal with a small margin. For group shots, box the most prominent animal.\n"
+                            "- quality: excellent (sharp, well-lit, clean background), good (usable, decent light), fair (grainy, poor light, cluttered background), poor (blurry, very dark, animal barely visible).\n\n"
+                            "View type definitions:\n"
                             "- side-profile: Full body visible from the side, showing the animal's build/conformation\n"
                             "- headshot: The animal's face or head is the main subject\n"
                             "- rear: Viewed from behind, showing width and muscling\n"
@@ -258,22 +298,124 @@ def classify_cattle_view(filepath):
         text = re.sub(r'^```json\s*', '', text)
         text = re.sub(r'\s*```$', '', text)
         result = json.loads(text)
-        view_type = result.get("type", "").strip().lower()
+
+        view_type = str(result.get("type", "")).strip().lower()
         if view_type not in VALID_VIEW_TYPES:
             print(f"  Unknown view type from Claude: {view_type!r}")
-            return None
-        return view_type
+            view_type = None
+
+        def clamp_pct(v, default):
+            try:
+                iv = int(round(float(v)))
+                return max(0, min(100, iv))
+            except (TypeError, ValueError):
+                return default
+
+        focus_x = clamp_pct(result.get("focus_x"), 50)
+        focus_y = clamp_pct(result.get("focus_y"), 50)
+
+        raw_box = result.get("box")
+        box = None
+        if isinstance(raw_box, list) and len(raw_box) == 4:
+            try:
+                l, t, r, b = [clamp_pct(v, None) for v in raw_box]
+                if None not in (l, t, r, b) and r > l and b > t:
+                    box = [l, t, r, b]
+            except Exception:
+                box = None
+
+        quality = str(result.get("quality", "")).strip().lower()
+        if quality not in VALID_QUALITIES:
+            quality = None
+
+        return {
+            "type":    view_type,
+            "focus_x": focus_x,
+            "focus_y": focus_y,
+            "box":     box,
+            "quality": quality,
+        }
     except Exception as e:
         print(f"  Claude view-type classification failed: {e}")
         return None
 
 
-def pick_primary_photo(photos, photo_types, photo_dates):
+def crop_to_subject(source_path, thumb_path, box, padding_pct=20):
+    """
+    Auto-crop a cattle photo to the bounding box returned by Claude with ~20%
+    padding on each side. Writes the result to thumb_path. Uses ImageMagick
+    (already a pipeline dependency) so no new Python package is needed.
+
+    box is [left%, top%, right%, bottom%] where each value is an int 0-100.
+    Returns True on success, False on failure (e.g. bad box, ImageMagick
+    error, source file missing).
+    """
+    if not box or len(box) != 4:
+        return False
+    try:
+        # Query the image dimensions so we can turn percentages into pixels
+        # and apply padding before the crop.
+        ident = subprocess.run(
+            ["identify", "-format", "%w %h", str(source_path)],
+            check=True, capture_output=True
+        )
+        w_str, h_str = ident.stdout.decode().strip().split()
+        w, h = int(w_str), int(h_str)
+        if w <= 0 or h <= 0:
+            return False
+
+        left   = int(w * box[0] / 100)
+        top    = int(h * box[1] / 100)
+        right  = int(w * box[2] / 100)
+        bottom = int(h * box[3] / 100)
+
+        # Pad around the subject — 20% of the box size on each axis gives
+        # the animal some breathing room inside the card
+        bw = max(1, right - left)
+        bh = max(1, bottom - top)
+        pad_x = int(bw * padding_pct / 100)
+        pad_y = int(bh * padding_pct / 100)
+        left   = max(0, left - pad_x)
+        top    = max(0, top - pad_y)
+        right  = min(w, right + pad_x)
+        bottom = min(h, bottom + pad_y)
+
+        crop_w = max(1, right - left)
+        crop_h = max(1, bottom - top)
+        geometry = f"{crop_w}x{crop_h}+{left}+{top}"
+
+        subprocess.run(
+            [
+                "convert", str(source_path),
+                "-crop", geometry,
+                "+repage",
+                "-quality", str(JPEG_QUALITY),
+                "-interlace", "Plane",
+                str(thumb_path),
+            ],
+            check=True, capture_output=True,
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"  ERROR cropping {source_path}: {e.stderr.decode()[:200] if e.stderr else e}")
+        return False
+    except Exception as e:
+        print(f"  ERROR cropping {source_path}: {e}")
+        return False
+
+
+def pick_primary_photo(photos, photo_types, photo_dates, photo_quality=None):
     """
     Choose the best primary photo for an animal from the spec priority table:
     most-recent side-profile > most-recent headshot > rear > three-quarter >
     with-handler > in-pasture > group > other. Falls back to the first photo
     in the array when no types exist.
+
+    Quality-aware (docs/PHOTO-PIPELINE-SPEC.md § 4): photos rated "poor" are
+    skipped during selection. If every photo is rated "poor", we fall back to
+    the normal selection across them all (something has to represent the
+    animal). "fair"/"good"/"excellent" are treated equally — recency beats
+    quality in that range.
 
     Tie-breaking rules (in order):
       1. Lower priority value wins (side-profile beats headshot).
@@ -287,6 +429,8 @@ def pick_primary_photo(photos, photo_types, photo_dates):
     if not photos:
         return None
 
+    photo_quality = photo_quality or []
+
     def priority_of(i):
         vt = photo_types[i] if i < len(photo_types) else ""
         return VIEW_TYPE_PRIORITY.get(vt, 99)
@@ -294,8 +438,19 @@ def pick_primary_photo(photos, photo_types, photo_dates):
     def date_of(i):
         return photo_dates[i] if i < len(photo_dates) else ""
 
-    best_i = 0
-    for i in range(1, len(photos)):
+    def is_poor(i):
+        q = photo_quality[i] if i < len(photo_quality) else ""
+        return q == "poor"
+
+    # First pass: candidates with quality != "poor"
+    candidates = [i for i in range(len(photos)) if not is_poor(i)]
+    # Fall back to all photos if everything is rated poor — we still need
+    # to show something.
+    if not candidates:
+        candidates = list(range(len(photos)))
+
+    best_i = candidates[0]
+    for i in candidates[1:]:
         p_i, p_best = priority_of(i), priority_of(best_i)
         if p_i < p_best:
             best_i = i
@@ -472,6 +627,7 @@ def process_inbox():
 
         # Step 2: Route by filename prefix
         category, target_name = route_by_prefix(photo.name)
+        gallery_caption = None  # set when we fall through to Claude below
 
         if category and target_name:
             # Prefix told us exactly where this goes
@@ -480,7 +636,7 @@ def process_inbox():
             print(f"  Routed by prefix: {category} -> {target.name}")
         else:
             # No prefix match — try Claude classification
-            category, suggested_name = classify_with_claude(photo)
+            category, suggested_name, gallery_caption = classify_with_claude(photo)
 
             if category and suggested_name:
                 print(f"  Classified by Claude: {category} -> {suggested_name}")
@@ -505,14 +661,40 @@ def process_inbox():
         if captured_date and category == "cattle":
             PHOTO_DATES[str(target)] = captured_date
 
-        # Step 4 (cattle only): ask Claude for a view-type classification
-        # so the lightbox's Featured Shots section has metadata to work with
-        # and the primary photo can be auto-selected by quality.
+        # Stash gallery caption + category + date for update_gallery_data()
+        # (PHOTO-PIPELINE-SPEC § 2). We store for anything that landed in
+        # the gallery folder or any folder the caption applies to.
+        if gallery_caption and category in ("gallery", "hunting"):
+            GALLERY_META[str(target)] = {
+                "caption":  gallery_caption,
+                "category": category,
+                "date":     captured_date or "",
+            }
+
+        # Step 4 (cattle only): ask Claude for view type + focal point +
+        # box + quality. Then use the box to auto-generate a -thumb.jpg
+        # variant that crops tightly around the animal. The full image
+        # stays in the lightbox / growth timeline, the thumb shows on the
+        # card grid so every animal appears roughly the same size.
         if category == "cattle":
-            view_type = classify_cattle_view(target)
-            if view_type:
-                print(f"  View type: {view_type}")
-                PHOTO_TYPES[str(target)] = view_type
+            meta = classify_cattle_view(target)
+            if meta:
+                if meta.get("type"):
+                    print(f"  View type: {meta['type']}")
+                    PHOTO_TYPES[str(target)] = meta["type"]
+                PHOTO_META[str(target)] = {
+                    "focus_x": meta.get("focus_x", 50),
+                    "focus_y": meta.get("focus_y", 50),
+                    "box":     meta.get("box"),
+                    "quality": meta.get("quality"),
+                }
+                if meta.get("quality"):
+                    print(f"  Quality: {meta['quality']}")
+                # Generate a -thumb.jpg auto-cropped around the animal
+                if meta.get("box"):
+                    thumb_path = target.with_name(target.stem + "-thumb" + target.suffix)
+                    if crop_to_subject(target, thumb_path, meta["box"]):
+                        print(f"  Cropped thumb: {thumb_path.name}")
 
     print("\nInbox processing complete.")
 
@@ -552,10 +734,16 @@ def update_cattle_data():
     animals = data.get("animals", [])
     existing_tags = {a["tag"] for a in animals}
 
-    # Find all tag photos
+    # Find all tag photos (full images only — exclude `-thumb.jpg` siblings).
+    # The regex uses \w+ for the tag so alphanumeric tags like "A12", "R5",
+    # or "125B" glob and parse correctly per PHOTO-PIPELINE-SPEC § 3.
     tag_photos = {}
     for photo in sorted(CATTLE_DIR.glob("tag-*-*.jpg")):
-        match = re.match(r'tag-(\w+)-(\d+)\.jpg', photo.name)
+        # Skip the auto-generated thumbnails — they're siblings of the real
+        # files and shouldn't enter the photos[] array.
+        if photo.stem.endswith("-thumb"):
+            continue
+        match = re.match(r'tag-(\w+)-(\d+)\.jpg$', photo.name)
         if match:
             tag = match.group(1).upper()  # Normalize to uppercase
             if tag not in tag_photos:
@@ -596,55 +784,90 @@ def update_cattle_data():
                 "photos": [],
                 "photo_dates": [],
                 "photo_types": [],
+                "photo_focus_x": [],
+                "photo_focus_y": [],
+                "photo_boxes": [],
+                "photo_quality": [],
                 "primary_photo": ""
             })
             existing_tags.add(tag)
             changed = True
 
-    # Update photo arrays for all animals. Keep photo_dates + photo_types
-    # in lockstep with photos: look up this run's fresh dates/types from the
-    # in-memory caches, and carry over anything already stored in the JSON
-    # for photos we're not touching.
+    # Update photo arrays for all animals. Keep photo_dates / photo_types /
+    # photo_focus_x / photo_focus_y / photo_boxes / photo_quality in lockstep
+    # with photos: prefer this run's fresh data from the in-memory caches,
+    # fall back to anything the JSON already had for photos we're not touching.
     for animal in animals:
         tag = animal["tag"]
         photos = tag_photos.get(tag, [])
         old_photos = animal.get("photos", [])
         old_dates  = animal.get("photo_dates", [])
         old_types  = animal.get("photo_types", [])
-        date_lookup = {}
-        type_lookup = {}
-        for i, p in enumerate(old_photos):
-            if i < len(old_dates):
-                date_lookup[p] = old_dates[i]
-            if i < len(old_types):
-                type_lookup[p] = old_types[i]
-        new_dates = []
-        new_types = []
+        old_focus_x = animal.get("photo_focus_x", [])
+        old_focus_y = animal.get("photo_focus_y", [])
+        old_boxes   = animal.get("photo_boxes", [])
+        old_quality = animal.get("photo_quality", [])
+
+        def _old_at(i, arr):
+            return arr[i] if i < len(arr) else None
+
+        date_lookup = {p: _old_at(i, old_dates) for i, p in enumerate(old_photos)}
+        type_lookup = {p: _old_at(i, old_types) for i, p in enumerate(old_photos)}
+        fx_lookup   = {p: _old_at(i, old_focus_x) for i, p in enumerate(old_photos)}
+        fy_lookup   = {p: _old_at(i, old_focus_y) for i, p in enumerate(old_photos)}
+        box_lookup  = {p: _old_at(i, old_boxes) for i, p in enumerate(old_photos)}
+        qual_lookup = {p: _old_at(i, old_quality) for i, p in enumerate(old_photos)}
+
+        new_dates, new_types = [], []
+        new_fx, new_fy, new_boxes, new_quality = [], [], [], []
         for p in photos:
+            # photo_dates
             if p in PHOTO_DATES:
                 new_dates.append(PHOTO_DATES[p])
-            elif p in date_lookup and date_lookup[p]:
+            elif date_lookup.get(p):
                 new_dates.append(date_lookup[p])
             else:
                 new_dates.append("")
+            # photo_types
             if p in PHOTO_TYPES:
                 new_types.append(PHOTO_TYPES[p])
-            elif p in type_lookup and type_lookup[p]:
+            elif type_lookup.get(p):
                 new_types.append(type_lookup[p])
             else:
                 new_types.append("")
+            # photo_focus_x / y / box / quality
+            meta = PHOTO_META.get(p)
+            if meta:
+                new_fx.append(meta.get("focus_x", 50))
+                new_fy.append(meta.get("focus_y", 50))
+                new_boxes.append(meta.get("box"))
+                new_quality.append(meta.get("quality") or "")
+            else:
+                new_fx.append(fx_lookup.get(p) if fx_lookup.get(p) is not None else 50)
+                new_fy.append(fy_lookup.get(p) if fy_lookup.get(p) is not None else 50)
+                new_boxes.append(box_lookup.get(p))
+                new_quality.append(qual_lookup.get(p) or "")
 
         # Recompute primary_photo whenever photos or classifications move.
-        new_primary = pick_primary_photo(photos, new_types, new_dates) or ""
+        # Quality-aware selection skips "poor" photos per PHOTO-PIPELINE-SPEC § 4.
+        new_primary = pick_primary_photo(photos, new_types, new_dates, new_quality) or ""
         old_primary = animal.get("primary_photo", "")
 
         if (photos != old_photos
             or new_dates != old_dates
             or new_types != old_types
+            or new_fx != old_focus_x
+            or new_fy != old_focus_y
+            or new_boxes != old_boxes
+            or new_quality != old_quality
             or new_primary != old_primary):
             animal["photos"] = photos
             animal["photo_dates"] = new_dates
             animal["photo_types"] = new_types
+            animal["photo_focus_x"] = new_fx
+            animal["photo_focus_y"] = new_fy
+            animal["photo_boxes"] = new_boxes
+            animal["photo_quality"] = new_quality
             animal["primary_photo"] = new_primary
             changed = True
 
@@ -676,8 +899,66 @@ def update_cattle_data():
         print("  cattle-data.json already up to date.")
 
 
+def update_gallery_data():
+    """
+    Append newly-classified gallery photos to gallery-data.json, preserving
+    existing entries. See docs/PHOTO-PIPELINE-SPEC.md § 2.
+
+    This function only adds entries for photos that went through
+    classify_with_claude during this run (stored in GALLERY_META). Manually-
+    placed photos in images/gallery/ don't get captions — the spec says the
+    caption comes from the classification pass. Existing entries in
+    gallery-data.json are left alone unless their file path is in GALLERY_META
+    (in which case we refresh the caption/category/date).
+    """
+    if not GALLERY_META:
+        return  # nothing new to record
+
+    data_file = Path("gallery-data.json")
+    if data_file.exists():
+        try:
+            with open(data_file, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"photos": []}
+    else:
+        data = {"photos": []}
+
+    if not isinstance(data, dict):
+        data = {"photos": []}
+    if "photos" not in data or not isinstance(data["photos"], list):
+        data["photos"] = []
+
+    existing_by_file = {p.get("file"): p for p in data["photos"] if isinstance(p, dict)}
+    changed = False
+    for path, meta in GALLERY_META.items():
+        entry = {
+            "file":     path,
+            "caption":  meta.get("caption", ""),
+            "category": meta.get("category", "gallery"),
+            "date":     meta.get("date", ""),
+        }
+        if path in existing_by_file:
+            if existing_by_file[path] != entry:
+                existing_by_file[path].update(entry)
+                changed = True
+        else:
+            data["photos"].append(entry)
+            changed = True
+
+    if changed:
+        from datetime import datetime
+        if "meta" not in data or not isinstance(data["meta"], dict):
+            data["meta"] = {}
+        data["meta"]["last_updated"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        with open(data_file, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"  Updated gallery-data.json ({len(data['photos'])} entries)")
+
+
 if __name__ == "__main__":
     process_inbox()
     process_cattle()
     update_cattle_data()
+    update_gallery_data()
     print("\nDone.")
