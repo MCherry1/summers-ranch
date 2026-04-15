@@ -2254,7 +2254,12 @@
             const statusSelect = el.querySelector('[data-role="status-select"]');
             const removeBtn = el.querySelector('[data-role="remove-herd"]');
             const originalStatus = animal.status || 'breeding';
-            let confirmedRemove = REMOVED_STATUSES.has(originalStatus); // pre-confirmed if already removed
+            // Starts true — nothing to confirm until the user actively changes
+            // the status to a REMOVED_STATUS it didn't start in. The change
+            // handler below flips it to false only in that specific case; a
+            // save that didn't touch the status dropdown (notes, weights,
+            // lineage edits) is always allowed.
+            let confirmedRemove = true;
             const REMOVE_BTN_LABEL = 'Remove from Herd';
             const REMOVE_BTN_CONFIRMED_LABEL = 'Removal confirmed — tap Save';
             function resetRemoveBtn() {
