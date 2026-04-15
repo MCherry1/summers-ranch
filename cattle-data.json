@@ -276,7 +276,7 @@
     },
     {
       "tag": "209",
-      "name": "",
+      "name": "Ethel",
       "born": "",
       "date_entered": "",
       "registration": "",
@@ -285,8 +285,8 @@
       "breed": "",
       "breed_detail": "",
       "sex": "",
-      "status": "",
-      "source": "",
+      "status": "breeding",
+      "source": "herd",
       "source_ranch": "",
       "breeding_stock": false,
       "birth_weight": null,
@@ -376,7 +376,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 04:09 UTC",
+    "last_updated": "2026-04-15 04:48 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
