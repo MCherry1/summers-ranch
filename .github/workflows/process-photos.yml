@@ -38,5 +38,6 @@ jobs:
             echo "No photos to process"
           else
             git commit -m "Auto-process photos: resize, optimize, organize"
+            git pull --rebase
             git push
           fi
