@@ -382,6 +382,54 @@
             if (e.key === 'ArrowLeft') navLightbox(-1);
             if (e.key === 'ArrowRight') navLightbox(1);
         });
+
+        // Progressive enhancement: if gallery-data.json exists, merge its
+        // photo entries into the grid. For photos that match an existing
+        // hardcoded item by data-full path, replace the caption with the
+        // pipeline-generated one. For photos that don't match, append a
+        // new .gallery-item tile. See docs/PHOTO-PIPELINE-SPEC.md § 2.
+        (function enhanceGallery() {
+            var grid = document.getElementById('galleryGrid');
+            if (!grid) return;
+            fetch('gallery-data.json', { cache: 'no-cache' })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    if (!data || !Array.isArray(data.photos)) return;
+                    var existing = {};
+                    grid.querySelectorAll('.gallery-item').forEach(function(el) {
+                        var full = el.dataset.full || '';
+                        if (full) existing[full] = el;
+                    });
+                    data.photos.forEach(function(entry) {
+                        if (!entry || !entry.file) return;
+                        var file = entry.file;
+                        var caption = entry.caption || '';
+                        var category = entry.category || 'ranch';
+                        if (existing[file]) {
+                            // Upgrade the caption on an existing hardcoded item
+                            if (caption) {
+                                var capEl = existing[file].querySelector('.gallery-item-caption');
+                                if (capEl) capEl.textContent = caption;
+                            }
+                            return;
+                        }
+                        // Append a new tile for pipeline-uploaded photos
+                        var tile = document.createElement('div');
+                        tile.className = 'gallery-item reveal';
+                        tile.dataset.category = category;
+                        tile.dataset.full = file;
+                        tile.setAttribute('onclick', 'openLightbox(this)');
+                        tile.innerHTML =
+                            '<img src="' + file + '" alt="' + (caption.replace(/"/g, '&quot;')) + '" loading="lazy">' +
+                            '<div class="gallery-item-overlay">' +
+                                '<span class="gallery-item-caption">' + caption + '</span>' +
+                            '</div>';
+                        grid.appendChild(tile);
+                        observer.observe(tile);
+                    });
+                })
+                .catch(function() { /* no gallery-data.json yet, leave hardcoded */ });
+        })();
     </script>
     <script src="js/ranch-calendar.js"></script>
 </body>
