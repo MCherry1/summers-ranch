@@ -143,49 +143,117 @@ When the pipeline creates an entry for a `XXX-CALF1` tag:
 }
 ```
 
-### Admin Panel — Creating a Calf
+### Admin Panel — Calf UI Flow
 
-When creating a new animal:
+The calf interface is driven by the **animal type dropdown** (sex field). When the type changes to any calf category, the calf-specific UI appears. When it changes away from calf, the transition UI appears (if applicable).
 
-1. If `sex` is set to `"calf"` (or `"bull calf"` or `"heifer calf"`):
-   - The **tag number input is disabled/grayed out**
-   - A **"Dam's tag #"** field appears (or the Dam dropdown auto-populates this)
-   - A **"Calf number"** field appears (defaults to `1`, for twins use `2`, `3`)
-   - The tag is auto-generated as `[dam_tag]-CALF[number]`
-   - `calf_of` is auto-set to the dam's tag
-   - `calf_status` is set to `"nursing"`
+#### State 1: Animal type is set to "calf" (or "bull calf" / "heifer calf")
 
-2. If the dam's tag is manually entered (dam not in the system):
-   - The tag still auto-generates as `[entered_number]-CALF`
-   - `calf_of` is set to the entered number
+```
+┌──────────────────────────────────────────────────┐
+│  Tag Number                                      │
+│  [ _______ ]  (grayed out, empty — no real tag)  │
+│                                                  │
+│  Calf Tag Number              ☑ Use dam tag      │
+│  [ 209     ]  (auto-filled, non-editable)        │
+│                                                  │
+│  Type                                            │
+│  [ Calf ▾ ]                                      │
+│                                                  │
+│  Dam                                             │
+│  [ #209 — Bessie ▾ ]                             │
+└──────────────────────────────────────────────────┘
+```
 
-### Admin Panel — Giving a Calf Its Own Tag
+**Behavior:**
+- Top-level **Tag Number** is grayed out and empty. Visually obvious this isn't a real tag yet.
+- **Calf Tag Number** field appears (only visible when type is a calf category).
+- **"Use dam tag number" checkbox** — checked by default. When checked:
+  - Calf tag auto-fills from the dam's tag number (if dam is set and has a tag)
+  - Calf tag field is non-editable (grayed out, shows the number)
+  - If dam is not set or has no tag, the calf tag field is editable so Marty can type it manually
+- When **"Use dam tag number" is unchecked:**
+  - Calf tag field grays out and disappears
+  - Top-level Tag Number field becomes editable (this calf already has its own tag)
+  - This handles the case where a calf arrives with its own tag from day one
 
-When an animal has `calf_status: "nursing"` or `"weaned"`:
+#### State 2: Changing type FROM calf to another type (e.g., heifer, cow, bull)
 
-1. A prominent button appears: **"Assign Own Tag"** (styled like "Remove from Herd" — appears alongside the status controls)
-2. Clicking it:
-   - Enables the tag number input field (was grayed out)
-   - Clears the tag field for the admin to type the new permanent tag
-   - Shows a confirmation message: "Enter the new tag number for this animal"
-3. When the admin types the new tag (e.g., "315") and saves:
-   - `tag` changes from `"209-CALF"` to `"315"`
-   - `calf_of` is cleared
-   - `calf_status` is set to `""`
-   - **All photos are renamed:**
-     ```
-     images/cattle/tag-209-CALF-1.jpg → images/cattle/tag-315-1.jpg
-     images/cattle/tag-209-CALF-2.jpg → images/cattle/tag-315-2.jpg
-     (and thumbnails if they exist)
-     ```
-   - `photos` array in JSON is updated with new paths
-   - `photo_fingerprints.json` is updated with new paths
-   - Commit message: `"Assign tag #315 to calf of #209 — rename photos and records"`
+**If "Use dam tag number" was checked (calf was using dam's tag):**
+
+```
+┌──────────────────────────────────────────────────┐
+│  Tag Number                                      │
+│  [ _______ ]  (still grayed out)                 │
+│                                                  │
+│  Type                                            │
+│  [ Heifer ▾ ]           [ Assign Tag ]           │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+- The Calf Tag Number field disappears (no longer a calf)
+- An **"Assign Tag"** button appears next to the type dropdown
+- Clicking "Assign Tag" → the button transforms into a **number input field**:
+
+```
+┌──────────────────────────────────────────────────┐
+│  Tag Number                                      │
+│  [ _______ ]  (still grayed out)                 │
+│                                                  │
+│  Type                                            │
+│  [ Heifer ▾ ]     New tag: [ 315  ]              │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+- The number input uses `<input type="number">` for big numeric keys
+- When Marty clicks **Save**:
+  - The new tag number populates the top-level Tag Number field
+  - `calf_of` is cleared
+  - `calf_status` is cleared
+  - All photos renamed (see Photo Renaming section below)
+  - Calf Tag Number field is gone
+
+**If "Use dam tag number" was unchecked (calf already had its own tag):**
+- The "Assign Tag" button does NOT appear — the animal already has a real tag
+- The type simply changes, tag stays as-is
+- No photo renaming needed
+
+#### Creating a brand new calf (Add Animal form)
+
+1. Type defaults to blank ("—")
+2. Marty selects "Calf" from the type dropdown
+3. Calf Tag Number field appears with "Use dam tag number" checked
+4. Marty selects the dam from the Dam dropdown
+5. Calf tag auto-fills with dam's tag number
+6. Marty fills in born date, sex details, etc.
+7. Clicks Create
+8. Entry is created with `tag: "209-CALF1"`, `calf_of: "209"`, `calf_status: "nursing"`
+9. The calf number (1, 2, etc.) is auto-determined: count existing `209-CALF*` entries and use the next number
+
+### Admin Panel — Giving a Calf Its Own Tag (Save Behavior)
+
+When Save is clicked after typing a new tag number in the "Assign Tag" field:
+
+1. `tag` changes from `"209-CALF1"` to `"315"`
+2. `calf_of` is cleared
+3. `calf_status` is set to `""`
+4. **All photos are renamed:**
+   ```
+   images/cattle/tag-209-CALF1-1.jpg → images/cattle/tag-315-1.jpg
+   images/cattle/tag-209-CALF1-2.jpg → images/cattle/tag-315-2.jpg
+   (and thumbnails if they exist)
+   ```
+5. `photos` array in JSON is updated with new paths
+6. `photo_fingerprints.json` is updated with new paths
+7. Commit message: `"Assign tag #315 to calf of #209 — rename photos and records"`
 
 ### Public Cattle Page — Calf Display
 
 Calves with `calf_status: "nursing"` appear as normal cards but with:
-- Tag displayed as: **"Calf of #209"** (not "Tag #209-CALF")
+- Tag displayed as: **"Calf of #209"** (not "Tag #209-CALF1")
+- If there are twins: **"Calf 1 of #209"** and **"Calf 2 of #209"**
 - The dam's tag is a clickable link to the dam's card
 - If the pink/blue newborn ribbon is active, it shows as usual
 
