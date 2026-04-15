@@ -369,6 +369,34 @@
         ""
       ],
       "primary_photo": "images/cattle/tag-207-1.jpg"
+    },
+    {
+      "tag": "BONGO BEE",
+      "name": "Test",
+      "born": "",
+      "date_entered": "2026-04-15",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": true,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [],
+      "photo_dates": []
     }
   ],
   "sires": [],
@@ -376,7 +404,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 18:56 UTC",
+    "last_updated": "2026-04-15 19:08 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
