@@ -31,21 +31,19 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python3 .github/scripts/process_photos.py
-
+        
       - name: Commit processed photos
         run: |
           git config user.name "Ranch Photo Bot"
-          git config user.email "photos@summersranch.com"
-          # photo-fingerprints.json is the metadata-fingerprint dedup table
-          # maintained by process_photos.py (CLEANUP-SPEC § 1). Include it
-          # so the table grows with new uploads and shrinks when animals
-          # are archived.
-          git add -A images/ cattle-data.json gallery-data.json photo-fingerprints.json 2>/dev/null || true
-
+          git config user.email "photos@mrsummersranch.com"
+          git add -A images/ cattle-data.json
           if git diff --staged --quiet; then
             echo "No photos to process"
           else
             git commit -m "Auto-process photos: resize, optimize, organize"
-            git pull --rebase
-            git push
+            for i in 1 2 3; do
+              git pull --rebase && git push && break
+              echo "Push attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
           fi
