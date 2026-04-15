@@ -336,7 +336,7 @@
       "status": "breeding",
       "source": "herd",
       "source_ranch": "",
-      "breeding_stock": true,
+      "breeding_stock": false,
       "birth_weight": null,
       "weaning_weight": null,
       "yearling_weight": null,
