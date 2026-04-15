@@ -177,3 +177,42 @@ Use a single tooltip container that repositions itself when triggered. Don't cre
 - The ⓘ button must not interfere with the label text — keep it on the same line but with enough spacing.
 - Dismissing a tooltip by tapping elsewhere should NOT accidentally trigger the field below it. Use `stopPropagation` on the tooltip container.
 - Tooltips should be closeable by tapping the ⓘ button again (toggle behavior).
+
+---
+
+## Implementation Notes
+
+Shipped in `admin.html`.
+
+- **DOM** — a single `<div class="help-tooltip" id="helpTooltip">` lives
+  just before the closing `</script>`; the form buttons are
+  `<button class="help-tip" data-tip="KEY">ⓘ</button>` nested inside
+  each `<label>` in `buildAnimalElement()`. Currently wired up for
+  13 fields on the edit form: `name`, `born`, `sex`, `registration`,
+  `breed_detail`, `sire`, `dam`, `status`, `calves`, `birth_weight`,
+  `weaning_weight`, `yearling_weight`, and `notes`.
+- **CSS** — `.help-tip` is the 20px circular button with a `::before`
+  pseudo-element expanding the touch target to 44x44. `.help-tooltip`
+  is `position: fixed` with a max-width of 280px and a gold-accented
+  `<strong>` rule so key terms in the copy pop. The `::after` caret
+  uses a CSS custom property `--arrow-left` that the JS updates on
+  every open so the arrow still points at the button even when the
+  bubble is clamped against the viewport edges.
+- **Positioning** — `positionTooltip(button)` measures the button and
+  bubble rects, prefers placing above the button, flips below when
+  there isn't room, and clamps the left offset to an 8px margin on
+  both sides. The `--arrow-left` property is recomputed so the caret
+  stays aligned with the button center.
+- **TOOLTIPS dict** — object keyed by `data-tip` value. Entries exist
+  for every spec'd field (including `calving_ease`, `disposition`,
+  `pregnancy_status`, `expected_calving` — their buttons will light
+  up once the aspirational-fields PR lands).
+- **Event handling** — one capture-phase click listener on `document`.
+  Clicking a `.help-tip` button toggles its tooltip (tap once to
+  open, tap again to close). Clicking anything that isn't a help-tip
+  or inside the bubble itself closes the open tooltip. `Escape` also
+  closes. `scroll` (capture) and `resize` dismiss so the fixed bubble
+  never drifts away from its anchor button.
+- **Mobile** — `@media (max-width: 480px)` clamps the bubble to the
+  full width of the viewport (minus 0.75rem margins) so the caret
+  still lines up via the dynamic `--arrow-left` value.
