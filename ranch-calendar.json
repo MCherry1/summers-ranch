@@ -25,7 +25,7 @@
       "name": "Calving Season",
       "start": "02-15",
       "end": "04-30",
-      "banner": "Calving season is underway \u2014 new arrivals coming soon!",
+      "banner": "Calving season is underway — new arrivals coming soon!",
       "hero_image": "images/hero/spring-calves.jpg",
       "status_text": "Calves are hitting the ground at Summers Ranch.",
       "priority": 2
@@ -36,16 +36,16 @@
       "end": "08-31",
       "banner": null,
       "hero_image": "images/hero/summer-pasture.jpg",
-      "status_text": "Breeding season \u2014 the herd is out on summer pasture.",
+      "status_text": "Breeding season — the herd is out on summer pasture.",
       "priority": 2
     },
     {
       "name": "Fall Roundup",
       "start": "09-15",
       "end": "11-15",
-      "banner": "Fall calves are ready \u2014 call about availability.",
+      "banner": "Fall calves are ready — call about availability.",
       "hero_image": "images/hero/fall-roundup.jpg",
-      "status_text": "Fall roundup \u2014 weaning calves and sorting the herd.",
+      "status_text": "Fall roundup — weaning calves and sorting the herd.",
       "priority": 2
     },
     {
@@ -58,10 +58,22 @@
       "priority": 2
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "name": "Grau Party",
+      "type": "ranch",
+      "date": "2026-04-18",
+      "end_date": "2026-04-18",
+      "advance_days": 7,
+      "banner": "Catch us this weekend at the Grau’s!",
+      "during_text": "At the Grau Party Today!",
+      "show_in_upcoming": true,
+      "priority": 3
+    }
+  ],
   "recurring_events": [],
   "meta": {
-    "last_updated": "",
+    "last_updated": "2026-04-15 18:58 UTC",
     "google_calendar_id": "",
     "notes": "This file drives all automatic site behavior: banners, hero swaps, seasonal text, birthday messages, and the upcoming events list. It can be updated manually, by Claude Code, or by the Google Calendar sync GitHub Action."
   }
