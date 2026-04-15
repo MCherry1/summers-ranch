@@ -716,7 +716,67 @@
         ""
       ],
       "photo_focus": [],
-      "primary_photo": "images/cattle/tag-CANDY-1.jpg"
+      "primary_photo": "images/cattle/tag-CANDY-1.jpg",
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ]
+    },
+    {
+      "tag": "GREMLIN",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-GREMLIN-1.jpg"
+      ],
+      "photo_dates": [
+        "2026-04-15"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-GREMLIN-1.jpg"
     }
   ],
   "sires": [],
@@ -724,7 +784,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 19:57 UTC",
+    "last_updated": "2026-04-15 21:40 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
