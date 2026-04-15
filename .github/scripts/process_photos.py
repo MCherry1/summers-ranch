@@ -644,6 +644,12 @@ def process_inbox():
         return
 
     photos = list(INBOX.glob("*.jpg")) + list(INBOX.glob("*.jpeg")) + list(INBOX.glob("*.png"))
+    # Also catch files with no extension (broken uploads)
+    for f in INBOX.iterdir():
+        if f.name == '.gitkeep' or f in photos:
+            continue
+        if f.is_file() and f.suffix == '':
+            photos.append(f)
     if not photos:
         print("No photos in inbox.")
         return
@@ -670,6 +676,20 @@ def process_inbox():
         print("No Claude API key — untagged photos will go to gallery.")
 
     for photo in photos:
+        # Sanitize filename: replace spaces with hyphens, strip special chars.
+        # Spaces break GitHub API uploads (filename truncates at the space).
+        # This catches files that somehow made it through with bad names.
+        clean_name = re.sub(r'\s+', '-', photo.name)           # spaces → hyphens
+        clean_name = re.sub(r'[^\w.\-]', '', clean_name)       # strip anything weird
+        if clean_name != photo.name:
+            clean_path = photo.parent / clean_name
+            # Add .jpg if no extension survived
+            if not any(clean_name.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png')):
+                clean_path = photo.parent / (clean_name + '.jpg')
+            photo.rename(clean_path)
+            photo = clean_path
+            print(f"  Sanitized filename: {photo.name}")
+
         print(f"\nProcessing: {photo.name}")
 
         # ----- Metadata fingerprint dedup (CLEANUP-SPEC § 1) -----
