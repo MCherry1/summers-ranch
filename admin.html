@@ -649,6 +649,326 @@
             100% { box-shadow: 0 0 0 0 rgba(198,168,75,0.0); }
         }
 
+        /* ============ ADMIN TABS (Herd / Calendar) ============ */
+        .admin-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 0.25rem 0.25rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(61,43,31,0.08);
+        }
+        .admin-tab {
+            flex: 1;
+            padding: 0.85rem 1rem;
+            min-height: 48px;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--stone);
+            background: var(--linen);
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .admin-tab:hover { color: var(--earth); border-color: var(--saddle); }
+        .admin-tab.active {
+            color: var(--warm-white);
+            background: var(--earth);
+            border-color: var(--earth);
+        }
+        .admin-tab span { font-size: 1rem; margin-right: 0.3rem; }
+        .admin-tab-pane { display: none; }
+        .admin-tab-pane.active { display: block; }
+
+        /* Calendar tab ——————————————————— */
+        .calendar-reminder {
+            background: rgba(160,82,45,0.08);
+            border-left: 3px solid var(--rust);
+            padding: 0.6rem 0.85rem;
+            font-size: 0.82rem;
+            color: var(--stone);
+            font-style: italic;
+            margin: 0 0.25rem 1rem;
+            border-radius: 2px;
+        }
+        .calendar-section {
+            margin: 2rem 0 1rem;
+            padding: 0 0.25rem;
+        }
+        .calendar-section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 0.85rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid rgba(107,127,94,0.2);
+        }
+        .cal-readonly {
+            font-size: 0.6rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            color: var(--stone);
+            text-transform: none;
+            font-style: italic;
+            margin-left: 0.35rem;
+        }
+        .cal-event-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .cal-empty {
+            text-align: center;
+            color: var(--stone);
+            font-style: italic;
+            font-size: 0.85rem;
+            padding: 1rem 0;
+        }
+        .cal-event-card {
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 4px;
+            padding: 1rem 1.1rem;
+            transition: box-shadow 0.3s, opacity 0.3s;
+        }
+        .cal-event-card:hover { box-shadow: 0 4px 18px rgba(61,43,31,0.07); }
+        .cal-event-card.past { opacity: 0.72; }
+        .cal-event-card.new-event {
+            border: 1px solid var(--gold);
+            box-shadow: 0 4px 20px rgba(198,168,75,0.15);
+            padding: 1.25rem 1.15rem;
+        }
+        .cal-event-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.35rem;
+        }
+        .cal-event-name {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--earth);
+            line-height: 1.2;
+        }
+        .cal-event-category {
+            flex-shrink: 0;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--saddle);
+            background: rgba(139,105,20,0.1);
+            padding: 0.2rem 0.55rem;
+            border-radius: 2px;
+        }
+        .cal-event-date {
+            font-size: 0.88rem;
+            color: var(--charcoal);
+            margin-bottom: 0.2rem;
+        }
+        .cal-event-when {
+            font-size: 0.78rem;
+            color: var(--stone);
+            margin-bottom: 0.4rem;
+        }
+        .cal-event-when.today { color: var(--rust); font-weight: 700; }
+        .cal-event-when.soon  { color: var(--saddle); font-weight: 700; }
+        .cal-event-banner-preview {
+            font-size: 0.78rem;
+            color: var(--stone);
+            font-style: italic;
+            border-left: 2px solid var(--linen);
+            padding: 0.25rem 0 0.25rem 0.6rem;
+            margin: 0.55rem 0;
+        }
+        .cal-event-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.85rem;
+        }
+        .cal-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.55rem 0.9rem;
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            min-height: 44px;
+            border-radius: 2px;
+            border: 1px solid rgba(61,43,31,0.2);
+            background: var(--warm-white);
+            color: var(--earth);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cal-btn:hover { background: var(--linen); border-color: var(--saddle); }
+        .cal-btn.primary { background: var(--earth); color: var(--warm-white); border-color: var(--earth); }
+        .cal-btn.primary:hover { background: var(--rust); border-color: var(--rust); }
+        .cal-btn.danger { border-color: rgba(160,82,45,0.35); color: var(--rust); }
+        .cal-btn.danger:hover { background: var(--rust); color: var(--warm-white); border-color: var(--rust); }
+        .cal-show-more {
+            display: block;
+            width: 100%;
+            padding: 0.7rem;
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--saddle);
+            background: transparent;
+            border: 1px dashed rgba(139,105,20,0.35);
+            border-radius: 2px;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .cal-show-more:hover { background: var(--linen); }
+
+        /* Event edit form (shared by new + inline edit) */
+        .cal-event-form { margin-top: 0.85rem; }
+        .cal-event-form input[type="text"],
+        .cal-event-form input[type="date"],
+        .cal-event-form input[type="number"],
+        .cal-event-form select,
+        .cal-event-form textarea {
+            width: 100%;
+            font-family: var(--font-body);
+            font-size: 16px;
+            padding: 0.85rem 0.9rem;
+            min-height: 48px;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 2px;
+            background: var(--warm-white);
+            color: var(--charcoal);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: border-color 0.2s;
+        }
+        .cal-event-form textarea {
+            min-height: 68px;
+            resize: vertical;
+            padding: 0.7rem 0.9rem;
+        }
+        .cal-event-form input:focus,
+        .cal-event-form select:focus,
+        .cal-event-form textarea:focus { border-color: var(--saddle); }
+        .cal-event-form input.invalid,
+        .cal-event-form select.invalid,
+        .cal-event-form textarea.invalid { border-color: var(--rust); }
+        .cal-event-form .invalid-note {
+            display: none;
+            color: var(--rust);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        .cal-event-form .invalid-note.show { display: block; }
+
+        /* Seasons (read-only) */
+        .cal-seasons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+        .cal-season-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 3px;
+        }
+        .cal-season-row.active { border-color: var(--sage); background: rgba(107,127,94,0.06); }
+        .cal-season-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--earth);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .cal-season-name::before {
+            content: '';
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: transparent;
+        }
+        .cal-season-row.active .cal-season-name::before { background: var(--sage); }
+        .cal-season-dates { font-size: 0.8rem; color: var(--stone); }
+
+        /* Birthdays */
+        .cal-birthdays-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .cal-birthday-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 0.85rem;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 3px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .cal-birthday-row:hover { border-color: var(--saddle); }
+        .cal-birthday-row.editing {
+            cursor: default;
+            border-color: var(--gold);
+            background: rgba(198,168,75,0.06);
+        }
+        .cal-birthday-name {
+            flex: 1;
+            font-weight: 700;
+            color: var(--earth);
+        }
+        .cal-birthday-date { color: var(--saddle); }
+        .cal-birthday-emoji { font-size: 1.1rem; }
+        .cal-birthday-meta {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--stone);
+            font-weight: 400;
+            margin-top: 0.15rem;
+        }
+        .cal-birthday-form {
+            padding: 1rem 1.1rem;
+            background: var(--warm-white);
+            border: 1px solid var(--gold);
+            border-radius: 3px;
+            margin-top: 0.5rem;
+            display: block;
+        }
+        .cal-add-birthday {
+            display: block;
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sage);
+            background: transparent;
+            border: 1px dashed rgba(107,127,94,0.4);
+            border-radius: 2px;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .cal-add-birthday:hover { background: rgba(107,127,94,0.08); }
+
         /* Status row with inline remove-from-herd button */
         .status-row { display: flex; gap: 0.6rem; align-items: flex-end; }
         .status-row .form-group { flex: 1; margin-bottom: 0; }
@@ -699,6 +1019,20 @@
 
     <!-- PANEL -->
     <div class="panel" id="panel">
+        <!-- Tab bar — swaps between Herd and Calendar management.
+             Swipe left/right on mobile to switch.
+             URL hash (#herd / #calendar) survives reloads. -->
+        <div class="admin-tabs" id="adminTabs" role="tablist">
+            <button class="admin-tab active" data-tab="herd" role="tab" aria-selected="true">
+                <span aria-hidden="true">🐄</span> Herd
+            </button>
+            <button class="admin-tab" data-tab="calendar" role="tab" aria-selected="false">
+                <span aria-hidden="true">📅</span> Calendar
+            </button>
+        </div>
+
+        <!-- ============ HERD TAB ============ -->
+        <div class="admin-tab-pane active" id="tabHerd" role="tabpanel">
         <div class="panel-header">
             <h2>Your herd</h2>
             <p id="herdMeta">Loading…</p>
@@ -785,6 +1119,55 @@
         <!-- Datalists for sire/dam autocomplete; rebuilt on render() -->
         <datalist id="siresDatalist"></datalist>
         <datalist id="damsDatalist"></datalist>
+        </div>
+
+        <!-- ============ CALENDAR TAB ============ -->
+        <div class="admin-tab-pane" id="tabCalendar" style="display:none" role="tabpanel">
+            <div class="panel-header">
+                <h2>Ranch calendar</h2>
+                <p id="calendarMeta">Loading…</p>
+            </div>
+
+            <!-- Security reminder from the spec. Never add events that
+                 signal the ranch is unattended. -->
+            <p class="calendar-reminder">
+                Only add ranch business events here. Don't post travel or time away from the ranch.
+            </p>
+
+            <div class="panel-actions">
+                <button class="btn btn-wide" id="addEventBtn">+ Add New Event</button>
+            </div>
+
+            <!-- Inline "new event" form, hidden until Add is tapped -->
+            <div class="cal-event-card new-event" id="newEventCard" style="display:none"></div>
+
+            <section class="calendar-section" id="calUpcomingSection">
+                <p class="calendar-section-label">Upcoming</p>
+                <div class="cal-event-list" id="upcomingEventsList">
+                    <p class="cal-empty">No upcoming events.</p>
+                </div>
+            </section>
+
+            <section class="calendar-section" id="calPastSection">
+                <p class="calendar-section-label">Past Events</p>
+                <div class="cal-event-list" id="pastEventsList">
+                    <p class="cal-empty">No past events yet.</p>
+                </div>
+                <button type="button" class="cal-show-more" id="showMorePastBtn" style="display:none">Show more</button>
+            </section>
+
+            <section class="calendar-section" id="calSeasonsSection">
+                <p class="calendar-section-label">Seasons <span class="cal-readonly">(read-only)</span></p>
+                <div class="cal-seasons-list" id="seasonsList"></div>
+            </section>
+
+            <section class="calendar-section" id="calBirthdaysSection">
+                <p class="calendar-section-label">Birthdays</p>
+                <div class="cal-birthdays-list" id="birthdaysList"></div>
+                <button type="button" class="cal-add-birthday" id="addBirthdayBtn">+ Add Birthday</button>
+                <div class="cal-birthday-form" id="newBirthdayForm" style="display:none"></div>
+            </section>
+        </div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -865,6 +1248,7 @@
                     panel.classList.add('show');
                     signoutBtn.style.display = 'inline-block';
                     render();
+                    if (location.hash === '#calendar') switchTab('calendar');
                     return;
                 } catch (e) {
                     // Token no longer valid — clear and fall through to password gate
@@ -942,6 +1326,7 @@
                 panel.classList.add('show');
                 signoutBtn.style.display = 'inline-block';
                 render();
+                if (location.hash === '#calendar') switchTab('calendar');
             } catch (e) {
                 console.error(e);
                 if (e.name === 'OperationError') {
@@ -968,6 +1353,9 @@
             token = null;
             data = null;
             dataSha = null;
+            calendarData = null;
+            calendarSha = null;
+            calendarLoaded = false;
             localStorage.removeItem(TOKEN_KEY);
             animalList.innerHTML = '';
             panel.classList.remove('show');
@@ -2039,6 +2427,739 @@
                 newSaveBtn.textContent = 'Create';
             }
         });
+
+        // ================================================================
+        // CALENDAR TAB (docs/ADMIN-CALENDAR-SPEC.md)
+        // ================================================================
+        const CALENDAR_PATH = 'ranch-calendar.json';
+        const CALENDAR_API_URL = `https://api.github.com/repos/${REPO}/contents/${CALENDAR_PATH}`;
+        let calendarData = null;
+        let calendarSha = null;
+        let calendarLoaded = false;
+        let pastEventsExpanded = false;
+        const PAST_EVENTS_DEFAULT = 10;
+
+        const CATEGORY_OPTIONS = [
+            { v: 'sale',    label: 'Sale' },
+            { v: 'show',    label: 'Show / Expo' },
+            { v: 'auction', label: 'Auction' },
+            { v: 'ranch',   label: 'Ranch Event' },
+            { v: 'general', label: 'General' }
+        ];
+        const CATEGORY_LABEL = {
+            sale: 'Sale', show: 'Show / Expo', auction: 'Auction',
+            ranch: 'Ranch Event', general: 'General'
+        };
+
+        async function loadCalendarData() {
+            const res = await fetch(CALENDAR_API_URL + '?ref=' + BRANCH, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/vnd.github+json'
+                }
+            });
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('Token rejected (401). Re-run admin-setup.html.');
+                if (res.status === 404) throw new Error('ranch-calendar.json not found in the repo.');
+                throw new Error('GitHub API error: ' + res.status);
+            }
+            const body = await res.json();
+            calendarSha = body.sha;
+            const contentBytes = b64decode(body.content.replace(/\n/g, ''));
+            calendarData = JSON.parse(utf8decode(contentBytes));
+            calendarLoaded = true;
+        }
+
+        // Shared commit helper for ranch-calendar.json. Mirrors commitCattleData
+        // with its own state + URL. mutator(data) mutates in place and returns
+        // a commit message.
+        async function commitCalendarData(mutator) {
+            // Guard against calling commit before the calendar JSON has been
+            // loaded. This can happen if a save is submitted while the initial
+            // fetch is still in flight, or after a failed load, or from the
+            // retry path on the very first attempt. Fetch first, then mutate.
+            if (!calendarData) await loadCalendarData();
+            let attempts = 0;
+            while (attempts < 2) {
+                attempts++;
+                if (attempts > 1) await loadCalendarData();
+
+                const message = mutator(calendarData);
+                if (!calendarData.meta) calendarData.meta = {};
+                calendarData.meta.last_updated = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+
+                const jsonStr = JSON.stringify(calendarData, null, 2) + '\n';
+                const contentB64 = b64encode(utf8encode(jsonStr));
+
+                const res = await fetch(CALENDAR_API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        content: contentB64,
+                        sha: calendarSha,
+                        branch: BRANCH
+                    })
+                });
+                if (res.ok) {
+                    const body = await res.json();
+                    calendarSha = body.content.sha;
+                    return;
+                }
+                if (res.status === 409 || res.status === 422) {
+                    if (attempts >= 2) throw new Error('Save conflict — reload the page.');
+                    continue;
+                }
+                if (res.status === 401) {
+                    throw new Error('Token rejected (401). Regenerate via admin-setup.html.');
+                }
+                const errBody = await res.text();
+                throw new Error(`Save failed (${res.status}): ${errBody.slice(0, 120)}`);
+            }
+        }
+
+        // ---------- Date helpers ----------
+        function parseCalISO(s) {
+            if (!s) return null;
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+            if (!m) return null;
+            return new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0);
+        }
+        function todayMidnight() {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        function formatEventDate(startISO, endISO) {
+            const s = parseCalISO(startISO);
+            if (!s) return startISO || '';
+            const sStr = `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}, ${s.getFullYear()}`;
+            const e = parseCalISO(endISO);
+            if (!e || endISO === startISO) return sStr;
+            if (e.getFullYear() === s.getFullYear() && e.getMonth() === s.getMonth()) {
+                return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}–${e.getDate()}, ${s.getFullYear()}`;
+            }
+            if (e.getFullYear() === s.getFullYear()) {
+                return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()} – ${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`;
+            }
+            const eStr = `${MONTH_NAMES[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
+            return `${sStr} – ${eStr}`;
+        }
+        function eventEndDateOrStart(ev) {
+            return ev.end_date || ev.date;
+        }
+        function whenPhrase(ev) {
+            const s = parseCalISO(ev.date);
+            const e = parseCalISO(eventEndDateOrStart(ev)) || s;
+            if (!s) return { text: '', cls: '' };
+            const today = todayMidnight();
+            const daysToStart = Math.round((s - today) / 86400000);
+            const daysToEnd = Math.round((e - today) / 86400000);
+            if (daysToStart > 0) {
+                if (daysToStart === 1) return { text: 'Tomorrow', cls: 'soon' };
+                if (daysToStart <= 7) return { text: 'In ' + daysToStart + ' days', cls: 'soon' };
+                return { text: 'In ' + daysToStart + ' days', cls: '' };
+            }
+            if (daysToEnd >= 0) return { text: 'Today!', cls: 'today' };
+            const ago = -daysToEnd;
+            if (ago === 1) return { text: '1 day ago', cls: '' };
+            return { text: ago + ' days ago', cls: '' };
+        }
+        function isoShiftOneYear(iso) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+            if (!m) return iso || '';
+            const y = +m[1] + 1;
+            let mm = m[2], dd = m[3];
+            // Leap-day rollover: Feb 29 is only valid on leap years, so when
+            // copying to a non-leap year we clamp to Feb 28 rather than letting
+            // the Date constructor silently normalize "2027-02-29" to Mar 1.
+            if (mm === '02' && dd === '29') {
+                const isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+                if (!isLeap) dd = '28';
+            }
+            return String(y) + '-' + mm + '-' + dd;
+        }
+
+        // ---------- Render ----------
+        function renderCalendar() {
+            if (!calendarData) return;
+            const events = (calendarData.events || []).slice();
+            const today = todayMidnight();
+            const upcoming = [];
+            const past = [];
+            events.forEach(ev => {
+                const endDate = parseCalISO(eventEndDateOrStart(ev));
+                if (!endDate || endDate >= today) upcoming.push(ev);
+                else past.push(ev);
+            });
+            upcoming.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            past.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            renderEventList('upcomingEventsList', upcoming, false);
+            renderPastEvents(past);
+            renderSeasons();
+            renderBirthdays();
+
+            const meta = document.getElementById('calendarMeta');
+            if (meta) {
+                const updated = (calendarData.meta && calendarData.meta.last_updated) || 'unknown';
+                meta.textContent = `${events.length} events · ${(calendarData.birthdays || []).length} birthdays · updated ${updated}`;
+            }
+        }
+
+        function renderEventList(containerId, events, isPast) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (events.length === 0) {
+                container.innerHTML = '<p class="cal-empty">' +
+                    (isPast ? 'No past events yet.' : 'No upcoming events.') + '</p>';
+                return;
+            }
+            container.innerHTML = '';
+            events.forEach(ev => container.appendChild(buildEventCard(ev, isPast)));
+        }
+        function renderPastEvents(past) {
+            const showMore = document.getElementById('showMorePastBtn');
+            const visible = pastEventsExpanded ? past : past.slice(0, PAST_EVENTS_DEFAULT);
+            renderEventList('pastEventsList', visible, true);
+            if (past.length > PAST_EVENTS_DEFAULT) {
+                showMore.style.display = '';
+                showMore.textContent = pastEventsExpanded
+                    ? 'Show fewer'
+                    : 'Show more (' + (past.length - PAST_EVENTS_DEFAULT) + ' more)';
+            } else {
+                showMore.style.display = 'none';
+            }
+        }
+
+        function buildEventCard(ev, isPast) {
+            const card = document.createElement('div');
+            card.className = 'cal-event-card' + (isPast ? ' past' : '');
+            card.dataset.eventDate = ev.date || '';
+            card.dataset.eventName = ev.name || '';
+
+            const when = whenPhrase(ev);
+            const category = CATEGORY_LABEL[ev.type] || 'General';
+            const bannerPreview = ev.banner || ev.during_text || '';
+            const advance = (typeof ev.advance_days === 'number') ? ev.advance_days : 30;
+
+            card.innerHTML = `
+                <div class="cal-event-summary">
+                    <div class="cal-event-head">
+                        <p class="cal-event-name">${escapeHtml(ev.name || 'Untitled event')}</p>
+                        <span class="cal-event-category">${escapeHtml(category)}</span>
+                    </div>
+                    <p class="cal-event-date">${escapeHtml(formatEventDate(ev.date, ev.end_date))}</p>
+                    <p class="cal-event-when ${when.cls}">${escapeHtml(when.text)} · Banner starts ${advance} day${advance === 1 ? '' : 's'} before</p>
+                    ${bannerPreview
+                        ? `<p class="cal-event-banner-preview">"${escapeHtml(bannerPreview.slice(0, 140))}${bannerPreview.length > 140 ? '…' : ''}"</p>`
+                        : ''}
+                    <div class="cal-event-actions">
+                        ${isPast ? '' : '<button type="button" class="cal-btn" data-action="edit">Edit</button>'}
+                        <button type="button" class="cal-btn" data-action="copy">Copy to Next Year</button>
+                        <button type="button" class="cal-btn danger" data-action="delete">Delete</button>
+                    </div>
+                </div>
+                <div class="cal-event-form-slot"></div>
+            `;
+
+            const editBtn = card.querySelector('[data-action="edit"]');
+            if (editBtn) editBtn.addEventListener('click', () => openInlineEdit(card, ev));
+            card.querySelector('[data-action="copy"]').addEventListener('click', () => copyEventToNextYear(ev));
+            card.querySelector('[data-action="delete"]').addEventListener('click', () => deleteEvent(ev));
+            return card;
+        }
+
+        // ---------- Event form (shared between new + inline edit) ----------
+        function buildEventForm(initial, opts) {
+            const wrap = document.createElement('div');
+            wrap.className = 'cal-event-form';
+            const categoryOpts = CATEGORY_OPTIONS.map(o =>
+                `<option value="${o.v}"${o.v === (initial.type || 'general') ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+            wrap.innerHTML = `
+                <p class="new-animal-title" style="margin-bottom:0.85rem">${escapeHtml(opts.title || 'New event')}</p>
+                <div class="form-group">
+                    <label>Event name *</label>
+                    <input type="text" data-field="name" value="${escapeAttr(initial.name || '')}" placeholder="e.g., Spring Sale">
+                    <p class="invalid-note" data-note="name">Event name is required</p>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select data-field="type">${categoryOpts}</select>
+                </div>
+                <div class="form-row2">
+                    <div class="form-group">
+                        <label>Start date *</label>
+                        <input type="date" data-field="date" value="${escapeAttr(initial.date || '')}">
+                        <p class="invalid-note" data-note="date">Start date is required</p>
+                    </div>
+                    <div class="form-group">
+                        <label>End date</label>
+                        <input type="date" data-field="end_date" value="${escapeAttr(initial.end_date || '')}">
+                        <p class="invalid-note" data-note="end_date">End date must be on or after start date</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Advance warning (days)</label>
+                    <input type="number" min="0" max="365" data-field="advance_days" value="${initial.advance_days != null ? initial.advance_days : 30}">
+                </div>
+                <div class="form-group">
+                    <label>Banner text (before event)</label>
+                    <textarea data-field="banner" placeholder="Shown during the advance-warning window.">${escapeHtml(initial.banner || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Banner text (during event)</label>
+                    <textarea data-field="during_text" placeholder="Shown on the event date(s). Overrides the pre-event text.">${escapeHtml(initial.during_text || '')}</textarea>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" data-field="show_in_upcoming" ${initial.show_in_upcoming !== false ? 'checked' : ''}>
+                        <span>Show in the public "Upcoming" section</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" data-action="cancel">Cancel</button>
+                    <button type="button" class="btn" data-action="submit">${escapeHtml(opts.submitLabel || 'Create event')}</button>
+                </div>
+            `;
+
+            function readForm() {
+                const out = {};
+                wrap.querySelectorAll('[data-field]').forEach(input => {
+                    const f = input.dataset.field;
+                    if (input.type === 'checkbox') out[f] = input.checked;
+                    else if (input.type === 'number') {
+                        const v = input.value.trim();
+                        out[f] = v === '' ? 30 : Math.max(0, parseInt(v, 10) || 0);
+                    } else {
+                        out[f] = input.value.trim();
+                    }
+                });
+                return out;
+            }
+            function validate(d) {
+                let ok = true;
+                wrap.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+                wrap.querySelectorAll('.invalid-note').forEach(el => el.classList.remove('show'));
+                if (!d.name) {
+                    wrap.querySelector('[data-field="name"]').classList.add('invalid');
+                    wrap.querySelector('[data-note="name"]').classList.add('show');
+                    ok = false;
+                }
+                if (!d.date) {
+                    wrap.querySelector('[data-field="date"]').classList.add('invalid');
+                    wrap.querySelector('[data-note="date"]').classList.add('show');
+                    ok = false;
+                }
+                if (d.end_date && d.end_date < d.date) {
+                    wrap.querySelector('[data-field="end_date"]').classList.add('invalid');
+                    wrap.querySelector('[data-note="end_date"]').classList.add('show');
+                    ok = false;
+                }
+                return ok;
+            }
+
+            const submitBtn = wrap.querySelector('[data-action="submit"]');
+            const cancelBtn = wrap.querySelector('[data-action="cancel"]');
+            submitBtn.addEventListener('click', async () => {
+                const d = readForm();
+                if (!validate(d)) return;
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.textContent = 'Saving…';
+                try {
+                    await opts.onSave(d);
+                } catch (e) {
+                    console.error(e);
+                    showToast(e.message || 'Save failed', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    submitBtn.textContent = opts.submitLabel || 'Create event';
+                }
+            });
+            cancelBtn.addEventListener('click', () => opts.onCancel && opts.onCancel());
+
+            return wrap;
+        }
+
+        // Normalize a form payload into a calendar event object
+        function formToEvent(form, existing) {
+            const ev = Object.assign({}, existing || {});
+            ev.name = form.name;
+            ev.type = form.type || 'general';
+            ev.date = form.date;
+            ev.end_date = form.end_date || form.date;
+            ev.advance_days = form.advance_days;
+            ev.banner = form.banner || '';
+            ev.during_text = form.during_text || '';
+            ev.show_in_upcoming = !!form.show_in_upcoming;
+            ev.priority = 3;
+            return ev;
+        }
+
+        // ---------- Add new event ----------
+        const newEventCard = document.getElementById('newEventCard');
+        const addEventBtn = document.getElementById('addEventBtn');
+        let addFormOpen = false;
+
+        addEventBtn.addEventListener('click', () => {
+            if (addFormOpen) return;
+            addFormOpen = true;
+            addEventBtn.style.display = 'none';
+            newEventCard.innerHTML = '';
+            newEventCard.style.display = '';
+            const form = buildEventForm({ type: 'general', advance_days: 30, show_in_upcoming: true }, {
+                title: 'New event',
+                submitLabel: 'Create event',
+                onCancel: closeAddForm,
+                onSave: async (d) => {
+                    const ev = formToEvent(d, null);
+                    await commitCalendarData(data => {
+                        if (!Array.isArray(data.events)) data.events = [];
+                        data.events.push(ev);
+                        return 'Update ranch calendar: add ' + ev.name;
+                    });
+                    showToast(`Added "${ev.name}"`, 'success');
+                    closeAddForm();
+                    renderCalendar();
+                }
+            });
+            newEventCard.appendChild(form);
+        });
+        function closeAddForm() {
+            addFormOpen = false;
+            newEventCard.style.display = 'none';
+            newEventCard.innerHTML = '';
+            addEventBtn.style.display = '';
+        }
+
+        // ---------- Inline edit ----------
+        function openInlineEdit(card, ev) {
+            const slot = card.querySelector('.cal-event-form-slot');
+            const summary = card.querySelector('.cal-event-summary');
+            if (slot.childElementCount > 0) return; // already open
+            summary.style.display = 'none';
+            const form = buildEventForm(ev, {
+                title: 'Edit event',
+                submitLabel: 'Save',
+                onCancel: () => {
+                    slot.innerHTML = '';
+                    summary.style.display = '';
+                },
+                onSave: async (d) => {
+                    const updated = formToEvent(d, ev);
+                    await commitCalendarData(data => {
+                        const idx = (data.events || []).findIndex(e =>
+                            e.name === ev.name && e.date === ev.date);
+                        if (idx === -1) throw new Error('Event disappeared from calendar');
+                        data.events[idx] = updated;
+                        return 'Update ranch calendar: edit ' + updated.name;
+                    });
+                    showToast(`Saved "${updated.name}"`, 'success');
+                    renderCalendar();
+                }
+            });
+            slot.appendChild(form);
+        }
+
+        // ---------- Copy to next year ----------
+        async function copyEventToNextYear(ev) {
+            const clone = Object.assign({}, ev);
+            clone.date = isoShiftOneYear(ev.date);
+            if (ev.end_date) clone.end_date = isoShiftOneYear(ev.end_date);
+            try {
+                await commitCalendarData(data => {
+                    if (!Array.isArray(data.events)) data.events = [];
+                    data.events.push(clone);
+                    return 'Update ranch calendar: copy ' + clone.name + ' to next year';
+                });
+                showToast(`Copied "${clone.name}" to ${clone.date}`, 'success');
+                renderCalendar();
+                const section = document.getElementById('calUpcomingSection');
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'Copy failed', 'error');
+            }
+        }
+
+        // ---------- Delete ----------
+        async function deleteEvent(ev) {
+            const ok = window.confirm(`Delete "${ev.name}"? This cannot be undone.`);
+            if (!ok) return;
+            try {
+                await commitCalendarData(data => {
+                    const idx = (data.events || []).findIndex(e =>
+                        e.name === ev.name && e.date === ev.date);
+                    if (idx !== -1) data.events.splice(idx, 1);
+                    return 'Update ranch calendar: delete ' + ev.name;
+                });
+                showToast(`Deleted "${ev.name}"`, 'success');
+                renderCalendar();
+            } catch (e) {
+                console.error(e);
+                showToast(e.message || 'Delete failed', 'error');
+            }
+        }
+
+        // ---------- Seasons (read-only) ----------
+        function mmddToPretty(mmdd) {
+            const m = /^(\d{2})-(\d{2})$/.exec(mmdd || '');
+            if (!m) return mmdd || '';
+            return MONTH_NAMES[parseInt(m[1], 10) - 1] + ' ' + parseInt(m[2], 10);
+        }
+        function isSeasonActive(season, today) {
+            const m = String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                      String(today.getDate()).padStart(2, '0');
+            const s = season.start, e = season.end;
+            if (!s || !e) return false;
+            if (s <= e) return m >= s && m <= e;
+            return m >= s || m <= e;
+        }
+        function renderSeasons() {
+            const list = document.getElementById('seasonsList');
+            if (!list) return;
+            const seasons = calendarData.seasons || [];
+            const today = new Date();
+            list.innerHTML = '';
+            seasons.forEach(season => {
+                const row = document.createElement('div');
+                row.className = 'cal-season-row' + (isSeasonActive(season, today) ? ' active' : '');
+                row.innerHTML =
+                    '<span class="cal-season-name">' + escapeHtml(season.name || '') + '</span>' +
+                    '<span class="cal-season-dates">' +
+                        escapeHtml(mmddToPretty(season.start)) + ' – ' +
+                        escapeHtml(mmddToPretty(season.end)) +
+                    '</span>';
+                list.appendChild(row);
+            });
+        }
+
+        // ---------- Birthdays ----------
+        function renderBirthdays() {
+            const list = document.getElementById('birthdaysList');
+            if (!list) return;
+            const birthdays = calendarData.birthdays || [];
+            list.innerHTML = '';
+            birthdays.forEach((b, idx) => {
+                const row = document.createElement('div');
+                row.className = 'cal-birthday-row';
+                row.dataset.idx = String(idx);
+                const emoji = b.role === 'mascot' ? '🧒' : '🎂';
+                let meta = '';
+                if (b.role === 'mascot' && b.year) {
+                    const today = new Date();
+                    const m = /^(\d{2})-(\d{2})$/.exec(b.date || '');
+                    if (m) {
+                        const birth = new Date(b.year, +m[1] - 1, +m[2]);
+                        let age = today.getFullYear() - birth.getFullYear();
+                        if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--;
+                        meta = `<span class="cal-birthday-meta">turns ${age + 1} next birthday</span>`;
+                    }
+                }
+                row.innerHTML =
+                    '<span class="cal-birthday-emoji">' + emoji + '</span>' +
+                    '<span class="cal-birthday-name">' +
+                        escapeHtml(b.name || '') + meta +
+                    '</span>' +
+                    '<span class="cal-birthday-date">' + escapeHtml(mmddToPretty(b.date)) + '</span>';
+                row.addEventListener('click', () => openBirthdayEdit(row, b, idx));
+                list.appendChild(row);
+            });
+        }
+
+        function openBirthdayEdit(row, birthday, idx) {
+            if (row.classList.contains('editing')) return;
+            row.classList.add('editing');
+            row.innerHTML = `
+                <input type="text" data-field="name" value="${escapeAttr(birthday.name || '')}" placeholder="Name" style="flex:1;min-width:0">
+                <input type="text" data-field="date" value="${escapeAttr(birthday.date || '')}" placeholder="MM-DD" maxlength="5" style="width:80px">
+                <button type="button" class="cal-btn" data-action="save">Save</button>
+                <button type="button" class="cal-btn" data-action="cancel">Cancel</button>
+            `;
+            Object.assign(row.style, { gap: '0.5rem', flexWrap: 'wrap' });
+            row.querySelectorAll('input').forEach(i => {
+                Object.assign(i.style, { fontSize: '16px', padding: '0.5rem 0.6rem', minHeight: '40px',
+                    border: '1px solid rgba(0,0,0,0.12)', borderRadius: '2px', background: 'var(--warm-white)' });
+                i.addEventListener('click', e => e.stopPropagation());
+            });
+            row.querySelectorAll('button').forEach(b => b.addEventListener('click', e => e.stopPropagation()));
+            row.querySelector('[data-action="cancel"]').addEventListener('click', () => renderBirthdays());
+            row.querySelector('[data-action="save"]').addEventListener('click', async () => {
+                const name = row.querySelector('[data-field="name"]').value.trim();
+                const date = row.querySelector('[data-field="date"]').value.trim();
+                if (!name || !/^\d{2}-\d{2}$/.test(date)) {
+                    showToast('Name and MM-DD date are required', 'error');
+                    return;
+                }
+                try {
+                    await commitCalendarData(data => {
+                        const updated = Object.assign({}, data.birthdays[idx], { name, date });
+                        data.birthdays[idx] = updated;
+                        return 'Update ranch calendar: edit birthday ' + name;
+                    });
+                    showToast(`Saved ${name}`, 'success');
+                    renderBirthdays();
+                } catch (e) {
+                    console.error(e);
+                    showToast(e.message || 'Save failed', 'error');
+                }
+            });
+        }
+
+        // Add Birthday — minimal inline form
+        const addBirthdayBtn = document.getElementById('addBirthdayBtn');
+        const newBirthdayForm = document.getElementById('newBirthdayForm');
+        addBirthdayBtn.addEventListener('click', () => {
+            if (newBirthdayForm.style.display !== 'none') return;
+            newBirthdayForm.style.display = '';
+            newBirthdayForm.innerHTML = `
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="nbName" placeholder="e.g., Grandpa Joe" autocomplete="off">
+                </div>
+                <div class="form-row2">
+                    <div class="form-group">
+                        <label>Date (MM-DD)</label>
+                        <input type="text" id="nbDate" placeholder="05-20" maxlength="5" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="nbRole">
+                            <option value="owner" selected>Owner</option>
+                            <option value="family">Family</option>
+                            <option value="mascot">Mascot</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Birthday message (optional)</label>
+                    <input type="text" id="nbMsg" placeholder="Happy Birthday to..." autocomplete="off">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="nbCancel">Cancel</button>
+                    <button type="button" class="btn" id="nbSave">Add birthday</button>
+                </div>
+            `;
+            newBirthdayForm.querySelectorAll('input, select').forEach(i =>
+                Object.assign(i.style, { width: '100%', fontSize: '16px', padding: '0.85rem 0.9rem',
+                    minHeight: '48px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '2px',
+                    background: 'var(--warm-white)' }));
+            document.getElementById('nbCancel').addEventListener('click', () => {
+                newBirthdayForm.style.display = 'none';
+                newBirthdayForm.innerHTML = '';
+            });
+            document.getElementById('nbSave').addEventListener('click', async () => {
+                const name = document.getElementById('nbName').value.trim();
+                const date = document.getElementById('nbDate').value.trim();
+                const role = document.getElementById('nbRole').value;
+                const msg  = document.getElementById('nbMsg').value.trim();
+                if (!name || !/^\d{2}-\d{2}$/.test(date)) {
+                    showToast('Name and MM-DD date are required', 'error');
+                    return;
+                }
+                try {
+                    await commitCalendarData(data => {
+                        if (!Array.isArray(data.birthdays)) data.birthdays = [];
+                        const entry = { name, date, role };
+                        if (msg) entry.message = msg;
+                        data.birthdays.push(entry);
+                        return 'Update ranch calendar: add birthday ' + name;
+                    });
+                    showToast(`Added ${name}`, 'success');
+                    newBirthdayForm.style.display = 'none';
+                    newBirthdayForm.innerHTML = '';
+                    renderBirthdays();
+                } catch (e) {
+                    console.error(e);
+                    showToast(e.message || 'Save failed', 'error');
+                }
+            });
+        });
+
+        // ---------- Past events expand ----------
+        document.getElementById('showMorePastBtn').addEventListener('click', () => {
+            pastEventsExpanded = !pastEventsExpanded;
+            renderCalendar();
+        });
+
+        // ================================================================
+        // TAB SWITCHING (Herd / Calendar) + hash routing + swipe gestures
+        // ================================================================
+        const tabButtons = document.querySelectorAll('.admin-tab');
+        const herdPane = document.getElementById('tabHerd');
+        const calendarPane = document.getElementById('tabCalendar');
+
+        async function switchTab(tab) {
+            if (tab !== 'herd' && tab !== 'calendar') tab = 'herd';
+            tabButtons.forEach(btn => {
+                const active = btn.dataset.tab === tab;
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            herdPane.style.display = tab === 'herd' ? '' : 'none';
+            calendarPane.style.display = tab === 'calendar' ? '' : 'none';
+            herdPane.classList.toggle('active', tab === 'herd');
+            calendarPane.classList.toggle('active', tab === 'calendar');
+
+            if (tab === 'calendar' && !calendarLoaded && token) {
+                try {
+                    const meta = document.getElementById('calendarMeta');
+                    if (meta) meta.textContent = 'Loading…';
+                    await loadCalendarData();
+                    renderCalendar();
+                } catch (e) {
+                    console.error(e);
+                    showToast(e.message || 'Could not load calendar', 'error');
+                }
+            }
+
+            const newHash = '#' + tab;
+            if (location.hash !== newHash) {
+                history.replaceState(null, '', location.pathname + newHash);
+            }
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        // Swipe left / right on the panel to switch tabs
+        (function() {
+            let startX = 0, startY = 0, tracking = false;
+            const panelEl = document.getElementById('panel');
+            panelEl.addEventListener('touchstart', e => {
+                if (!e.touches || !e.touches[0]) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                tracking = true;
+            }, { passive: true });
+            panelEl.addEventListener('touchend', e => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                if (dx < 0) switchTab('calendar');
+                else        switchTab('herd');
+            }, { passive: true });
+        })();
+
+        // Respect hash on load and honor back/forward nav
+        const initialTab = location.hash === '#calendar' ? 'calendar' : 'herd';
+        window.addEventListener('hashchange', () => {
+            switchTab(location.hash === '#calendar' ? 'calendar' : 'herd');
+        });
+        switchTab(initialTab);
     </script>
 </body>
 </html>
