@@ -1287,9 +1287,14 @@
                 if (animal.disposition) {
                     rows += '<dt>Disposition</dt><dd>' + dispositionLabel(animal.disposition) + '</dd>';
                 }
-                // Pregnancy fields are sale-only and require a meaningful
-                // status — buyers don't need to see "Open" on a breeding cow.
-                if (animal.status === 'sale' && animal.pregnancy_status) {
+                // Pregnancy fields are sale-only AND female-only. The admin
+                // form exposes them for any animal, but showing "Bred"
+                // under a sale bull or steer is nonsense — restrict to
+                // cow / heifer / calf sexes so the public card never
+                // leaks impossible data.
+                var _sex = String(animal.sex || '').toLowerCase();
+                var _isFemale = _sex === 'cow' || _sex === 'heifer' || _sex === 'calf' || _sex === 'heifer calf';
+                if (animal.status === 'sale' && _isFemale && animal.pregnancy_status) {
                     rows += '<dt>Pregnancy</dt><dd>' + prettyPregnancy(animal.pregnancy_status) + '</dd>';
                     if ((animal.pregnancy_status === 'bred' || animal.pregnancy_status === 'confirmed') && animal.expected_calving) {
                         rows += '<dt>Expected calving</dt><dd>' + animal.expected_calving + '</dd>';
