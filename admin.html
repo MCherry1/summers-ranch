@@ -2376,6 +2376,11 @@
         // with its own state + URL. mutator(data) mutates in place and returns
         // a commit message.
         async function commitCalendarData(mutator) {
+            // Guard against calling commit before the calendar JSON has been
+            // loaded. This can happen if a save is submitted while the initial
+            // fetch is still in flight, or after a failed load, or from the
+            // retry path on the very first attempt. Fetch first, then mutate.
+            if (!calendarData) await loadCalendarData();
             let attempts = 0;
             while (attempts < 2) {
                 attempts++;
@@ -2470,7 +2475,16 @@
         function isoShiftOneYear(iso) {
             const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
             if (!m) return iso || '';
-            return String(+m[1] + 1) + '-' + m[2] + '-' + m[3];
+            const y = +m[1] + 1;
+            let mm = m[2], dd = m[3];
+            // Leap-day rollover: Feb 29 is only valid on leap years, so when
+            // copying to a non-leap year we clamp to Feb 28 rather than letting
+            // the Date constructor silently normalize "2027-02-29" to Mar 1.
+            if (mm === '02' && dd === '29') {
+                const isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+                if (!isLeap) dd = '28';
+            }
+            return String(y) + '-' + mm + '-' + dd;
         }
 
         // ---------- Render ----------
