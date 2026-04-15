@@ -293,9 +293,99 @@ panel.addEventListener('touchend', e => {
 
 ## Implementation Priority
 
-1. **Tab navigation** — Add the Herd/Calendar tab bar. Herd tab wraps existing content.
-2. **Calendar tab skeleton** — Event list rendering from `ranch-calendar.json`
-3. **Add New Event form** — Inline form with all fields
-4. **Edit/Delete/Copy** — Event card actions
-5. **Seasons and Birthdays** — Read-only display sections
-6. **Birthday editing** — Inline edit for birthdays
+1. ✅ **Tab navigation** — Herd/Calendar tab bar with hash routing and swipe gestures
+2. ✅ **Calendar tab skeleton** — Event list rendered from `ranch-calendar.json`
+3. ✅ **Add New Event form** — Inline form with every field from the spec
+4. ✅ **Edit/Delete/Copy** — Inline edit form, confirm-delete dialog, copy-to-next-year
+5. ✅ **Seasons and Birthdays** — Read-only seasons, editable birthdays
+6. ✅ **Birthday editing** — Tap-to-edit rows + "Add Birthday" inline form
+
+---
+
+## Implementation Notes
+
+All six priority items shipped together in `admin.html`. Code locations:
+
+### DOM structure
+- `<div class="admin-tabs">` contains `[🐄 Herd]` / `[📅 Calendar]` pill
+  buttons. The existing herd content is wrapped in
+  `<div class="admin-tab-pane" id="tabHerd">`, and the new calendar content
+  lives in `<div class="admin-tab-pane" id="tabCalendar">`.
+- Calendar pane sections: business-only reminder, `+ Add New Event` button,
+  `#newEventCard`, `#calUpcomingSection`, `#calPastSection` with a
+  `Show more` toggle, `#calSeasonsSection` (read-only), and
+  `#calBirthdaysSection`.
+
+### JS — shared plumbing
+- `CALENDAR_PATH` + `CALENDAR_API_URL` + `calendarData` / `calendarSha` /
+  `calendarLoaded` state. Parallel to the cattle-data equivalents.
+- `loadCalendarData()` / `commitCalendarData(mutator)` — same shape as the
+  existing cattle helpers. Commit messages start with
+  `Update ranch calendar: ...` so the repo history is readable.
+- Sign-out flow clears `calendarData`/`calendarSha`/`calendarLoaded` so a
+  re-login reloads cleanly.
+
+### Tab switching + swipe + hash routing
+- `switchTab(tab)` updates the active pill, toggles pane visibility, writes
+  `#herd` / `#calendar` to the URL with `history.replaceState`, and lazy-
+  loads `ranch-calendar.json` on the first visit to the calendar tab.
+- `hashchange` listener honors back/forward navigation.
+- The boot and unlock flows re-trigger `switchTab('calendar')` if the
+  current URL hash is `#calendar` so deep-linking works across the
+  password gate.
+- Swipe detection on `#panel`: 80px minimum horizontal delta, must
+  dominate vertical delta (1.5×) so diagonal scrolls don't trigger. Swipe
+  left → Calendar, swipe right → Herd.
+
+### Event rendering
+- `renderCalendar()` splits events into upcoming / past using
+  `end_date || date`, sorts upcoming ascending and past descending, then
+  delegates to `renderEventList` / `renderPastEvents` / `renderSeasons` /
+  `renderBirthdays`.
+- Past events render at 0.72 opacity via `.cal-event-card.past`. Only
+  upcoming events get the `[Edit]` button per spec; past events can be
+  copied or deleted.
+- `whenPhrase(ev)` produces `"Today!"` / `"Tomorrow"` / `"In N days"` /
+  `"N days ago"` with `.today` / `.soon` colour states for the upcoming row.
+- `formatEventDate(start, end)` handles single-day, same-month range,
+  same-year range, and multi-year ranges with a nice en-dash.
+
+### Event form
+- `buildEventForm(initial, { title, submitLabel, onSave, onCancel })` is
+  shared between the "New event" inline card and the inline edit slot on
+  each event card.
+- Inputs map 1:1 to the spec's fields. The Category dropdown feeds
+  `type` (sale/show/auction/ranch/general). Start/end are
+  `<input type="date">` for native pickers on mobile; advance days is
+  `<input type="number" min="0" max="365">`.
+- Validation: event name required, start date required, end date must be
+  ≥ start date when present. Invalid fields get a red border and an
+  `.invalid-note` that slides in below.
+- `formToEvent(form, existing)` normalizes payloads (`end_date` defaults
+  to `date`, `priority` is always 3, `show_in_upcoming` defaults to true).
+
+### Event actions
+- **Edit** → `openInlineEdit(card, ev)` hides the card summary and mounts
+  the edit form in a slot inside the card. Save commits and re-renders.
+- **Copy to Next Year** → `copyEventToNextYear(ev)` clones the event with
+  dates shifted forward by one calendar year (`isoShiftOneYear`), commits,
+  and scrolls the Upcoming section into view so the copy is visible.
+- **Delete** → `deleteEvent(ev)` uses `window.confirm("Delete ...?")`, then
+  splices the event out and commits with
+  `Update ranch calendar: delete <name>`.
+
+### Seasons (read-only)
+- `renderSeasons()` walks `calendarData.seasons` and renders one row per
+  season. `isSeasonActive()` handles both normal and wrap-around ranges
+  (e.g., Winter 11-16 → 02-14). The currently-active season gets the
+  green dot + subtle sage tint via `.cal-season-row.active`.
+
+### Birthdays
+- `renderBirthdays()` builds tap-to-edit rows. Mascot rows compute
+  "turns N next birthday" from the stored `year`.
+- Tapping a row calls `openBirthdayEdit(row, birthday, idx)` which swaps
+  the row contents for inline inputs (name + MM-DD) and Save/Cancel
+  buttons. MM-DD is validated with `/^\d{2}-\d{2}$/`.
+- The `+ Add Birthday` button reveals `#newBirthdayForm` with Name, Date
+  (MM-DD), Role (owner/family/mascot), and an optional message. Commits
+  with `Update ranch calendar: add birthday <name>`.
