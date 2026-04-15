@@ -204,6 +204,61 @@
         ""
       ],
       "primary_photo": "images/cattle/tag-TY124-2.jpg"
+    },
+    {
+      "tag": "THEO",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-THEO-1.jpg",
+        "images/cattle/tag-THEO-2.jpg"
+      ],
+      "photo_dates": [
+        "2026-04-12",
+        "2026-04-12"
+      ],
+      "photo_types": [
+        "",
+        ""
+      ],
+      "photo_focus_x": [
+        50,
+        50
+      ],
+      "photo_focus_y": [
+        50,
+        50
+      ],
+      "photo_boxes": [
+        null,
+        null
+      ],
+      "photo_quality": [
+        "",
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-THEO-1.jpg"
     }
   ],
   "sires": [],
@@ -211,7 +266,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-14 22:50 UTC",
+    "last_updated": "2026-04-15 03:18 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
