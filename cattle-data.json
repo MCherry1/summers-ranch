@@ -321,6 +321,54 @@
         ""
       ],
       "primary_photo": "images/cattle/tag-209-1.jpg"
+    },
+    {
+      "tag": "207",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-207-1.jpg"
+      ],
+      "photo_dates": [
+        "2023-06-11"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-207-1.jpg"
     }
   ],
   "sires": [],
@@ -328,7 +376,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 03:41 UTC",
+    "last_updated": "2026-04-15 04:09 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
