@@ -1448,6 +1448,38 @@
                             </div>
                         </div>
                     </div>
+                    <div class="form-row2">
+                        <div class="form-group">
+                            <label>Date entered</label>
+                            <input type="date" data-field="date_entered" value="${escapeAttr(animal.date_entered || '')}">
+                            <p class="checkbox-hint" style="margin-left:0">When this animal joined the herd. For animals born here, same as Born. For purchased animals, the acquisition date.</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Calving ease</label>
+                            <select data-field="calving_ease">
+                                ${calvingEaseOptions(animal.calving_ease)}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Disposition (BIF 1–6)</label>
+                        <select data-field="disposition">
+                            ${dispositionOptions(animal.disposition)}
+                        </select>
+                        <p class="checkbox-hint" style="margin-left:0">Temperament score on the Beef Improvement Federation scale. Docile cattle are safer, gain better, and produce calmer offspring.</p>
+                    </div>
+                    <div class="form-row2">
+                        <div class="form-group">
+                            <label>Pregnancy status</label>
+                            <select data-field="pregnancy_status">
+                                ${pregnancyStatusOptions(animal.pregnancy_status)}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Expected calving</label>
+                            <input type="text" data-field="expected_calving" value="${escapeAttr(animal.expected_calving || '')}" placeholder="e.g., Spring 2026 or 2026-04-15">
+                        </div>
+                    </div>
                     <div class="form-group checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" data-field="breeding_stock" ${animal.breeding_stock ? 'checked' : ''}>
@@ -1650,6 +1682,55 @@
             return (s === 'bull' || s === 'steer') ? 'Calves sired' : 'Calves';
         }
 
+        // Calving-ease 1-5 scale (industry standard). Stored as a number or null.
+        // Value is empty string in the select when null, coerced back on save.
+        function calvingEaseOptions(current) {
+            const opts = [
+                { v: '', label: '—' },
+                { v: '1', label: '1 — No assistance' },
+                { v: '2', label: '2 — Easy pull' },
+                { v: '3', label: '3 — Hard pull' },
+                { v: '4', label: '4 — Surgical' },
+                { v: '5', label: '5 — Abnormal presentation' }
+            ];
+            const cur = (current != null && current !== '') ? String(current) : '';
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === cur ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
+        // BIF (Beef Improvement Federation) disposition 1–6 scale.
+        // Stored as the string value ("1", "2", etc.) so both number and
+        // label display everywhere. Empty string is the neutral unset state.
+        function dispositionOptions(current) {
+            const opts = [
+                { v: '',  label: '—' },
+                { v: '1', label: '1 — Docile' },
+                { v: '2', label: '2 — Restless' },
+                { v: '3', label: '3 — Nervous' },
+                { v: '4', label: '4 — Flighty' },
+                { v: '5', label: '5 — Aggressive' },
+                { v: '6', label: '6 — Very Aggressive' }
+            ];
+            const cur = current != null ? String(current) : '';
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === cur ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
+        function pregnancyStatusOptions(current) {
+            const opts = [
+                { v: '',           label: '—' },
+                { v: 'open',       label: 'Open' },
+                { v: 'bred',       label: 'Bred' },
+                { v: 'confirmed',  label: 'Confirmed pregnant' }
+            ];
+            const cur = current || '';
+            return opts.map(o =>
+                `<option value="${o.v}"${o.v === cur ? ' selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+
         function photoPicker(animal) {
             const photos = animal.photos || [];
             if (photos.length === 0) {
@@ -1733,7 +1814,8 @@
                 const edited = Object.assign({}, originalAnimal);
                 // Fields that should be stored as Number|null rather than trimmed strings
                 const numericFields = new Set([
-                    'birth_weight', 'weaning_weight', 'yearling_weight', 'calves'
+                    'birth_weight', 'weaning_weight', 'yearling_weight', 'calves',
+                    'calving_ease'
                 ]);
                 el.querySelectorAll('[data-field]').forEach(input => {
                     const f = input.dataset.field;
@@ -1894,10 +1976,16 @@
                 return;
             }
 
+            // Today's ISO date (YYYY-MM-DD) for the date_entered default.
+            // The spec calls this field "auto-populated with today's date for
+            // new animals" — this is where that defaulting happens.
+            const todayIso = new Date().toISOString().slice(0, 10);
+
             const animal = {
                 tag: tag,
                 name: newName.value.trim(),
                 born: newBorn.value.trim(),
+                date_entered: todayIso,
                 registration: '',
                 sire: '',
                 dam: '',
@@ -1911,6 +1999,10 @@
                 birth_weight: null,
                 weaning_weight: null,
                 yearling_weight: null,
+                calving_ease: null,
+                disposition: '',
+                pregnancy_status: '',
+                expected_calving: '',
                 calves: 0,
                 calves_manual: false,
                 notes: '',
