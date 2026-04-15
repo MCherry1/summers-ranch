@@ -79,24 +79,68 @@ Add a `calf_of` field and a `calf_status` field to the animal schema:
 
 ### Photo Pipeline — Calf Prefix
 
-The iOS Shortcut will use the format:
+**iOS Shortcut Input (Simplified for Big Number Keys):**
+
+The shortcut asks TWO questions, both using the number input type (big keys):
+
+1. **"Tag number?"** → Marty types `209` (number keyboard)
+2. **"Calf number? (blank if not a calf)"** → Marty types `1` for first calf, `2` for twins, or leaves blank for an adult cow (number keyboard)
+
+The shortcut constructs the filename:
+- Calf number entered → `cattle-tag-209CALF1-20260315-143022.jpg`
+- Calf number blank → `cattle-tag-209-20260315-143022.jpg`
+
+**Marty never types letters. Ever.** Both inputs use the big numeric keyboard. The shortcut adds "CALF" automatically.
+
+**For twins:** Dam #209 has twins. Marty photographs the first calf → types `209` then `1`. Photographs the second calf → types `209` then `2`. Files become `tag-209-CALF1-1.jpg` and `tag-209-CALF2-1.jpg`.
+
+**Shortcut implementation:**
 ```
-cattle-tag-209CALF-20260315-143022.jpg
+1. Ask for Input: "Tag number?" (Number type)
+   → save to TagNumber
+2. Ask for Input: "Calf number? Leave blank if adult" (Number type)
+   → save to CalfNumber
+3. If CalfNumber has value:
+   → set Prefix to: cattle-tag-[TagNumber]CALF[CalfNumber]
+   Else:
+   → set Prefix to: cattle-tag-[TagNumber]
+4. (rest of shortcut continues as normal)
 ```
 
-The pipeline should recognize the `CALF` suffix:
-- Route to `images/cattle/tag-209-CALF-1.jpg`, `tag-209-CALF-2.jpg`, etc.
-- Create or update the `209-CALF` entry in `cattle-data.json` (not the `209` entry)
-- Auto-populate `calf_of` with `"209"` when creating the entry
+The pipeline recognizes these patterns:
+- `cattle-tag-209CALF1-timestamp.jpg` → tag `209-CALF1` (first calf / twin 1)
+- `cattle-tag-209CALF2-timestamp.jpg` → tag `209-CALF2` (twin 2)
+- `cattle-tag-209CALF-timestamp.jpg` → tag `209-CALF` (legacy single calf format)
+- `cattle-tag-209-timestamp.jpg` → tag `209` (adult)
 
 **Pipeline regex update:**
 ```python
-# Detect calf suffix in tag
-cattle_match = re.match(r'cattle-tag-\[?(\w+?)(CALF)?\]?-', name)
-if cattle_match:
-    tag_base = cattle_match.group(1).upper()
-    is_calf = cattle_match.group(2) is not None
-    tag_number = tag_base + '-CALF' if is_calf else tag_base
+# In route_by_prefix() — try calf pattern first, then regular:
+calf_match = re.match(r'cattle-tag-\[?(\w+?)(calf\d*)\]?-', name, re.IGNORECASE)
+if calf_match:
+    tag_base = calf_match.group(1).upper()
+    calf_suffix = calf_match.group(2).upper()
+    tag_number = tag_base + '-' + calf_suffix
+    seq = next_cattle_number(tag_number)
+    return "cattle", f"tag-{tag_number}-{seq}.jpg"
+
+regular_match = re.match(r'cattle-tag-\[?(\w+)\]?-', name, re.IGNORECASE)
+if regular_match:
+    tag_number = regular_match.group(1).upper()
+    seq = next_cattle_number(tag_number)
+    return "cattle", f"tag-{tag_number}-{seq}.jpg"
+```
+
+**Auto-create entry for calves:**
+When the pipeline creates an entry for a `XXX-CALF1` tag:
+```python
+{
+    "tag": "209-CALF1",
+    "calf_of": "209",  # extracted from tag before the CALF suffix
+    "calf_status": "nursing",
+    "branded": False,
+    ... (all other fields blank)
+}
 ```
 
 ### Admin Panel — Creating a Calf
@@ -106,7 +150,8 @@ When creating a new animal:
 1. If `sex` is set to `"calf"` (or `"bull calf"` or `"heifer calf"`):
    - The **tag number input is disabled/grayed out**
    - A **"Dam's tag #"** field appears (or the Dam dropdown auto-populates this)
-   - The tag is auto-generated as `[dam_tag]-CALF`
+   - A **"Calf number"** field appears (defaults to `1`, for twins use `2`, `3`)
+   - The tag is auto-generated as `[dam_tag]-CALF[number]`
    - `calf_of` is auto-set to the dam's tag
    - `calf_status` is set to `"nursing"`
 
@@ -144,14 +189,16 @@ Calves with `calf_status: "nursing"` appear as normal cards but with:
 - The dam's tag is a clickable link to the dam's card
 - If the pink/blue newborn ribbon is active, it shows as usual
 
-### Edge Case: Multiple Calves from Same Dam
+### Edge Case: Twins and Multiple Calves from Same Dam
 
-When dam #209 has a new calf while a previous "209-CALF" still exists:
-- The NEW calf gets `tag: "209-CALF-2"`, then `"209-CALF-3"`, etc.
-- The pipeline auto-numbers just like regular tag photos
-- But this shouldn't happen often — by the time dam #209 has her next calf, the previous one should have been weaned and assigned its own tag
+**Twins:** Dam #209 has twins. They get `tag: "209-CALF1"` and `tag: "209-CALF2"`. Marty types `209` and `1` for the first twin, `209` and `2` for the second. The shortcut and pipeline handle this natively through the calf number input.
 
-If it does happen, the admin panel should show a nudge: "Tag #209 has 2 calves — the older one may need its own tag."
+**Next year's calf:** If dam #209 has a new calf the following year while a previous CALF1 still exists and hasn't been weaned/retagged:
+- The new calf gets the next available number: `209-CALF3` (if 1 and 2 exist from twins) or `209-CALF2` (if only 1 existed)
+- Marty just types the next number in the shortcut
+- The admin panel should show a nudge: "Tag #209 has 2 calves — the older one may need its own tag."
+
+**Important:** Calves from different years sharing a dam is normal. The calf number is NOT tied to birth order across years — it's just a unique differentiator. Marty picks the number; the system doesn't auto-assign it.
 
 ---
 
@@ -212,16 +259,31 @@ function isNudgesDismissed() {
 
 This applies to ALL nudges, not just the branding one. Dismissed nudges return after 24 hours. This prevents the admin panel from being permanently silent about issues that still need attention.
 
+### Nudge: Pregnancy Overdue
+
+Cattle gestation is approximately **283 days**. If a cow has `pregnancy_status` set to `"bred"` or `"confirmed"` for longer than ~300 days (giving some buffer), something needs attention — either she calved and nobody updated the record, or there's a problem.
+
+**Trigger:** An animal with `pregnancy_status` of `"bred"` or `"confirmed"` where:
+- `expected_calving` is a parseable date AND that date is more than 14 days in the past, OR
+- `expected_calving` is not set but `pregnancy_status` was set more than 300 days ago (requires tracking when the status was set — add a `pregnancy_set_date` field, auto-populated when pregnancy_status changes)
+
+**Message:** "Tag #209 may be overdue — marked pregnant [X] days ago" or "Tag #209's expected calving date has passed (was [date])"
+
+**Priority:** Medium. This is a health/recordkeeping concern, not a revenue issue.
+
+**Important:** This nudge should NOT automatically clear the pregnancy status. Marty clears it manually when he's confirmed the calf was born and has updated the records. The nudge just reminds him to check.
+
 ---
 
 ## 4. Updated Schema
 
 ```json
 {
-  "tag": "209-CALF",
+  "tag": "209-CALF1",
   "calf_of": "209",
   "calf_status": "nursing",
   "branded": false,
+  "pregnancy_set_date": "",
   "name": "",
   "born": "2026-03-15",
   "date_entered": "2026-03-15",
@@ -236,6 +298,7 @@ New fields:
 | `calf_of` | string | `""` | Dam's tag number. Set while calf is with mom. Cleared when calf gets own tag. |
 | `calf_status` | string | `""` | `"nursing"`, `"weaned"`, or `""` (independent). |
 | `branded` | boolean | `false` | Whether the animal has been branded with the ranch brand. |
+| `pregnancy_set_date` | string | `""` | ISO date auto-set when `pregnancy_status` changes to "bred" or "confirmed". Used for overdue nudge calculation. |
 
 ---
 
