@@ -111,9 +111,33 @@ Some agricultural businesses use `.ag` as a domain hack. We considered it but pa
 
 ---
 
+## Gallery Curation — Build When Photo Count Grows
+
+Deferred from `docs/CLEANUP-SPEC.md` § 3. The gallery currently has ~17
+photos and a flat grid works fine. Don't build this until there are 50+
+photos in `gallery-data.json` and the page starts feeling like an
+endless scroll.
+
+**Recommended approach:**
+- Add a `featured` boolean to `gallery-data.json` entries
+- Gallery page shows only featured photos by default with a "Show all"
+  toggle
+- Add a Gallery tab to the admin panel (alongside Herd and Calendar)
+  for toggling featured, reordering, and deleting
+- For the About page hunting section: auto-select the most recent 2–3
+  photos per year by reading `photo_dates` and grouping by year
+
+The data layer is already in place — `gallery-data.json` exists,
+captions and categories are populated by the classification pass. The
+`featured` flag and admin UI are the only missing pieces.
+
+---
+
 ## Completed (For Reference)
 
 - ✅ Photo pipeline (GitHub Actions: resize, strip EXIF, route by prefix, auto-number)
+- ✅ Metadata fingerprint dedup (survives iOS re-encoding, namespaced by cattle/gallery)
+- ✅ Herd archive workflow (culled/deceased animals move to `images/archive/` + `data.archived[]`, with Restore button in admin)
 - ✅ iOS Shortcut (3 categories: General, Cattle, Hunting)
 - ✅ Dynamic cattle page (renders from cattle-data.json)
 - ✅ Admin panel (password-protected, add/edit animals)

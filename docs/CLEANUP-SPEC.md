@@ -187,6 +187,90 @@ The gallery has ~17 photos. Curation doesn't matter until there are 50+. By then
 
 ## Implementation Priority
 
-1. **Metadata fingerprint duplicate detection** — Build now. Prevents the most common user error.
-2. **Herd culling archive workflow** — Build now. Needed before Marty starts managing the herd for real.
-3. **Photo curation** — Future. Document in `FUTURE-IMPROVEMENTS.md`, don't implement.
+1. ✅ **Metadata fingerprint duplicate detection** — Build now. Prevents the most common user error.
+2. ✅ **Herd culling archive workflow** — Build now. Needed before Marty starts managing the herd for real.
+3. 📋 **Photo curation** — Documented in `docs/FUTURE-IMPROVEMENTS.md`. Deferred until 50+ gallery photos.
+
+---
+
+## Implementation Notes
+
+### § 1 — Metadata fingerprint dedup
+
+- **`.github/scripts/process_photos.py`** — new `photo_fingerprint()`
+  helper shells out to `exiftool` for `DateTimeOriginal`,
+  `SubSecTimeOriginal`, `ImageUniqueID`, and original `ImageWidth`/
+  `ImageHeight`, joins them with `|`, and hashes the result to a
+  16-char MD5 digest. Extraction runs BEFORE `strip_and_resize()` so
+  the EXIF is still intact.
+- **`load_fingerprints()` / `save_fingerprints()`** read and write
+  `photo-fingerprints.json` at the repo root with the `{cattle: {},
+  gallery: {}}` schema from the spec. Missing file → empty schema
+  default, malformed file → empty schema default (belt and
+  suspenders).
+- **`fingerprint_namespace_for(category, name)`** picks the namespace.
+  Prefix-based check for pre-classification photos (`cattle-tag-*` →
+  `cattle`, everything else → `gallery`). After the photo is routed,
+  the caller uses the final category directly.
+- **`process_inbox()`** pipeline order:
+  1. Compute fingerprint (EXIF-based).
+  2. If it exists in the pre-move namespace → duplicate, remove from
+     inbox, skip to next photo.
+  3. Otherwise fall back to the SHA-256 file hash check for photos
+     that have no usable EXIF.
+  4. Process normally.
+  5. After the photo lands at its target path, record the fingerprint
+     under the final (post-classification) namespace so future
+     uploads of the same photo get caught.
+- **`save_fingerprints()`** runs once at the end of `process_inbox()`
+  if anything changed. The workflow commits
+  `photo-fingerprints.json` alongside the photos.
+
+### § 2 — Herd culling archive workflow
+
+- **`admin.html`** — `saveAnimal()` watches for `status in
+  {culled, deceased}` combined with the existing
+  `_getConfirmedRemove` flag. When both match, the commit mutator
+  stamps `archived_date` (local YYYY-MM-DD) and `archived_reason`,
+  pushes the animal into `data.archived[]`, and splices it out of
+  `data.animals[]`. Commit message: `Archive tag #<tag> (<name>) —
+  <reason>`. The admin then re-renders instead of trying to update
+  the now-missing card.
+- **New "Archived Animals" section** (`#archivedSection`) lives at
+  the bottom of the Herd tab, hidden entirely when
+  `data.archived[]` is empty. Collapsible toggle, opens a list of
+  rows showing tag + name + reason + date, each with a **Restore**
+  button. `renderArchived()` is called from the existing
+  `render()` alongside `renderNudges()`.
+- **`restoreArchivedAnimal(idx)`** prompts with a confirm dialog,
+  strips the archive metadata, sets `status = 'breeding'` as the
+  default, moves the animal back to `data.animals[]`, and commits
+  with `Restore tag #<tag> from archive`. The pipeline then moves
+  the photos back from `images/archive/` → `images/cattle/` on its
+  next run.
+- **`.github/scripts/process_photos.py`** — new `sync_archive()`
+  reconciles the filesystem with `cattle-data.json`. For each
+  animal in `archived[]`, moves any still-present
+  `images/cattle/tag-<tag>-*.jpg` (and `-thumb.jpg` siblings) to
+  `images/archive/`, and prunes the corresponding entries from
+  `photo-fingerprints.json`'s `cattle` namespace. For each animal
+  back in `animals[]`, walks `images/archive/` and moves matching
+  photos back. Runs between `process_cattle()` and
+  `update_cattle_data()`.
+- **`.github/workflows/process-photos.yml`** — trigger paths now
+  include `cattle-data.json` so archive/restore commits from the
+  admin panel re-run the pipeline. The commit step stages
+  `gallery-data.json` and `photo-fingerprints.json` in addition to
+  the existing `images/` + `cattle-data.json` set.
+
+### Verification
+- `python3 ast.parse` on `process_photos.py` → clean.
+- `photo_fingerprint()` smoke-tested against the live exiftool
+  install; namespace selection verified for cattle-tag-*, photo-*,
+  and explicit category arguments.
+- `load_fingerprints()` / `save_fingerprints()` round-trip tested
+  in a temp directory.
+- `sync_archive()` end-to-end: archive case moves files, prunes
+  fingerprints, leaves active animals alone; restore case moves
+  files back. Thumbs travel with their parents.
+- `new Function()` parses the full `admin.html` inline script clean.

@@ -5,6 +5,10 @@ on:
     paths:
       - 'images/inbox/**'
       - 'images/cattle/**'
+      # sync_archive() reconciles images/cattle/ <-> images/archive/ with
+      # cattle-data.json's animals[] / archived[] arrays, so any edit to
+      # the JSON (archive / restore) needs to re-run the pipeline.
+      - 'cattle-data.json'
   workflow_dispatch:
 
 jobs:
@@ -32,7 +36,11 @@ jobs:
         run: |
           git config user.name "Ranch Photo Bot"
           git config user.email "photos@summersranch.com"
-          git add -A images/ cattle-data.json
+          # photo-fingerprints.json is the metadata-fingerprint dedup table
+          # maintained by process_photos.py (CLEANUP-SPEC § 1). Include it
+          # so the table grows with new uploads and shrinks when animals
+          # are archived.
+          git add -A images/ cattle-data.json gallery-data.json photo-fingerprints.json 2>/dev/null || true
 
           if git diff --staged --quiet; then
             echo "No photos to process"

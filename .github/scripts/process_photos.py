@@ -94,6 +94,82 @@ def file_hash(filepath):
     return h.hexdigest()
 
 
+# ----- Metadata fingerprint dedup (docs/CLEANUP-SPEC.md § 1) -----
+#
+# SHA-256 file hashing catches byte-identical duplicates but breaks as soon
+# as iOS re-encodes a photo on export. EXIF fields like DateTimeOriginal +
+# SubSecTimeOriginal + the original ImageWidth/ImageHeight survive re-encoding,
+# so we fingerprint on those instead. photo-fingerprints.json is a lookup
+# table with separate "cattle" and "gallery" namespaces — cross-pipeline
+# dupes are intentional (a great cow photo can also go in the gallery), so
+# we only block same-namespace matches.
+
+FINGERPRINT_FILE = Path("photo-fingerprints.json")
+
+
+def photo_fingerprint(filepath):
+    """
+    Generate a fingerprint from EXIF metadata that survives re-encoding.
+    Returns a 16-char md5 digest string, or None if no usable EXIF.
+    """
+    try:
+        result = subprocess.run(
+            ["exiftool",
+             "-DateTimeOriginal", "-SubSecTimeOriginal",
+             "-ImageUniqueID", "-ImageWidth", "-ImageHeight",
+             "-s3", "-sep", "|", str(filepath)],
+            capture_output=True, text=True, timeout=5,
+        )
+        raw = (result.stdout or "").strip()
+        # Require at least one meaningful field (DateTimeOriginal is ~10 chars).
+        if not raw or len(raw) < 10:
+            return None
+        return hashlib.md5(raw.encode()).hexdigest()[:16]
+    except Exception:
+        return None
+
+
+def load_fingerprints():
+    """Load photo-fingerprints.json, returning the schema default if missing."""
+    if not FINGERPRINT_FILE.exists():
+        return {"cattle": {}, "gallery": {}}
+    try:
+        with open(FINGERPRINT_FILE, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return {"cattle": {}, "gallery": {}}
+    if not isinstance(data, dict):
+        data = {}
+    if not isinstance(data.get("cattle"), dict):
+        data["cattle"] = {}
+    if not isinstance(data.get("gallery"), dict):
+        data["gallery"] = {}
+    return data
+
+
+def save_fingerprints(data):
+    """Persist photo-fingerprints.json (pretty-printed, trailing newline)."""
+    with open(FINGERPRINT_FILE, "w") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def fingerprint_namespace_for(category, photo_name):
+    """
+    Decide which fingerprint namespace a photo belongs to. Cattle photos
+    (cattle-tag-* prefix) use the "cattle" namespace; everything else
+    (photo-*, hunting-*, unclassified) uses the "gallery" namespace.
+    """
+    if category == "cattle":
+        return "cattle"
+    # Prefix-based guess for before-classification check, since category
+    # may not be known yet
+    name = (photo_name or "").lower()
+    if name.startswith("cattle-tag-"):
+        return "cattle"
+    return "gallery"
+
+
 def build_existing_hashes():
     """Build a set of SHA-256 hashes of all existing photos in the repo."""
     hashes = set()
@@ -579,6 +655,14 @@ def process_inbox():
     existing_hashes = build_existing_hashes()
     print(f"  {len(existing_hashes)} existing photos indexed.")
 
+    # Load metadata-fingerprint lookup table. This is the smart dedup path
+    # (CLEANUP-SPEC § 1) — survives iOS re-encoding. The SHA check above is
+    # kept as a belt-and-suspenders fallback for photos with no usable EXIF.
+    fingerprints = load_fingerprints()
+    fingerprints_changed = False
+    print(f"  Fingerprints loaded: {len(fingerprints.get('cattle', {}))} cattle, "
+          f"{len(fingerprints.get('gallery', {}))} gallery")
+
     has_api = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
     if has_api:
         print("Claude API key found — will classify untagged photos.")
@@ -588,10 +672,27 @@ def process_inbox():
     for photo in photos:
         print(f"\nProcessing: {photo.name}")
 
-        # Duplicate check — compare raw file hash against all existing photos
+        # ----- Metadata fingerprint dedup (CLEANUP-SPEC § 1) -----
+        # Extract BEFORE stripping EXIF. If the fingerprint is already in
+        # the appropriate namespace, this is a true duplicate (even if the
+        # bytes differ from an earlier re-encode).
+        incoming_fp = photo_fingerprint(photo)
+        fp_namespace = fingerprint_namespace_for(None, photo.name)
+        if incoming_fp:
+            ns_table = fingerprints.get(fp_namespace, {})
+            if incoming_fp in ns_table:
+                existing_path = ns_table[incoming_fp]
+                print(f"  DUPLICATE (metadata fingerprint) — already exists as "
+                      f"{existing_path}. Removing from inbox.")
+                photo.unlink()
+                continue
+
+        # Fallback duplicate check — byte-identical file hash. Catches
+        # photos that have no usable EXIF, or edge cases where the
+        # fingerprint table is stale.
         incoming_hash = file_hash(photo)
         if incoming_hash in existing_hashes:
-            print(f"  DUPLICATE — this photo already exists in the repo. Removing from inbox.")
+            print(f"  DUPLICATE (file hash) — this photo already exists in the repo. Removing from inbox.")
             photo.unlink()
             continue
 
@@ -656,6 +757,15 @@ def process_inbox():
         # Add to duplicate index so same-batch dupes get caught too
         existing_hashes.add(incoming_hash)
 
+        # Record the metadata fingerprint under the right namespace. Use the
+        # now-known category (from prefix or Claude) rather than the pre-move
+        # guess, so a photo classified as cattle lands in the cattle table
+        # even if it came in through the generic photo-* prefix.
+        if incoming_fp:
+            final_namespace = "cattle" if category == "cattle" else "gallery"
+            fingerprints.setdefault(final_namespace, {})[incoming_fp] = str(target)
+            fingerprints_changed = True
+
         # Remember the date so update_cattle_data() can populate photo_dates
         # keyed to this photo in lockstep with animal.photos.
         if captured_date and category == "cattle":
@@ -695,6 +805,12 @@ def process_inbox():
                     thumb_path = target.with_name(target.stem + "-thumb" + target.suffix)
                     if crop_to_subject(target, thumb_path, meta["box"]):
                         print(f"  Cropped thumb: {thumb_path.name}")
+
+    # Persist the updated fingerprint lookup table if anything moved.
+    if fingerprints_changed:
+        save_fingerprints(fingerprints)
+        print(f"  Wrote {FINGERPRINT_FILE} ({len(fingerprints['cattle'])} cattle, "
+              f"{len(fingerprints['gallery'])} gallery)")
 
     print("\nInbox processing complete.")
 
@@ -956,9 +1072,121 @@ def update_gallery_data():
         print(f"  Updated gallery-data.json ({len(data['photos'])} entries)")
 
 
+ARCHIVE_DIR = Path("images/archive")
+
+
+def sync_archive():
+    """
+    Reconcile images/cattle/ <-> images/archive/ with cattle-data.json's
+    animals[] and archived[] arrays. See docs/CLEANUP-SPEC.md § 2.
+
+    - Animals in `archived[]` with photos still in images/cattle/ get their
+      photos (and -thumb.jpg siblings) moved to images/archive/. Their
+      metadata fingerprints are purged from the cattle namespace so a
+      fresh upload of the same original photo wouldn't be blocked.
+    - Animals in `animals[]` with photos currently in images/archive/
+      (restored via the admin panel) get their photos moved back. No
+      fingerprint re-registration needed since the files never left the
+      repo.
+
+    The admin panel mutates cattle-data.json to trigger this sync — the
+    JSON moves happen in the browser; the physical file moves happen here.
+    """
+    data_file = Path("cattle-data.json")
+    if not data_file.exists():
+        return
+
+    try:
+        with open(data_file, "r") as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"sync_archive: could not read cattle-data.json: {e}")
+        return
+
+    active = data.get("animals", []) or []
+    archived = data.get("archived", []) or []
+    if not archived and not active:
+        return
+
+    fingerprints = load_fingerprints()
+    fingerprints_changed = False
+    moved_count = 0
+
+    def move_photo(src_path, dst_dir):
+        """Move a single photo plus its -thumb.jpg sibling if present."""
+        nonlocal moved_count
+        src = Path(src_path)
+        if not src.exists():
+            return
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        dst = dst_dir / src.name
+        if dst.exists():
+            # Target already exists — don't clobber, skip
+            return
+        src.rename(dst)
+        moved_count += 1
+        # Move the -thumb.jpg sibling if it's there
+        thumb_src = src.with_name(src.stem + "-thumb" + src.suffix)
+        if thumb_src.exists():
+            thumb_dst = dst_dir / thumb_src.name
+            if not thumb_dst.exists():
+                thumb_src.rename(thumb_dst)
+
+    # Archive active -> archived: move files from images/cattle/ to
+    # images/archive/ and strip their fingerprints so the table stays clean.
+    cattle_namespace = fingerprints.get("cattle", {})
+    for animal in archived:
+        tag = animal.get("tag")
+        if not tag:
+            continue
+        # Paths recorded in the animal's photos[] might still point at
+        # images/cattle/. Move whatever is still there.
+        for photo_path in list(animal.get("photos", []) or []):
+            if photo_path.startswith("images/cattle/") and Path(photo_path).exists():
+                move_photo(photo_path, ARCHIVE_DIR)
+        # Also catch any stray tag-<tag>-N.jpg files the pipeline may have
+        # written directly to images/cattle/ that the JSON doesn't know about.
+        for stray in CATTLE_DIR.glob(f"tag-{tag}-*.jpg"):
+            if stray.stem.endswith("-thumb"):
+                continue
+            move_photo(str(stray), ARCHIVE_DIR)
+        # Prune fingerprints — any cattle-namespace entry pointing at a
+        # path for this tag is now stale.
+        dead_fps = [
+            fp for fp, path in cattle_namespace.items()
+            if f"/tag-{tag}-" in path or path.endswith(f"/tag-{tag}.jpg")
+        ]
+        for fp in dead_fps:
+            del cattle_namespace[fp]
+            fingerprints_changed = True
+
+    # Restore archived -> active: if an animal was moved back to
+    # animals[] by the admin panel but its photos are still in
+    # images/archive/, move them back to images/cattle/. We walk the
+    # archive folder rather than relying on the JSON path since the
+    # admin may or may not update the path when restoring.
+    active_tags = {a.get("tag") for a in active if a.get("tag")}
+    if active_tags and ARCHIVE_DIR.exists():
+        for f in ARCHIVE_DIR.glob("tag-*-*.jpg"):
+            if f.stem.endswith("-thumb"):
+                continue
+            m = re.match(r"tag-(\w+)-\d+\.jpg$", f.name)
+            if not m:
+                continue
+            if m.group(1) in active_tags:
+                move_photo(str(f), CATTLE_DIR)
+
+    if moved_count:
+        print(f"sync_archive: moved {moved_count} photo(s)")
+    if fingerprints_changed:
+        save_fingerprints(fingerprints)
+        print("sync_archive: pruned fingerprints for archived animals")
+
+
 if __name__ == "__main__":
     process_inbox()
     process_cattle()
+    sync_archive()
     update_cattle_data()
     update_gallery_data()
     print("\nDone.")
