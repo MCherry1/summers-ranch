@@ -382,6 +382,89 @@
             letter-spacing: 0.15em; text-transform: uppercase;
             color: var(--stone); margin-bottom: 0.35rem;
         }
+
+        /* ============ HELP TOOLTIPS (ADMIN-TOOLTIPS-SPEC) ============ */
+        /* Inline ⓘ button next to a field label. Tapping it shows a
+           single shared tooltip bubble positioned relative to the button. */
+        .help-tip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--stone);
+            background: rgba(122,117,111,0.15);
+            border: none;
+            cursor: pointer;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+            padding: 0;
+            position: relative;
+            line-height: 1;
+            font-family: Georgia, serif;
+            font-style: italic;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .help-tip:hover { background: rgba(139,105,20,0.2); color: var(--saddle); }
+        /* Expanded touch target — keeps the visual circle at 20px but makes
+           the tappable area 44x44 so it's comfortable on mobile. */
+        .help-tip::before {
+            content: '';
+            position: absolute;
+            top: -12px; right: -12px; bottom: -12px; left: -12px;
+        }
+
+        /* The single shared tooltip bubble. Repositioned on every open. */
+        .help-tooltip {
+            position: fixed;
+            display: none;
+            max-width: 280px;
+            /* Cap the bubble at a safe fraction of the viewport height so
+               long tooltip copy stays reachable on short/landscape screens.
+               positionTooltip() reads the rect AFTER this cap is applied. */
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0.8rem 1rem;
+            background: var(--earth);
+            color: var(--warm-white);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            border-radius: 4px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+            z-index: 3000;
+            pointer-events: auto;
+        }
+        .help-tooltip.show { display: block; }
+        .help-tooltip::after {
+            content: '';
+            position: absolute;
+            left: var(--arrow-left, 50%);
+            width: 0; height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+        }
+        .help-tooltip[data-placement="above"]::after {
+            bottom: -7px;
+            border-top: 7px solid var(--earth);
+        }
+        .help-tooltip[data-placement="below"]::after {
+            top: -7px;
+            border-bottom: 7px solid var(--earth);
+        }
+        .help-tooltip strong { color: var(--gold); }
+        @media (max-width: 480px) {
+            .help-tooltip {
+                left: 0.75rem !important;
+                right: 0.75rem !important;
+                max-width: none;
+            }
+            .help-tooltip::after { left: var(--arrow-left, 50%) !important; }
+        }
+
         .form-group input[type="text"],
         .form-group select,
         .form-group textarea {
@@ -1172,6 +1255,10 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- Single shared tooltip bubble — repositioned on each open. See
+         docs/ADMIN-TOOLTIPS-SPEC.md and the TOOLTIPS dict in the script. -->
+    <div class="help-tooltip" id="helpTooltip" role="tooltip" aria-hidden="true"></div>
+
     <script>
         // ============================================================
         // Summers Ranch Admin Panel
@@ -1748,16 +1835,16 @@
                 </div>
                 <div class="animal-form">
                     <div class="form-group">
-                        <label>Name</label>
+                        <label>Name <button type="button" class="help-tip" data-tip="name" aria-label="Help">ⓘ</button></label>
                         <input type="text" data-field="name" value="${escapeAttr(animal.name || '')}" placeholder="e.g., Bessie">
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
-                            <label>Born</label>
+                            <label>Born <button type="button" class="help-tip" data-tip="born" aria-label="Help">ⓘ</button></label>
                             <input type="date" data-field="born" value="${escapeAttr(animal.born || '')}">
                         </div>
                         <div class="form-group">
-                            <label>Sex</label>
+                            <label>Sex <button type="button" class="help-tip" data-tip="sex" aria-label="Help">ⓘ</button></label>
                             <select data-field="sex">
                                 ${sexOptions(animal.sex)}
                             </select>
@@ -1765,27 +1852,27 @@
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
-                            <label>Registration #</label>
+                            <label>Registration # <button type="button" class="help-tip" data-tip="registration" aria-label="Help">ⓘ</button></label>
                             <input type="text" data-field="registration" value="${escapeAttr(animal.registration || '')}" placeholder="e.g., AHA-43567890" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label>Breed detail (optional)</label>
+                            <label>Breed detail (optional) <button type="button" class="help-tip" data-tip="breed_detail" aria-label="Help">ⓘ</button></label>
                             <input type="text" data-field="breed_detail" value="${escapeAttr(animal.breed_detail || '')}" placeholder="e.g., Hereford x Angus" autocomplete="off">
                         </div>
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
-                            <label>Sire (tag #)</label>
+                            <label>Sire (tag #) <button type="button" class="help-tip" data-tip="sire" aria-label="Help">ⓘ</button></label>
                             <input type="text" data-field="sire" value="${escapeAttr(animal.sire || '')}" list="siresDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label>Dam (tag #)</label>
+                            <label>Dam (tag #) <button type="button" class="help-tip" data-tip="dam" aria-label="Help">ⓘ</button></label>
                             <input type="text" data-field="dam" value="${escapeAttr(animal.dam || '')}" list="damsDatalist" placeholder="pick or type" autocomplete="off">
                         </div>
                     </div>
                     <div class="form-group status-row">
                         <div class="form-group" style="margin:0">
-                            <label>Status</label>
+                            <label>Status <button type="button" class="help-tip" data-tip="status" aria-label="Help">ⓘ</button></label>
                             <select data-field="status" data-role="status-select">
                                 ${statusOptions(animal.status)}
                             </select>
@@ -1805,7 +1892,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>${calvesLabelForSex(animal.sex)}</label>
+                        <label>${calvesLabelForSex(animal.sex)} <button type="button" class="help-tip" data-tip="calves" aria-label="Help">ⓘ</button></label>
                         <div class="calves-stepper">
                             <button type="button" data-role="calves-dec" ${calvesManual ? '' : 'disabled'}>&lsaquo;</button>
                             <input type="number" data-field="calves" value="${calvesVal}" min="0" ${calvesManual ? '' : 'disabled'}>
@@ -1822,16 +1909,16 @@
                         <div class="weights-fields" data-role="weights-fields">
                             <div class="form-row2">
                                 <div class="form-group">
-                                    <label>Birth weight (lb)</label>
+                                    <label>Birth weight (lb) <button type="button" class="help-tip" data-tip="birth_weight" aria-label="Help">ⓘ</button></label>
                                     <input type="text" inputmode="numeric" data-field="birth_weight" value="${animal.birth_weight != null ? animal.birth_weight : ''}" placeholder="e.g., 78">
                                 </div>
                                 <div class="form-group">
-                                    <label>Weaning weight (lb)</label>
+                                    <label>Weaning weight (lb) <button type="button" class="help-tip" data-tip="weaning_weight" aria-label="Help">ⓘ</button></label>
                                     <input type="text" inputmode="numeric" data-field="weaning_weight" value="${animal.weaning_weight != null ? animal.weaning_weight : ''}" placeholder="e.g., 540">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Yearling weight (lb)</label>
+                                <label>Yearling weight (lb) <button type="button" class="help-tip" data-tip="yearling_weight" aria-label="Help">ⓘ</button></label>
                                 <input type="text" inputmode="numeric" data-field="yearling_weight" value="${animal.yearling_weight != null ? animal.yearling_weight : ''}" placeholder="optional">
                             </div>
                         </div>
@@ -1843,14 +1930,14 @@
                             <p class="checkbox-hint" style="margin-left:0">When this animal joined the herd. For animals born here, same as Born. For purchased animals, the acquisition date.</p>
                         </div>
                         <div class="form-group">
-                            <label>Calving ease</label>
+                            <label>Calving ease <button type="button" class="help-tip" data-tip="calving_ease" aria-label="Help">ⓘ</button></label>
                             <select data-field="calving_ease">
                                 ${calvingEaseOptions(animal.calving_ease)}
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Disposition (BIF 1–6)</label>
+                        <label>Disposition (BIF 1–6) <button type="button" class="help-tip" data-tip="disposition" aria-label="Help">ⓘ</button></label>
                         <select data-field="disposition">
                             ${dispositionOptions(animal.disposition)}
                         </select>
@@ -1858,13 +1945,13 @@
                     </div>
                     <div class="form-row2">
                         <div class="form-group">
-                            <label>Pregnancy status</label>
+                            <label>Pregnancy status <button type="button" class="help-tip" data-tip="pregnancy_status" aria-label="Help">ⓘ</button></label>
                             <select data-field="pregnancy_status">
                                 ${pregnancyStatusOptions(animal.pregnancy_status)}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Expected calving</label>
+                            <label>Expected calving <button type="button" class="help-tip" data-tip="expected_calving" aria-label="Help">ⓘ</button></label>
                             <input type="text" data-field="expected_calving" value="${escapeAttr(animal.expected_calving || '')}" placeholder="e.g., Spring 2026 or 2026-04-15">
                         </div>
                     </div>
@@ -1876,7 +1963,7 @@
                         <p class="checkbox-hint">Checked + sex bull → adds to <strong>sire</strong> list. Checked + sex cow/heifer → adds to <strong>dam</strong> list. Other animals can then pick this one as their sire or dam.</p>
                     </div>
                     <div class="form-group">
-                        <label>Notes</label>
+                        <label>Notes <button type="button" class="help-tip" data-tip="notes" aria-label="Help">ⓘ</button></label>
                         <textarea data-field="notes" placeholder="Anything worth remembering">${escapeHtml(animal.notes || '')}</textarea>
                     </div>
                     <div class="form-group">
@@ -3160,6 +3247,174 @@
             switchTab(location.hash === '#calendar' ? 'calendar' : 'herd');
         });
         switchTab(initialTab);
+
+        // ================================================================
+        // HELP TOOLTIPS (docs/ADMIN-TOOLTIPS-SPEC.md)
+        // ================================================================
+        // Keyed by the data-tip attribute on each .help-tip button. Any
+        // spec'd field whose button isn't wired yet (rare) is still a safe
+        // no-op — the dict is the source of truth for text. <strong>
+        // accents get the gold highlight via the CSS rule above.
+        const TOOLTIPS = {
+            name:
+                "Optional but buyers remember names. A named animal feels like an individual, not just a number. Many ranchers name their best breeding stock.",
+            registration:
+                "If this animal is registered with the American Hereford Association (AHA), enter the registration number here. Buyers can look up the full pedigree, EPDs, and genetic data on <strong>hereford.org</strong> using this number. This is the single most valuable field for selling registered stock.",
+            sire:
+                "The father. Select from your herd or from outside/reference animals. Tracking sires lets buyers evaluate the genetics behind each animal. If the sire is from another ranch, add it as a reference animal first.",
+            dam:
+                "The mother. Same as sire — select from your herd or reference animals. Dam quality is often more important than sire quality for evaluating replacement heifers.",
+            born:
+                "Birth date, or your best estimate. The AHA requires an exact date for registration. If you find a 2-day-old calf, just scroll back a couple days — an estimate is fine. Used to calculate age on the website and to detect calving season automatically.",
+            sex:
+                "Bull, cow, heifer (young female that hasn't calved), steer (castrated male), or calf (young, sex not yet relevant). This affects which fields show up and how the animal is categorized on the site.",
+            breed:
+                "Primary breed. For registered Herefords, this is \"Hereford.\" For crossbred calves (like when a neighbor's bull gets in), use the primary breed and add details in Breed Detail.",
+            breed_detail:
+                "For crossbred or percentage animals. Examples: \"Hereford x Angus cross\", \"3/4 Hereford 1/4 Angus\". Leave blank for purebreds. Being upfront about crossbreeding builds trust with buyers.",
+            birth_weight:
+                "Weight at birth in pounds. Tells buyers about calving ease — lighter birth weights usually mean easier deliveries. The AHA average for Herefords is around <strong>75–85 lbs</strong>. Record this within 24 hours of birth if possible.",
+            weaning_weight:
+                "Weight at weaning (typically around 205 days / 7 months old). This is the primary growth indicator buyers look at. The industry standard is the \"adjusted 205-day weight\" but your actual weaning weight is fine.",
+            yearling_weight:
+                "Weight at approximately 365 days old. Shows growth trajectory from weaning to maturity. Optional — not all operations weigh yearlings, but it's valuable data if you have it.",
+            calving_ease:
+                "Industry standard 1–5 scale for how the birth went. One of the FIRST things a buyer asks about when evaluating a bull — \"Will my heifers have trouble with his calves?\" For dams, record their most recent calving. For bulls, this reflects their calves' average.",
+            disposition:
+                "Temperament on the BIF (Beef Improvement Federation) 1–6 scale. Buyers care more than ever — docile cattle are safer to handle, gain weight better, and produce calmer offspring. Evaluate in both pasture and pen since some cattle act differently when corralled.",
+            pregnancy_status:
+                "For females you're thinking of selling. Buyers pay significantly more for a bred or confirmed-pregnant female than an open one. <strong>Open</strong> = not pregnant. <strong>Bred</strong> = exposed to a bull or AI'd. <strong>Confirmed</strong> = pregnancy verified by a vet.",
+            expected_calving:
+                "When the calf is due. Cattle gestation is approximately 283 days. Even a rough estimate like \"March 2026\" is useful for buyers.",
+            calves:
+                "How many calves this animal has produced. For dams, it's the number she's birthed. For bulls, it's the number he's sired. Updates automatically when you add a new animal and select this one as its sire or dam. A cow with 6 healthy calves is a proven producer.",
+            status:
+                "<strong>Breeding Stock</strong> — active in your breeding program. <strong>For Sale</strong> — available for purchase, shows an \"Inquire\" button on the website. <strong>Sold</strong> — stays visible with a \"Sold\" ribbon. <strong>Retired</strong> — no longer breeding but still on the ranch. <strong>Culled/Deceased</strong> — hidden from the public site but kept in your records.",
+            notes:
+                "Anything else worth knowing. Buyers see this on the website, so keep it positive and professional. Good examples: \"Excellent milker, easy keeper\", \"Throws calves with great depth and width\", \"Gentle with handlers.\" Save medical details for your paper records."
+        };
+
+        (function() {
+            const tooltipEl = document.getElementById('helpTooltip');
+            let currentTarget = null;
+
+            function hideTooltip() {
+                tooltipEl.classList.remove('show');
+                tooltipEl.setAttribute('aria-hidden', 'true');
+                currentTarget = null;
+            }
+
+            function positionTooltip(button) {
+                // Reset any previous inline positioning so we can measure
+                // cleanly, then pick the side of the button with more
+                // vertical room. The CSS max-height caps the bubble to the
+                // viewport, and we clamp `top` so long copy never extends
+                // off-screen — the bubble becomes scrollable inside itself.
+                tooltipEl.style.left = '';
+                tooltipEl.style.top = '';
+                tooltipEl.style.maxHeight = '';
+                tooltipEl.classList.add('show');
+                tooltipEl.setAttribute('aria-hidden', 'false');
+
+                const btnRect = button.getBoundingClientRect();
+                const tipRect = tooltipEl.getBoundingClientRect();
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const margin = 8;
+                const gap = 10;
+
+                // How much room exists above vs below the button?
+                const roomAbove = btnRect.top - margin;
+                const roomBelow = vh - btnRect.bottom - margin;
+                // Cap the bubble's height to the larger side so the ::after
+                // arrow can always point at the button.
+                const maxH = Math.max(0, Math.max(roomAbove, roomBelow) - gap);
+                if (tipRect.height > maxH && maxH > 40) {
+                    tooltipEl.style.maxHeight = maxH + 'px';
+                }
+                // Re-measure after the max-height clamp
+                const tipRect2 = tooltipEl.getBoundingClientRect();
+
+                let top;
+                let placement;
+                // Prefer above the button when there's room; otherwise below.
+                // If neither has enough room for the (now-clamped) bubble,
+                // fall back to whichever side has more space.
+                if (tipRect2.height + gap <= roomAbove) {
+                    top = btnRect.top - tipRect2.height - gap;
+                    placement = 'above';
+                } else if (tipRect2.height + gap <= roomBelow) {
+                    top = btnRect.bottom + gap;
+                    placement = 'below';
+                } else if (roomAbove >= roomBelow) {
+                    top = Math.max(margin, btnRect.top - tipRect2.height - gap);
+                    placement = 'above';
+                } else {
+                    top = Math.min(vh - margin - tipRect2.height, btnRect.bottom + gap);
+                    placement = 'below';
+                }
+
+                // Horizontally center the bubble on the button, clamped to
+                // the viewport so mobile landscape or narrow columns don't
+                // push it off-screen.
+                let left = btnRect.left + btnRect.width / 2 - tipRect2.width / 2;
+                if (left < margin) left = margin;
+                if (left + tipRect2.width > vw - margin) left = vw - margin - tipRect2.width;
+
+                // The arrow should still point at the button even after we
+                // clamp the bubble. Compute its offset from the bubble's
+                // left edge so the ::after caret lines up with the button.
+                const arrowX = btnRect.left + btnRect.width / 2 - left;
+                tooltipEl.style.setProperty('--arrow-left', arrowX + 'px');
+                tooltipEl.style.top = top + 'px';
+                tooltipEl.style.left = left + 'px';
+                tooltipEl.dataset.placement = placement;
+            }
+
+            function showTooltip(button) {
+                const key = button.dataset.tip;
+                const text = TOOLTIPS[key];
+                if (!text) return;
+                tooltipEl.innerHTML = text;
+                currentTarget = button;
+                positionTooltip(button);
+            }
+
+            // Event delegation — one listener for every ⓘ button on the
+            // page, past and future (the form re-renders frequently).
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest && e.target.closest('.help-tip');
+                if (btn) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (currentTarget === btn) {
+                        hideTooltip();
+                    } else {
+                        showTooltip(btn);
+                    }
+                    return;
+                }
+                // Clicking anywhere outside a help-tip or the tooltip itself
+                // dismisses it. When we dismiss, swallow the event so the
+                // underlying form control doesn't receive the click —
+                // otherwise tapping to close the tooltip can also focus the
+                // field below it, leading to accidental edits on mobile.
+                if (currentTarget && !e.target.closest('.help-tooltip')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    hideTooltip();
+                }
+            }, true);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && currentTarget) hideTooltip();
+            });
+
+            // Hide on scroll / resize — the bubble's fixed position goes
+            // stale otherwise
+            window.addEventListener('scroll', hideTooltip, true);
+            window.addEventListener('resize', hideTooltip);
+        })();
     </script>
 </body>
 </html>
