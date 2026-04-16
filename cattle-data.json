@@ -51,7 +51,7 @@
     {
       "tag": "109A",
       "name": "",
-      "born": "",
+      "born": "2024-04-15",
       "registration": "",
       "sire": "",
       "dam": "",
@@ -59,13 +59,13 @@
       "breed_detail": "",
       "sex": "",
       "status": "",
-      "source": "",
+      "source": "herd",
       "source_ranch": "",
       "breeding_stock": false,
       "birth_weight": null,
       "weaning_weight": null,
       "yearling_weight": null,
-      "calves": 0,
+      "calves": 1,
       "calves_manual": false,
       "notes": "",
       "photos": [
@@ -89,7 +89,12 @@
       "photo_quality": [
         ""
       ],
-      "primary_photo": "images/cattle/tag-109A-1.jpg"
+      "primary_photo": "images/cattle/tag-109A-1.jpg",
+      "date_entered": "",
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": ""
     },
     {
       "tag": "12345",
@@ -784,7 +789,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-15 21:40 UTC",
+    "last_updated": "2026-04-16 01:04 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
