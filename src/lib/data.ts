@@ -9,6 +9,7 @@ import {
   type MediaAsset,
   type CattleMediaLink,
 } from '@schemas';
+import { pickPrimaryPhoto } from '@/lib/derive/primary-photo';
 
 function parseOrThrow<T>(label: string, schema: { parse: (input: unknown) => T }, input: unknown): T {
   try {
@@ -69,6 +70,10 @@ function buildTagIndex(): Map<string, string> {
 
 export function animalIdForTag(tag: string): string | undefined {
   return tagIndex.get(tag.toUpperCase());
+}
+
+export function primaryPhotoForAnimal(animalId: string): MediaAsset | null {
+  return pickPrimaryPhoto(linksForAnimal(animalId), mediaById);
 }
 
 export function seedSummary(): { animals: number; media: number; links: number } {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" role="img" aria-label="Placeholder ranch hero image">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#faf6ef"/>
+      <stop offset="0.55" stop-color="#ede5d3"/>
+      <stop offset="1" stop-color="#c8941e" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="hills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b7f5e" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#4a3928" stop-opacity="0.45"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <path d="M0 720 Q 320 620 640 680 T 1280 660 T 1920 700 L 1920 1080 L 0 1080 Z" fill="url(#hills)"/>
+  <path d="M0 820 Q 400 760 800 810 T 1600 790 T 1920 820 L 1920 1080 L 0 1080 Z" fill="#4a3928" opacity="0.5"/>
+  <text x="960" y="540" text-anchor="middle" font-family="Cormorant Garamond, Garamond, serif" font-size="80" fill="#4a3928" opacity="0.25" letter-spacing="4">PLACEHOLDER · RANCH HERO</text>
+</svg>

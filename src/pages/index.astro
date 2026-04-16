@@ -1,42 +1,347 @@
 ---
-import '@/styles/global.css';
-import { allAnimals, allMedia, seedSummary } from '@/lib/data';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import AnimalCardPreview from '@/components/cattle/AnimalCardPreview.astro';
+import { allAnimals, getAnimal } from '@/lib/data';
+import { computeAge } from '@/lib/derive';
 
-const summary = seedSummary();
-const publicAnimals = allAnimals.filter((a) => a.publicVisible);
-const publicMedia = allMedia.filter(
-  (m) => m.publicEligible && !m.hidden && !m.deleted && m.state === 'published',
+// Curated 3-animal teaser: herd sire, mature dam, weaned yearling.
+// Mix of life stages tells a better story than a random 3.
+const TEASER_IDS = [
+  '53071b6f-eb74-44bb-a552-f389ae573520', // Bull 801
+  'f2fbb6f7-9ec4-4e9d-a40a-8963a0259987', // Dam 840
+  '6048f941-15dc-4b97-aec0-8db039fec541', // Yearling 841 (weaning-retag)
+];
+const teaserAnimals = TEASER_IDS.map((id) => getAnimal(id)).filter(
+  (a): a is NonNullable<ReturnType<typeof getAnimal>> => a !== undefined,
 );
+
+// Theodore, born 2025-01-11 per project notes. Auto-age display.
+const theodoreAge = computeAge('2025-01-11');
+
+// Public-visible herd size for the CTA.
+const herdCount = allAnimals.filter((a) => a.publicVisible).length;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Summers Ranch — rebuild in progress</title>
-    <meta name="robots" content="noindex,nofollow" />
-  </head>
-  <body>
-    <main class="container" style="padding-block: var(--space-7);">
-      <h1>Summers Ranch</h1>
-      <p class="prose">
-        The rebuild is underway. This page is a temporary build-verification
-        scaffold and will be replaced with the real home page in the next
-        checkpoint. The live prototype is at
-        <a href="https://mrsummersranch.com">mrsummersranch.com</a>.
-      </p>
+<BaseLayout
+  title="Summers Ranch"
+  description="A family-owned cattle breeding operation in Sutter Creek, California. Registered Herefords raised with care."
+  currentNav="home"
+>
+  <section class="hero">
+    <img class="hero-image" src="/placeholders/hero-ranch.svg" alt="" aria-hidden="true" />
+    <div class="hero-overlay">
+      <div class="container hero-inner">
+        <p class="eyebrow">Sutter Creek · Amador County · California</p>
+        <h1>A family tradition of raising cattle the right way.</h1>
+        <p class="lede">
+          Registered Herefords, patient breeding, and the rhythm of the
+          seasons. Summers Ranch is a working operation run by one family
+          across generations.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/herd">Meet the herd</a>
+          <a class="btn btn-ghost" href="/about">Our story</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      <h2>Checkpoint 1 — foundation</h2>
-      <ul>
-        <li><strong>{summary.animals}</strong> animals validated (of which {publicAnimals.length} public-visible)</li>
-        <li><strong>{summary.media}</strong> media assets validated (of which {publicMedia.length} publicly eligible)</li>
-        <li><strong>{summary.links}</strong> cattle-media links validated</li>
-      </ul>
-      <p class="prose">
-        If this page renders, Zod validated every record in the seed at build
-        time. If the seed breaks, the build fails with a path-qualified error.
+  <section class="intro container">
+    <div class="prose">
+      <p>
+        We raise Hereford cattle on quiet acreage in the Sierra foothills.
+        Every calf is tracked, every pairing considered. We sell breeding
+        stock and finished animals by private treaty and at auction, and
+        we're always happy to talk cattle with people who care about them
+        too.
       </p>
-    </main>
-  </body>
-</html>
+    </div>
+  </section>
+
+  <section class="teaser">
+    <div class="container">
+      <header class="section-head">
+        <h2>The Herd</h2>
+        <p class="section-sub">
+          A few faces from {herdCount} head currently on the ranch.
+        </p>
+      </header>
+      <div class="card-grid">
+        {teaserAnimals.map((animal) => <AnimalCardPreview animal={animal} />)}
+      </div>
+      <div class="section-action">
+        <a class="btn btn-outline" href="/herd">Browse the full herd</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mascot container">
+    <div class="mascot-grid">
+      <figure class="mascot-photo">
+        <img
+          src="/placeholders/mascot-theodore.svg"
+          alt="Theodore, the Junior Ranch Hand"
+          loading="lazy"
+        />
+      </figure>
+      <div class="mascot-copy">
+        <p class="eyebrow">Junior Ranch Hand</p>
+        <h2>Meet Theodore.</h2>
+        <p>
+          Every ranch needs a good hand. Ours happens to be
+          {theodoreAge ? ` ${theodoreAge} old ` : ' '}and the youngest
+          member of the Summers family. You'll see him in the gallery,
+          usually mid-adventure.
+        </p>
+        <a class="link-arrow" href="/gallery">See more of Theodore →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="story container">
+    <div class="story-inner prose">
+      <p class="eyebrow">Our story</p>
+      <h2>Generations in the same soil.</h2>
+      <p>
+        The Summers family has been working cattle for longer than any of us
+        remember. This is a retirement the right way — patient, hands-on,
+        and deeply loved. We'd rather show you than tell you about it.
+      </p>
+      <a class="link-arrow" href="/about">Read the family story →</a>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="container cta-inner">
+      <h2>Come out and meet the cattle.</h2>
+      <p>
+        Visitors welcome by appointment. Call us about current availability,
+        upcoming sales, or just to talk Herefords.
+      </p>
+      <a class="btn btn-primary" href="/contact">Get in touch</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Shared button primitives local to this page; promote to ui/Button later if reused. */
+  .btn {
+    display: inline-block;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-weight: 700;
+    transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+  }
+  .btn-primary {
+    background: var(--color-earth);
+    color: var(--color-cream);
+  }
+  .btn-primary:hover {
+    background: var(--color-saddle);
+    color: var(--color-cream);
+  }
+  .btn-outline {
+    border: 1px solid var(--color-earth);
+    color: var(--color-earth);
+  }
+  .btn-outline:hover {
+    background: var(--color-earth);
+    color: var(--color-cream);
+  }
+  .btn-ghost {
+    color: var(--color-cream);
+    border: 1px solid color-mix(in srgb, var(--color-cream) 60%, transparent);
+  }
+  .btn-ghost:hover {
+    background: color-mix(in srgb, var(--color-cream) 10%, transparent);
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-saddle);
+    margin-bottom: var(--space-3);
+  }
+
+  .link-arrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-saddle);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--color-gold);
+    margin-top: var(--space-3);
+  }
+  .link-arrow:hover {
+    color: var(--color-earth);
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    position: relative;
+    min-height: clamp(420px, 62vh, 720px);
+    overflow: hidden;
+  }
+  .hero-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero-overlay {
+    position: relative;
+    height: 100%;
+    min-height: inherit;
+    display: grid;
+    align-items: center;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-earth) 25%, transparent) 0%,
+      color-mix(in srgb, var(--color-earth) 55%, transparent) 100%
+    );
+    padding-block: var(--space-8);
+  }
+  .hero-inner {
+    color: var(--color-cream);
+    max-width: 50rem;
+  }
+  .hero-inner .eyebrow {
+    color: color-mix(in srgb, var(--color-gold) 90%, var(--color-cream));
+  }
+  .hero-inner h1 {
+    color: var(--color-cream);
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    line-height: 1.1;
+    margin-bottom: var(--space-5);
+    max-width: 22ch;
+  }
+  .hero-inner .lede {
+    font-size: var(--text-lg);
+    max-width: 40ch;
+    color: color-mix(in srgb, var(--color-cream) 88%, transparent);
+  }
+  .hero-actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+  }
+
+  /* ---- Intro ---- */
+  .intro {
+    padding-block: var(--space-8);
+  }
+  .intro .prose {
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    max-width: 36rem;
+  }
+
+  /* ---- Teaser ---- */
+  .teaser {
+    padding-block: var(--space-7) var(--space-8);
+    background: var(--color-linen);
+  }
+  .section-head {
+    margin-bottom: var(--space-6);
+  }
+  .section-head h2 {
+    margin-bottom: var(--space-2);
+  }
+  .section-sub {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+    gap: var(--space-5);
+  }
+  .section-action {
+    margin-top: var(--space-6);
+    text-align: center;
+  }
+
+  /* ---- Mascot ---- */
+  .mascot {
+    padding-block: var(--space-8);
+  }
+  .mascot-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 320px) 1fr;
+    gap: var(--space-7);
+    align-items: center;
+  }
+  .mascot-photo {
+    margin: 0;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .mascot-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @media (max-width: 720px) {
+    .mascot-grid {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .mascot-photo {
+      max-width: 260px;
+      margin-inline: auto;
+    }
+  }
+
+  /* ---- Story ---- */
+  .story {
+    padding-block: var(--space-7) var(--space-8);
+  }
+  .story-inner {
+    max-width: 44rem;
+  }
+
+  /* ---- Final CTA ---- */
+  .cta-section {
+    background: var(--color-earth);
+    color: var(--color-cream);
+    padding-block: var(--space-8);
+  }
+  .cta-inner {
+    text-align: center;
+    max-width: 44rem;
+  }
+  .cta-inner h2 {
+    color: var(--color-cream);
+  }
+  .cta-inner p {
+    color: color-mix(in srgb, var(--color-cream) 85%, transparent);
+    max-width: 36ch;
+    margin-inline: auto;
+  }
+  .cta-inner .btn-primary {
+    background: var(--color-gold);
+    color: var(--color-earth);
+    margin-top: var(--space-4);
+  }
+  .cta-inner .btn-primary:hover {
+    background: var(--color-cream);
+  }
+</style>

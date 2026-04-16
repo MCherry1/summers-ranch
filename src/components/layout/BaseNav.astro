@@ -1,0 +1,164 @@
+---
+interface Props {
+  current?: string;
+}
+
+const { current } = Astro.props;
+
+const links = [
+  { href: '/', label: 'Home', key: 'home' },
+  { href: '/about', label: 'About', key: 'about' },
+  { href: '/herd', label: 'The Herd', key: 'herd' },
+  { href: '/gallery', label: 'Gallery', key: 'gallery' },
+  { href: '/contact', label: 'Contact', key: 'contact' },
+];
+---
+
+<header class="site-nav">
+  <div class="container nav-row">
+    <a href="/" class="brand" aria-label="Summers Ranch, home">
+      <span class="brand-mark">Summers Ranch</span>
+      <span class="brand-sub">Sutter Creek, California</span>
+    </a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav-list" aria-label="Open navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav>
+      <ul id="site-nav-list" class="nav-list">
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                aria-current={current === l.key ? 'page' : undefined}
+              >
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--color-cream) 92%, transparent);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-earth) 12%, transparent);
+  }
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-4);
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    color: var(--color-earth);
+    text-decoration: none;
+  }
+  .brand-mark {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .brand-sub {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .nav-list {
+    display: flex;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nav-list a {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-earth);
+    padding: 6px 2px;
+    border-bottom: 1px solid transparent;
+    transition: border-color 140ms ease, color 140ms ease;
+  }
+  .nav-list a[aria-current='page'] {
+    border-bottom-color: var(--color-gold);
+    color: var(--color-saddle);
+  }
+  .nav-list a:hover {
+    color: var(--color-saddle);
+    border-bottom-color: var(--color-gold);
+  }
+  .nav-toggle {
+    display: none;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    padding: 10px 8px;
+    cursor: pointer;
+  }
+  .nav-toggle span {
+    display: block;
+    height: 2px;
+    background: var(--color-earth);
+    margin: 4px 0;
+    transition: transform 160ms ease, opacity 160ms ease;
+  }
+  @media (max-width: 720px) {
+    .nav-toggle {
+      display: block;
+    }
+    .nav-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      gap: 0;
+      padding: var(--space-4) var(--space-5);
+      background: var(--color-cream);
+      border-bottom: 1px solid color-mix(in srgb, var(--color-earth) 12%, transparent);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 200ms ease;
+    }
+    .site-nav[data-open='true'] .nav-list {
+      max-height: 420px;
+    }
+    .nav-list li {
+      padding-block: var(--space-3);
+      border-bottom: 1px solid color-mix(in srgb, var(--color-earth) 8%, transparent);
+    }
+    .nav-list li:last-child {
+      border-bottom: none;
+    }
+  }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('.site-nav');
+  const toggle = nav?.querySelector<HTMLButtonElement>('.nav-toggle');
+  toggle?.addEventListener('click', () => {
+    const open = nav?.getAttribute('data-open') === 'true';
+    nav?.setAttribute('data-open', open ? 'false' : 'true');
+    toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+    toggle.setAttribute('aria-label', open ? 'Open navigation' : 'Close navigation');
+  });
+</script>

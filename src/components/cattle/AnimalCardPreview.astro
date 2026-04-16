@@ -1,0 +1,112 @@
+---
+import type { Animal } from '@schemas';
+import { primaryPhotoForAnimal, getAnimal } from '@/lib/data';
+import { computeAge } from '@/lib/derive';
+import { resolveMediaUrl } from '@/lib/media-url';
+
+interface Props {
+  animal: Animal;
+}
+
+const { animal } = Astro.props;
+const media = primaryPhotoForAnimal(animal.animalId);
+const photoUrl = resolveMediaUrl(media?.cardKey ?? media?.publicKey ?? null);
+const age = computeAge(animal.birthDate);
+
+// Calf of #dam label when sharing the dam's tag provisionally
+let tagLabel = `#${animal.displayTag}`;
+if (animal.isProvisionalTag && animal.damAnimalId) {
+  const dam = getAnimal(animal.damAnimalId);
+  if (dam) tagLabel = `Calf of #${dam.displayTag}`;
+}
+
+const detailHref = `/herd/${animal.animalId}`;
+---
+
+<a class="preview-card" href={detailHref} aria-label={`View ${tagLabel}`}>
+  <div class="photo">
+    {
+      photoUrl ? (
+        <img src={photoUrl} alt="" loading="lazy" />
+      ) : (
+        <div class="photo-empty" aria-hidden="true">
+          <span>No photo yet</span>
+        </div>
+      )
+    }
+  </div>
+  <div class="meta">
+    <div class="tag">{tagLabel}</div>
+    {animal.name && <div class="name">{animal.name}</div>}
+    {age && <div class="age">{age}</div>}
+  </div>
+</a>
+
+<style>
+  .preview-card {
+    display: block;
+    text-decoration: none;
+    color: var(--color-earth);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .preview-card:hover,
+  .preview-card:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .preview-card:hover,
+    .preview-card:focus-visible {
+      transform: none;
+    }
+  }
+  .photo {
+    aspect-ratio: 4 / 3;
+    background: var(--color-linen);
+    overflow: hidden;
+  }
+  .photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-empty {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .meta {
+    padding: var(--space-4) var(--space-5);
+  }
+  .tag {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-earth);
+    line-height: 1.1;
+  }
+  .name {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+  .age {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-saddle);
+    margin-top: var(--space-2);
+  }
+</style>

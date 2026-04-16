@@ -1,5 +1,19 @@
 # Upload Ranch Photos to GitHub — iOS Shortcut Guide
 
+> **⚠ LEGACY v1 DOCUMENT — stale on the `v2-rebuild` branch.**
+>
+> This guide describes the shortcut that uploads photos directly to the
+> GitHub repo, where a GitHub Actions pipeline processes them. The v2
+> rebuild replaces that pipeline with a Cloudflare Worker endpoint and
+> R2 storage (Phase 2 — not yet built). The shortcut will be retargeted
+> to the new endpoint at the Phase 2 cutover.
+>
+> Read for UX intent (number-keyboard prompts, filename conventions,
+> Marty's real-world workflow) — not for implementation details. See
+> `docs/README.md` for the full legacy notice.
+
+---
+
 Select photos on your iPhone, pick a category, and they upload automatically.
 
 **Install the shortcut directly:** [Tap here on your iPhone](https://www.icloud.com/shortcuts/d43741765d9c4b95bc48484ebbc3cc74)

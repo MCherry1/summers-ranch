@@ -1,0 +1,57 @@
+---
+import '@/styles/global.css';
+import BaseNav from '@/components/layout/BaseNav.astro';
+import BaseFooter from '@/components/layout/BaseFooter.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  currentNav?: string;
+  noindex?: boolean;
+}
+
+const { title, description, currentNav, noindex } = Astro.props;
+const fullTitle = title.includes('Summers Ranch') ? title : `${title} — Summers Ranch`;
+const meta =
+  description ??
+  'Summers Ranch — a family-owned cattle breeding operation in Sutter Creek, California.';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={meta} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={meta} />
+    <meta property="og:type" content="website" />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <BaseNav current={currentNav} />
+    <main id="main">
+      <slot />
+    </main>
+    <BaseFooter />
+
+    <style is:global>
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-earth);
+        color: var(--color-cream);
+        padding: 8px 16px;
+        z-index: 100;
+        text-decoration: none;
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+    </style>
+  </body>
+</html>
