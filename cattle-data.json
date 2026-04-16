@@ -58,7 +58,7 @@
       "breed": "",
       "breed_detail": "",
       "sex": "",
-      "status": "",
+      "status": "sale",
       "source": "herd",
       "source_ranch": "",
       "breeding_stock": false,
@@ -789,7 +789,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-16 01:04 UTC",
+    "last_updated": "2026-04-16 01:05 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
