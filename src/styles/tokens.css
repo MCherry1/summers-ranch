@@ -1,0 +1,57 @@
+:root {
+  --color-earth: #4a3928;
+  --color-saddle: #8b6914;
+  --color-gold: #c8941e;
+  --color-rust: #8a3921;
+  --color-sage: #6b7f5e;
+  --color-stone: #7a756f;
+  --color-cream: #faf6ef;
+  --color-linen: #ede5d3;
+  --color-warm-white: #fffdf9;
+
+  --color-text: var(--color-earth);
+  --color-text-muted: var(--color-stone);
+  --color-bg: var(--color-cream);
+  --color-surface: var(--color-warm-white);
+  --color-accent: var(--color-gold);
+  --color-accent-strong: var(--color-saddle);
+
+  --font-display: 'Cormorant Garamond', 'Garamond', 'Times New Roman', serif;
+  --font-body: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(74, 57, 40, 0.08);
+  --shadow-md: 0 4px 12px rgba(74, 57, 40, 0.12);
+  --shadow-lg: 0 12px 32px rgba(74, 57, 40, 0.16);
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 4rem;
+
+  --leading-tight: 1.15;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+
+  --max-width-content: 72rem;
+  --max-width-prose: 40rem;
+}

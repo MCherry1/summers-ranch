@@ -1,0 +1,1229 @@
+{
+  "media": [
+    {
+      "mediaId": "f5154f92-8c76-47b9-b3f7-2c2d81d87685",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/bull_801-side-14d.jpg",
+      "publicKey": "placeholders/bull_801-side-14d-public.jpg",
+      "cardKey": "placeholders/bull_801-side-14d-card.jpg",
+      "thumbKey": "placeholders/bull_801-side-14d-thumb.jpg",
+      "associatedAnimalId": "53071b6f-eb74-44bb-a552-f389ae573520",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-02T15:00:00Z",
+      "capturedAt": "2026-04-02T12:00:00Z",
+      "processedAt": "2026-04-02T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_f5154f92.jpg",
+        "exifDate": "2026-04-02T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-f5154f92",
+        "fingerprint": "seed-fp-f5154f92"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "c363fdb2-0682-4a2c-a20b-5ffe456ad3fc",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/bull_801-head-14d.jpg",
+      "publicKey": "placeholders/bull_801-head-14d-public.jpg",
+      "cardKey": "placeholders/bull_801-head-14d-card.jpg",
+      "thumbKey": "placeholders/bull_801-head-14d-thumb.jpg",
+      "associatedAnimalId": "53071b6f-eb74-44bb-a552-f389ae573520",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-02T15:00:00Z",
+      "capturedAt": "2026-04-02T12:00:00Z",
+      "processedAt": "2026-04-02T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_c363fdb2.jpg",
+        "exifDate": "2026-04-02T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-c363fdb2",
+        "fingerprint": "seed-fp-c363fdb2"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "59ccb186-43fd-459a-b75c-10a686765857",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/bull_801-three-quarter-30d.jpg",
+      "publicKey": "placeholders/bull_801-three-quarter-30d-public.jpg",
+      "cardKey": "placeholders/bull_801-three-quarter-30d-card.jpg",
+      "thumbKey": "placeholders/bull_801-three-quarter-30d-thumb.jpg",
+      "associatedAnimalId": "53071b6f-eb74-44bb-a552-f389ae573520",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-17T15:00:00Z",
+      "capturedAt": "2026-03-17T12:00:00Z",
+      "processedAt": "2026-03-17T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "three-quarter",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_59ccb186.jpg",
+        "exifDate": "2026-03-17T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-59ccb186",
+        "fingerprint": "seed-fp-59ccb186"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "a6252634-3a97-4ab2-9d3b-3d8cf2bea583",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/bull_801-in-pasture-45d.jpg",
+      "publicKey": "placeholders/bull_801-in-pasture-45d-public.jpg",
+      "cardKey": "placeholders/bull_801-in-pasture-45d-card.jpg",
+      "thumbKey": "placeholders/bull_801-in-pasture-45d-thumb.jpg",
+      "associatedAnimalId": "53071b6f-eb74-44bb-a552-f389ae573520",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-02T15:00:00Z",
+      "capturedAt": "2026-03-02T12:00:00Z",
+      "processedAt": "2026-03-02T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "in-pasture",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_a6252634.jpg",
+        "exifDate": "2026-03-02T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-a6252634",
+        "fingerprint": "seed-fp-a6252634"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "b1ac8e29-6c6d-461e-98f3-f26eb32aca60",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/bull_801-side-180d.jpg",
+      "publicKey": "placeholders/bull_801-side-180d-public.jpg",
+      "cardKey": "placeholders/bull_801-side-180d-card.jpg",
+      "thumbKey": "placeholders/bull_801-side-180d-thumb.jpg",
+      "associatedAnimalId": "53071b6f-eb74-44bb-a552-f389ae573520",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2025-10-18T15:00:00Z",
+      "capturedAt": "2025-10-18T12:00:00Z",
+      "processedAt": "2025-10-18T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "good",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_b1ac8e29.jpg",
+        "exifDate": "2025-10-18T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-b1ac8e29",
+        "fingerprint": "seed-fp-b1ac8e29"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "5d942bdd-021a-4734-8ab6-00ee52500cbc",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/open_heifer_812-side-7d.jpg",
+      "publicKey": "placeholders/open_heifer_812-side-7d-public.jpg",
+      "cardKey": "placeholders/open_heifer_812-side-7d-card.jpg",
+      "thumbKey": "placeholders/open_heifer_812-side-7d-thumb.jpg",
+      "associatedAnimalId": "0a09c777-bc9a-4a2e-b334-816f8b15ee4f",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-09T15:00:00Z",
+      "capturedAt": "2026-04-09T12:00:00Z",
+      "processedAt": "2026-04-09T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_5d942bdd.jpg",
+        "exifDate": "2026-04-09T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-5d942bdd",
+        "fingerprint": "seed-fp-5d942bdd"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "ec3b1f2b-2533-47fc-8044-b28015325661",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/open_heifer_812-head-7d.jpg",
+      "publicKey": "placeholders/open_heifer_812-head-7d-public.jpg",
+      "cardKey": "placeholders/open_heifer_812-head-7d-card.jpg",
+      "thumbKey": "placeholders/open_heifer_812-head-7d-thumb.jpg",
+      "associatedAnimalId": "0a09c777-bc9a-4a2e-b334-816f8b15ee4f",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-09T15:00:00Z",
+      "capturedAt": "2026-04-09T12:00:00Z",
+      "processedAt": "2026-04-09T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_ec3b1f2b.jpg",
+        "exifDate": "2026-04-09T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-ec3b1f2b",
+        "fingerprint": "seed-fp-ec3b1f2b"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "82e7865a-80bb-496e-a06b-821b21252501",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_a_820-side-21d.jpg",
+      "publicKey": "placeholders/dam_a_820-side-21d-public.jpg",
+      "cardKey": "placeholders/dam_a_820-side-21d-card.jpg",
+      "thumbKey": "placeholders/dam_a_820-side-21d-thumb.jpg",
+      "associatedAnimalId": "40c26cd3-b972-4023-99eb-b46ae60f49b0",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-26T15:00:00Z",
+      "capturedAt": "2026-03-26T12:00:00Z",
+      "processedAt": "2026-03-26T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_82e7865a.jpg",
+        "exifDate": "2026-03-26T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-82e7865a",
+        "fingerprint": "seed-fp-82e7865a"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "7a4f90d2-650c-4bbf-8a11-474b5fe7dead",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_a_820-head-21d.jpg",
+      "publicKey": "placeholders/dam_a_820-head-21d-public.jpg",
+      "cardKey": "placeholders/dam_a_820-head-21d-card.jpg",
+      "thumbKey": "placeholders/dam_a_820-head-21d-thumb.jpg",
+      "associatedAnimalId": "40c26cd3-b972-4023-99eb-b46ae60f49b0",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-26T15:00:00Z",
+      "capturedAt": "2026-03-26T12:00:00Z",
+      "processedAt": "2026-03-26T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_7a4f90d2.jpg",
+        "exifDate": "2026-03-26T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-7a4f90d2",
+        "fingerprint": "seed-fp-7a4f90d2"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "12e31f29-bf59-4614-bbd3-4b1795390457",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_a_820-three-quarter-60d.jpg",
+      "publicKey": "placeholders/dam_a_820-three-quarter-60d-public.jpg",
+      "cardKey": "placeholders/dam_a_820-three-quarter-60d-card.jpg",
+      "thumbKey": "placeholders/dam_a_820-three-quarter-60d-thumb.jpg",
+      "associatedAnimalId": "40c26cd3-b972-4023-99eb-b46ae60f49b0",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-02-15T15:00:00Z",
+      "capturedAt": "2026-02-15T12:00:00Z",
+      "processedAt": "2026-02-15T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "three-quarter",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_12e31f29.jpg",
+        "exifDate": "2026-02-15T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-12e31f29",
+        "fingerprint": "seed-fp-12e31f29"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "88d7a78f-e03e-4e17-962f-0cf456f4b92c",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_b_830-side-18d.jpg",
+      "publicKey": "placeholders/dam_b_830-side-18d-public.jpg",
+      "cardKey": "placeholders/dam_b_830-side-18d-card.jpg",
+      "thumbKey": "placeholders/dam_b_830-side-18d-thumb.jpg",
+      "associatedAnimalId": "4ab0cd48-129c-460d-a9dd-4bb83bdaca0f",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-29T15:00:00Z",
+      "capturedAt": "2026-03-29T12:00:00Z",
+      "processedAt": "2026-03-29T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_88d7a78f.jpg",
+        "exifDate": "2026-03-29T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-88d7a78f",
+        "fingerprint": "seed-fp-88d7a78f"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "12033cdc-8f1c-4c1f-960f-5dae565a11ae",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_c_840-side-10d.jpg",
+      "publicKey": "placeholders/dam_c_840-side-10d-public.jpg",
+      "cardKey": "placeholders/dam_c_840-side-10d-card.jpg",
+      "thumbKey": "placeholders/dam_c_840-side-10d-thumb.jpg",
+      "associatedAnimalId": "f2fbb6f7-9ec4-4e9d-a40a-8963a0259987",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-06T15:00:00Z",
+      "capturedAt": "2026-04-06T12:00:00Z",
+      "processedAt": "2026-04-06T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_12033cdc.jpg",
+        "exifDate": "2026-04-06T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-12033cdc",
+        "fingerprint": "seed-fp-12033cdc"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "e0b2c51e-ad7b-4153-b346-9b4905952090",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_c_840-head-10d.jpg",
+      "publicKey": "placeholders/dam_c_840-head-10d-public.jpg",
+      "cardKey": "placeholders/dam_c_840-head-10d-card.jpg",
+      "thumbKey": "placeholders/dam_c_840-head-10d-thumb.jpg",
+      "associatedAnimalId": "f2fbb6f7-9ec4-4e9d-a40a-8963a0259987",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-06T15:00:00Z",
+      "capturedAt": "2026-04-06T12:00:00Z",
+      "processedAt": "2026-04-06T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_e0b2c51e.jpg",
+        "exifDate": "2026-04-06T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-e0b2c51e",
+        "fingerprint": "seed-fp-e0b2c51e"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "21f9568a-3886-430d-8562-3943cff0bd6c",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_c_840-three-quarter-40d.jpg",
+      "publicKey": "placeholders/dam_c_840-three-quarter-40d-public.jpg",
+      "cardKey": "placeholders/dam_c_840-three-quarter-40d-card.jpg",
+      "thumbKey": "placeholders/dam_c_840-three-quarter-40d-thumb.jpg",
+      "associatedAnimalId": "f2fbb6f7-9ec4-4e9d-a40a-8963a0259987",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-03-07T15:00:00Z",
+      "capturedAt": "2026-03-07T12:00:00Z",
+      "processedAt": "2026-03-07T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "three-quarter",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_21f9568a.jpg",
+        "exifDate": "2026-03-07T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-21f9568a",
+        "fingerprint": "seed-fp-21f9568a"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "71d49c3a-0b19-4a6c-a674-66456ff4c706",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/dam_c_840-in-pasture-120d.jpg",
+      "publicKey": "placeholders/dam_c_840-in-pasture-120d-public.jpg",
+      "cardKey": "placeholders/dam_c_840-in-pasture-120d-card.jpg",
+      "thumbKey": "placeholders/dam_c_840-in-pasture-120d-thumb.jpg",
+      "associatedAnimalId": "f2fbb6f7-9ec4-4e9d-a40a-8963a0259987",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2025-12-17T15:00:00Z",
+      "capturedAt": "2025-12-17T12:00:00Z",
+      "processedAt": "2025-12-17T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "in-pasture",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_71d49c3a.jpg",
+        "exifDate": "2025-12-17T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-71d49c3a",
+        "fingerprint": "seed-fp-71d49c3a"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "0c23be65-a156-43a9-88d0-558e95341182",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_a1_nursing_820-side-5d.jpg",
+      "publicKey": "placeholders/calf_a1_nursing_820-side-5d-public.jpg",
+      "cardKey": "placeholders/calf_a1_nursing_820-side-5d-card.jpg",
+      "thumbKey": "placeholders/calf_a1_nursing_820-side-5d-thumb.jpg",
+      "associatedAnimalId": "e3ee223d-cb42-41eb-a5a6-b5d85083f4a5",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-11T15:00:00Z",
+      "capturedAt": "2026-04-11T12:00:00Z",
+      "processedAt": "2026-04-11T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_0c23be65.jpg",
+        "exifDate": "2026-04-11T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-0c23be65",
+        "fingerprint": "seed-fp-0c23be65"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "86f42d6f-e702-4d5d-9cea-e50b40de0af2",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_a1_nursing_820-head-3d.jpg",
+      "publicKey": "placeholders/calf_a1_nursing_820-head-3d-public.jpg",
+      "cardKey": "placeholders/calf_a1_nursing_820-head-3d-card.jpg",
+      "thumbKey": "placeholders/calf_a1_nursing_820-head-3d-thumb.jpg",
+      "associatedAnimalId": "e3ee223d-cb42-41eb-a5a6-b5d85083f4a5",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-13T15:00:00Z",
+      "capturedAt": "2026-04-13T12:00:00Z",
+      "processedAt": "2026-04-13T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_86f42d6f.jpg",
+        "exifDate": "2026-04-13T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-86f42d6f",
+        "fingerprint": "seed-fp-86f42d6f"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "688aa0ea-0892-4b1b-af3f-3dfc86758238",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_b1_twinA_830-side-4d.jpg",
+      "publicKey": "placeholders/calf_b1_twinA_830-side-4d-public.jpg",
+      "cardKey": "placeholders/calf_b1_twinA_830-side-4d-card.jpg",
+      "thumbKey": "placeholders/calf_b1_twinA_830-side-4d-thumb.jpg",
+      "associatedAnimalId": "298df03c-7b9b-41dd-aa10-75aa5c2052c4",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-12T15:00:00Z",
+      "capturedAt": "2026-04-12T12:00:00Z",
+      "processedAt": "2026-04-12T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_688aa0ea.jpg",
+        "exifDate": "2026-04-12T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-688aa0ea",
+        "fingerprint": "seed-fp-688aa0ea"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "925b5a45-5185-4e73-afce-c03fc678d2b7",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_b2_twinB_830-side-4d.jpg",
+      "publicKey": "placeholders/calf_b2_twinB_830-side-4d-public.jpg",
+      "cardKey": "placeholders/calf_b2_twinB_830-side-4d-card.jpg",
+      "thumbKey": "placeholders/calf_b2_twinB_830-side-4d-thumb.jpg",
+      "associatedAnimalId": "842946e8-a1c8-442c-b3b9-cbe6577cb158",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-12T15:00:00Z",
+      "capturedAt": "2026-04-12T12:00:00Z",
+      "processedAt": "2026-04-12T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_925b5a45.jpg",
+        "exifDate": "2026-04-12T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-925b5a45",
+        "fingerprint": "seed-fp-925b5a45"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "a1272c4f-6115-43b8-b8bc-f55b46891ef3",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c1_weaned_841-side-2d.jpg",
+      "publicKey": "placeholders/calf_c1_weaned_841-side-2d-public.jpg",
+      "cardKey": "placeholders/calf_c1_weaned_841-side-2d-card.jpg",
+      "thumbKey": "placeholders/calf_c1_weaned_841-side-2d-thumb.jpg",
+      "associatedAnimalId": "6048f941-15dc-4b97-aec0-8db039fec541",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-14T15:00:00Z",
+      "capturedAt": "2026-04-14T12:00:00Z",
+      "processedAt": "2026-04-14T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_a1272c4f.jpg",
+        "exifDate": "2026-04-14T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-a1272c4f",
+        "fingerprint": "seed-fp-a1272c4f"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "5079ea81-e283-418c-8625-51d35a9cec36",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c1_weaned_841-head-2d.jpg",
+      "publicKey": "placeholders/calf_c1_weaned_841-head-2d-public.jpg",
+      "cardKey": "placeholders/calf_c1_weaned_841-head-2d-card.jpg",
+      "thumbKey": "placeholders/calf_c1_weaned_841-head-2d-thumb.jpg",
+      "associatedAnimalId": "6048f941-15dc-4b97-aec0-8db039fec541",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-14T15:00:00Z",
+      "capturedAt": "2026-04-14T12:00:00Z",
+      "processedAt": "2026-04-14T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "head",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_5079ea81.jpg",
+        "exifDate": "2026-04-14T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-5079ea81",
+        "fingerprint": "seed-fp-5079ea81"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "8842d2c1-cd42-41ca-bd72-5fd135efc6a9",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c1_weaned_841-side-60d.jpg",
+      "publicKey": "placeholders/calf_c1_weaned_841-side-60d-public.jpg",
+      "cardKey": "placeholders/calf_c1_weaned_841-side-60d-card.jpg",
+      "thumbKey": "placeholders/calf_c1_weaned_841-side-60d-thumb.jpg",
+      "associatedAnimalId": "6048f941-15dc-4b97-aec0-8db039fec541",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-02-15T15:00:00Z",
+      "capturedAt": "2026-02-15T12:00:00Z",
+      "processedAt": "2026-02-15T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "good",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_8842d2c1.jpg",
+        "exifDate": "2026-02-15T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-8842d2c1",
+        "fingerprint": "seed-fp-8842d2c1"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "e78fc81c-c793-4749-8abd-b3b00d7cdd1f",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c1_weaned_841-side-200d.jpg",
+      "publicKey": "placeholders/calf_c1_weaned_841-side-200d-public.jpg",
+      "cardKey": "placeholders/calf_c1_weaned_841-side-200d-card.jpg",
+      "thumbKey": "placeholders/calf_c1_weaned_841-side-200d-thumb.jpg",
+      "associatedAnimalId": "6048f941-15dc-4b97-aec0-8db039fec541",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2025-09-28T15:00:00Z",
+      "capturedAt": "2025-09-28T12:00:00Z",
+      "processedAt": "2025-09-28T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "fair",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_e78fc81c.jpg",
+        "exifDate": "2025-09-28T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-e78fc81c",
+        "fingerprint": "seed-fp-e78fc81c"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "b844efa7-0451-43df-9a11-9d86b020b18b",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c2_twinA_840-side-8d.jpg",
+      "publicKey": "placeholders/calf_c2_twinA_840-side-8d-public.jpg",
+      "cardKey": "placeholders/calf_c2_twinA_840-side-8d-card.jpg",
+      "thumbKey": "placeholders/calf_c2_twinA_840-side-8d-thumb.jpg",
+      "associatedAnimalId": "1573edff-0771-4322-8bec-af544d3b8943",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-08T15:00:00Z",
+      "capturedAt": "2026-04-08T12:00:00Z",
+      "processedAt": "2026-04-08T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_b844efa7.jpg",
+        "exifDate": "2026-04-08T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-b844efa7",
+        "fingerprint": "seed-fp-b844efa7"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    },
+    {
+      "mediaId": "abd59237-2d9d-44a0-8120-109c4612be72",
+      "sourceKind": "share-sheet-cattle",
+      "originalKey": "placeholders/calf_c3_twinB_840-side-8d.jpg",
+      "publicKey": "placeholders/calf_c3_twinB_840-side-8d-public.jpg",
+      "cardKey": "placeholders/calf_c3_twinB_840-side-8d-card.jpg",
+      "thumbKey": "placeholders/calf_c3_twinB_840-side-8d-thumb.jpg",
+      "associatedAnimalId": "590b2f38-61ce-456b-8d79-5811f9c5af54",
+      "submittedTag": "",
+      "submittedMode": "cattle",
+      "uploadedAt": "2026-04-08T15:00:00Z",
+      "capturedAt": "2026-04-08T12:00:00Z",
+      "processedAt": "2026-04-08T15:02:00Z",
+      "subjectType": "single-animal",
+      "shotType": "side",
+      "boundingBox": [
+        10,
+        15,
+        90,
+        85
+      ],
+      "focalPoint": [
+        50,
+        55
+      ],
+      "quality": "excellent",
+      "confidence": 0.95,
+      "autoAccepted": true,
+      "needsReview": false,
+      "publicEligible": true,
+      "hidden": false,
+      "deleted": false,
+      "state": "published",
+      "processingErrors": [],
+      "privateMetadata": {
+        "originalFilename": "IMG_abd59237.jpg",
+        "exifDate": "2026-04-08T12:00:00Z",
+        "gpsLocation": null,
+        "device": "iPhone placeholder",
+        "dimensions": {
+          "width": 1200,
+          "height": 900
+        },
+        "fileHash": "seed-hash-abd59237",
+        "fingerprint": "seed-fp-abd59237"
+      },
+      "createdAt": "2026-04-16T12:00:00Z",
+      "updatedAt": "2026-04-16T12:00:00Z"
+    }
+  ]
+}

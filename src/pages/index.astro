@@ -1,0 +1,42 @@
+---
+import '@/styles/global.css';
+import { allAnimals, allMedia, seedSummary } from '@/lib/data';
+
+const summary = seedSummary();
+const publicAnimals = allAnimals.filter((a) => a.publicVisible);
+const publicMedia = allMedia.filter(
+  (m) => m.publicEligible && !m.hidden && !m.deleted && m.state === 'published',
+);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Summers Ranch — rebuild in progress</title>
+    <meta name="robots" content="noindex,nofollow" />
+  </head>
+  <body>
+    <main class="container" style="padding-block: var(--space-7);">
+      <h1>Summers Ranch</h1>
+      <p class="prose">
+        The rebuild is underway. This page is a temporary build-verification
+        scaffold and will be replaced with the real home page in the next
+        checkpoint. The live prototype is at
+        <a href="https://mrsummersranch.com">mrsummersranch.com</a>.
+      </p>
+
+      <h2>Checkpoint 1 — foundation</h2>
+      <ul>
+        <li><strong>{summary.animals}</strong> animals validated (of which {publicAnimals.length} public-visible)</li>
+        <li><strong>{summary.media}</strong> media assets validated (of which {publicMedia.length} publicly eligible)</li>
+        <li><strong>{summary.links}</strong> cattle-media links validated</li>
+      </ul>
+      <p class="prose">
+        If this page renders, Zod validated every record in the seed at build
+        time. If the seed breaks, the build fails with a path-qualified error.
+      </p>
+    </main>
+  </body>
+</html>

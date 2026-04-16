@@ -1,0 +1,20 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@schemas": ["src/schemas/index.ts"],
+      "@schemas/*": ["src/schemas/*"],
+      "@lib/*": ["src/lib/*"]
+    },
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", "node_modules", "Website_Review-and-Redesign", "about.html", "admin*.html", "cattle.html", "contact.html", "gallery.html", "index.html", "roadmap.html", "docs", "spec", "js", "images"]
+}

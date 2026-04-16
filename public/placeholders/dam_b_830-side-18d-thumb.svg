@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Placeholder image for tag 830 SIDE">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#faf6ef"/>
+      <stop offset="1" stop-color="#ede5d3"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <rect x="8" y="8" width="304" height="304" fill="none" stroke="#c8941e" stroke-width="2" stroke-dasharray="6 6" opacity="0.5"/>
+  <text x="50%" y="40%" text-anchor="middle" fill="#8b6914" font-family="Cormorant Garamond, Garamond, serif" font-size="80" font-weight="600">#830</text>
+  <text x="50%" y="58%" text-anchor="middle" fill="#4a3928" font-family="Lato, Arial, sans-serif" font-size="23" letter-spacing="2">SIDE</text>
+  <text x="50%" y="72%" text-anchor="middle" fill="#4a3928" font-family="Lato, Arial, sans-serif" font-size="11" opacity="0.7">2026-03-29</text>
+  <text x="50%" y="93%" text-anchor="middle" fill="#4a3928" font-family="Lato, Arial, sans-serif" font-size="11" opacity="0.4">PLACEHOLDER · thumb</text>
+</svg>

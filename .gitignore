@@ -10,3 +10,14 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Node / Astro (v2-rebuild)
+node_modules/
+dist/
+.astro/
+*.log
+npm-debug.log*
+.env
+.env.*
+!.env.example
+
