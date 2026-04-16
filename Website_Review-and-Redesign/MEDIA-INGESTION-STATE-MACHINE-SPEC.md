@@ -148,13 +148,14 @@ Expected outputs:
 - probable media role (`cattle`, `gallery`, `heroCandidate`, `unknown`)
 
 Allowed shot types:
+*(Note: the authoritative, current vocabulary is in `RECOMMENDED-ARCHITECTURE.md`. The list below is a subset for illustration.)*
 - `side`
 - `head`
-- `threeQuarter`
+- `three-quarter`
 - `group`
-- `detail`
-- `heroLandscape`
-- `galleryGeneral`
+- `close-detail`
+- `hero-landscape`
+- `gallery-general`
 - `unknown`
 
 Transitions:

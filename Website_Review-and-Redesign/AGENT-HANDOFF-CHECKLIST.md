@@ -1,5 +1,7 @@
 # Summers Ranch — Agent Handoff Checklist
 
+> **IMPORTANT UPDATE (April 2026):** This document has been superseded by `README.md` and `PROJECT-SYNOPSIS-AND-HISTORY.md` as the primary onboarding path. Also note: Mark has confirmed NO legacy data preservation is required. The current prototype is reference material, not a source to migrate from.
+
 ## Purpose
 
 This document is the **first thing** a new coding agent should read before touching the Summers Ranch rebuild.

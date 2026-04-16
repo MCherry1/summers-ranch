@@ -1,5 +1,7 @@
 # Summers Ranch Canonical Data Model Spec — v2
 
+> **IMPORTANT NOTE:** `RECOMMENDED-ARCHITECTURE.md` contains the current authoritative schema. This document contains the earlier detailed design. Where they differ (e.g., shot type vocabulary, AHA readiness states), `RECOMMENDED-ARCHITECTURE.md` wins. This document remains valuable for the design reasoning and extended schemas (CattleMediaLink, RibbonFlag, SeasonalMediaSelection) that it defines.
+
 ## Design decisions incorporated
 
 ### 1) Identity model

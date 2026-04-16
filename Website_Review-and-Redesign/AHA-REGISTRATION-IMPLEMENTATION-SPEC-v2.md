@@ -90,14 +90,16 @@ Implementation rule:
 
 ## Recommended readiness states
 
-- `not_applicable`
-- `not_started`
-- `in_progress`
-- `ready_for_owner_review`
-- `ready_for_submission`
-- `submitted`
-- `registered`
-- `blocked`
+*Note: These are the authoritative values. The simpler 5-state list in RECOMMENDED-ARCHITECTURE.md should be replaced with these 8 values in the schema.*
+
+- `not_applicable` — animal is not intended for registration (e.g., commercial calf, reference animal)
+- `not_started` — animal is eligible but no registration work has begun
+- `in_progress` — some registration fields are filled, but not all
+- `ready_for_owner_review` — system thinks fields are complete enough; owner should confirm
+- `ready_for_submission` — owner has confirmed and the record is ready to submit to AHA
+- `submitted` — submitted to AHA, awaiting response
+- `registered` — registration number returned from AHA
+- `blocked` — cannot proceed due to missing prerequisites (e.g., dam not registered)
 
 ## Admin behavior
 

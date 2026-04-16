@@ -1,5 +1,7 @@
 # Summers Ranch — Master Implementation Brief
 
+> **IMPORTANT UPDATE (April 2026):** Mark has confirmed that NO legacy data or media needs to be preserved. All photos in the current prototype are test photos; all cattle records are placeholder data. The rebuild is a true fresh slate — not a migration. Treat the current prototype purely as a visual/UX reference, not as a source of data to port. See PROJECT-SYNOPSIS-AND-HISTORY.md and PHASE-1-IMPLEMENTATION.md for the current direction.
+
 ## Purpose
 
 This document consolidates the active planning set for the Summers Ranch rebuild/refactor.

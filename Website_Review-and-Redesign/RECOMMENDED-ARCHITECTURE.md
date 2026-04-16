@@ -82,7 +82,7 @@ interface Animal {
   tattoo: string | null
   breed: string | null
   breedDetail: string | null
-  ahaReadiness: 'not-started' | 'partial' | 'ready' | 'submitted' | 'registered' | null
+  ahaReadiness: 'not-applicable' | 'not-started' | 'in-progress' | 'ready-for-owner-review' | 'ready-for-submission' | 'submitted' | 'registered' | 'blocked' | null
   
   // Breeding
   pregnancyStatus: 'open' | 'bred' | 'confirmed' | null
@@ -146,7 +146,7 @@ interface MediaAsset {
   
   // Classification
   subjectType: 'single-animal' | 'group' | 'landscape' | 'hero' | 'detail' | 'unknown' | null
-  shotType: 'side' | 'head' | 'three-quarter' | 'rear' | 'in-pasture' | 'with-handler' | 'group' | 'close-detail' | 'landscape' | 'unknown' | null
+  shotType: 'side' | 'head' | 'three-quarter' | 'rear' | 'in-pasture' | 'with-handler' | 'group' | 'close-detail' | 'landscape' | 'hero-landscape' | 'gallery-general' | 'unknown' | null   // authoritative vocabulary — overrides older docs that have subsets
   boundingBox: [number, number, number, number] | null  // left%, top%, right%, bottom%
   focalPoint: [number, number] | null  // x%, y%
   quality: 'excellent' | 'good' | 'fair' | 'poor' | null
