@@ -526,6 +526,135 @@ Two new files added to repo root at cutover:
 
 ---
 
+### A21. Admin is its own URL space — public surfaces never change by login state
+
+**Supersedes:** Section 6 (Admin mode differences) — the "same card with mode prop" concept is preserved, but the architecture around it is clarified.
+
+**What changes:**
+
+Admin is its own surface, not a transformation of the public site. Public surfaces (`/`, `/herd`, `/herd/[id]`, `/gallery`, `/about`, `/contact`) render identically regardless of whether any user is logged in as admin. Admin routes live under `/admin/*`:
+
+- `/admin/` — Dashboard (login landing)
+- `/admin/herd/` — admin herd view (same card component as `/herd/` with `mode="admin"`)
+- `/admin/herd/[animalId]/` — admin front of card
+- `/admin/herd/[animalId]/details/` — admin back of card with edit affordances
+- `/admin/media/` — Media tab (Phase 2+)
+- `/admin/calendar/` — Calendar tab (Phase 2+)
+- `/admin/settings/` — admin settings (trusted device list, phone numbers, etc.)
+
+**Design principle:** Marty can hand his phone to a buyer while logged in, and the buyer sees the public site. No hiding of admin state required; no UI transformation happens on public pages.
+
+The card component still uses a `mode` prop — this doesn't change. What changes is that the mode is determined by the URL (`/admin/*` = admin mode; otherwise public mode), not by session state on public URLs.
+
+**Admin button placement:** in the site footer, styled identically to other footer links (Privacy, Terms, Contact). Not half-opacity hidden text (the original site's mistake). Not page-bottom-fixed.
+
+**Hamburger admin entry:** only appears when the user has a valid **known-device cookie** (see A22). Public visitors who have never logged in see the standard hamburger; first-time admin access is always via the footer. After a user's first successful login with "Remember me" checked, the hamburger gains an admin section on that device persistently, even after the session cookie expires.
+
+**Hamburger states:**
+
+*Logged out, never-logged-in device (or Remember-me never checked):*
+```
+Home
+About
+Herd
+Gallery
+Contact
+```
+
+*Known-device cookie present, session cookie expired:*
+```
+Home
+About
+Herd
+Gallery
+Contact
+─────────────
+Admin           (single entry — opens password modal)
+```
+
+*Known-device cookie present, session cookie valid (actively logged in):*
+```
+Home
+About
+Herd
+Gallery
+Contact
+─────────────
+Dashboard
+Manage Herd
+Media
+Calendar
+Settings
+Log Out
+```
+
+**Admin-active indicator:** when the user has a valid session cookie (actively logged in), the hamburger icon itself displays a subtle dot/badge signaling admin-mode-active. Mostly a Matt-facing affordance for distinguishing admin sessions at a glance; Marty will likely ignore it.
+
+**Login flow:** tapping the footer Admin link (or the hamburger Admin entry after session expiry) opens a **modal**, not a page. Password field with show/hide reveal button, Remember-me checkbox (unchecked by default), Submit button, × to dismiss. Current page stays rendered underneath. On successful login: modal dismisses, hamburger updates to full admin navigation, user stays on whatever page they were viewing. Marty can then navigate to `/admin/` via the Dashboard link.
+
+**Password input behavior:**
+- HTML5 `<input type="password">` for iOS Passwords / 1Password autofill support
+- `autocomplete="current-password"` attribute
+- Reveal button (eye icon) toggles display; hidden by default
+- Paste allowed (password managers)
+
+---
+
+### A22. Auth mechanism: password-only with full hygiene stack
+
+**Supersedes:** Section 11.4 (Login page) is substantially revised and moved under admin architecture.
+
+**What changes:**
+
+Auth is password-only. No MFA in Phase 1, Phase 2, or near-term roadmap. The threat model (no financial transactions, low-value target, reversible site defacement) and the multi-user operational complexity make password-only the correct choice.
+
+**Required auth hygiene stack:**
+
+*Password storage:*
+- Argon2id hashing with appropriate cost parameters (m=64MB, t=3, p=4 minimum)
+- Never store plaintext anywhere, including logs
+- Per-password salts stored alongside the hash
+
+*Password requirements for users:*
+- Minimum 16 characters, any composition (no forced complexity rules — they encourage weaker passwords in practice)
+- Passphrase encouraged in UX copy ("try a memorable phrase")
+- No periodic forced rotation (NIST SP 800-63B explicitly recommends against this)
+
+*Session management:*
+- Session cookie: 30 days if "Remember me" checked, otherwise expires at browser close
+- Known-device cookie: 6 months, set ONLY on successful login AND when Remember-me was checked
+- Known-device cookie is a random nonce, validated server-side against a per-user trusted-devices list
+- Session cookie is HTTP-only, Secure, SameSite=Strict
+
+*Protection mechanisms:*
+- HTTPS everywhere (Cloudflare Pages default), with HSTS header
+- CSRF tokens on all admin POST/PUT/DELETE requests
+- Rate limiting at the Cloudflare edge: 5 failed login attempts trigger a 15-minute block on that IP
+- Cloudflare WAF in front of `/admin/*` routes for automated attack filtering
+- No password reset via email alone; recovery is out-of-band (Matt resets Marty's password manually if lost; documented in `docs/SECURITY-RECOVERY.md`)
+
+*Login event notifications:*
+- Notifications sent to `security@mrsummersranch.com` (DNS forwarder to Matt's personal email)
+- Triggers:
+  - Successful login from a novel IP or geographic region (heuristic: IP not seen in previous 60 days, or country change)
+  - 5+ failed attempts in 10 minutes from any IP
+  - Not triggered on routine logins from known IPs (avoids noise)
+- Notification contents: timestamp, IP, User-Agent, geographic approximation, relevant details
+- Notifications go only to Matt, never to Marty (Marty is not the security monitor)
+
+*Critical bug-prevention rules:*
+- Known-device cookie is set ONLY on successful login, NEVER on failed password attempts (prevents an attacker from submitting wrong passwords with Remember-me checked to seed trusted devices)
+- Known-device cookie is set ONLY when Remember-me is explicitly checked (not by default)
+- "Clear all trusted devices" button in `/admin/settings/` revokes every known-device cookie globally; next login on every device requires full footer-Admin re-entry
+
+**Future consideration — multi-user TOTP MFA:**
+
+If ever added, use TOTP (Time-based One-Time Passwords, RFC 6238) with authenticator apps (Google Authenticator, Authy, 1Password, Apple Passwords). Not SMS. Each user would have a personal `totpSecret` and pre-printed recovery codes. Setup is one-time QR scan per user per device. Works offline (critical for ranch environment with spotty cell service). No per-message cost. Adds schema fields (`users.totpSecret`, `users.recoveryCodes`) and a code-entry step to the login flow.
+
+**Not in Phase 1. Not in Phase 2. Deferred indefinitely unless a specific concern emerges.**
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -538,15 +667,9 @@ Resolved into amendments A10, A11, A12 (see below).
 
 Resolved into amendments A13-A19 (see below).
 
-### P3. Admin surface model
+### P3. Admin surface model — PARTIALLY RESOLVED 2026-04-17
 
-Matt has flagged the question: what does clicking "Admin" actually do? Is it a page, a mode, or both?
-
-**Current thinking (not yet locked):**
-- Likely both: `/admin` dashboard as landing, admin herd view as a mode of `/herd` with chrome
-- Tension: the "Needs Attention" sort on admin herd view may make a separate dashboard redundant
-
-**To be workshopped.**
+Admin architecture and authentication are locked in amendments A21-A22. The remaining work is detailing the *contents* of the admin surfaces themselves — what's on the Dashboard specifically, what Manage Herd shows beyond the herd view, what Media and Calendar and Settings contain. This is a workshop continuation, not a new workshop.
 
 ### P4. Share sheet mechanics
 
