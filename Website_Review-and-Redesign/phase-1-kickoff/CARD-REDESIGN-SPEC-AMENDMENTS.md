@@ -275,6 +275,257 @@ This is a sub-detail for the future Share Sheet Mechanics workshop (P4), noted h
 
 ---
 
+### A13. v2 replaces v1 entirely at cutover; standard Astro layout at root
+
+**Supersedes:** Section 21.1 (Branch strategy) is extended.
+
+**What changes:**
+
+At v2 cutover, the repository root adopts the standard Astro project layout:
+
+```
+/
+├── src/
+├── public/
+├── data/
+├── docs/
+├── astro.config.mjs
+├── package.json
+├── tsconfig.json
+├── CLAUDE.md
+├── LICENSE.md
+├── COPYRIGHT.md
+├── README.md
+├── CNAME
+├── .github/
+└── .gitignore
+```
+
+All v1 files (HTML files, root JSONs, old `js/` and `spec/` directories, old `images/` structure) are deleted from the working tree. v1 history is preserved in git only.
+
+**Reasoning:** standard Astro layout matches developer and agent expectations; no subdirectory navigation overhead; v1 remains accessible via git history if ever needed.
+
+---
+
+### A14. Media folder structure: `{tag}-{slug}/` with animalId as the stable identity
+
+**Supersedes:** Nothing in the main spec directly; establishes new structural convention.
+
+**What changes:**
+
+**Phase 1 placeholder images** live under:
+
+```
+public/images/cattle/{tag}-{name-slug}/
+public/images/cattle/{tag}/              (unnamed animals)
+public/images/ranch/                      (landscape, gallery, atmospheric)
+public/images/people/                     (family, ranch hands)
+public/images/theodore/                   (Junior Ranch Hand shots)
+```
+
+Examples:
+- `public/images/cattle/801-big-red/`
+- `public/images/cattle/812/`
+- `public/images/cattle/840-sweetheart/`
+
+**Slug rules:** lowercase, hyphens for spaces, special characters stripped. "Sweetheart Jr." becomes `sweetheart-jr`.
+
+**Phase 2 production media (R2 object keys)** uses the stable animalId instead of the tag-name folder:
+
+```
+cattle/{animalId}/photo-{timestamp}.{ext}
+ranch/{category}/photo-{timestamp}.{ext}
+people/{slug}/photo-{timestamp}.{ext}
+```
+
+**Critical requirement for coding agent:** photo paths are NEVER hardcoded in component code. Photo lookup ALWAYS resolves via `animalId` → path mapping computed at build time (for Phase 1) or runtime (for Phase 2 R2). When an animal is retagged, renaming the folder with `git mv` requires zero code changes.
+
+**Reasoning:** human-readable for navigation; stable identity for code; retag operations are folder-rename-only, not migration-events.
+
+---
+
+### A15. Copy organization: hybrid single-file per short page, folder-with-sections per long page
+
+**Supersedes:** Section 18.1 (Page copy).
+
+**What changes:**
+
+User-facing text lives in `src/content/`, organized by page. Short pages get a single Markdown file; long pages (>~400 words or multiple distinct sections) get a folder with one file per section.
+
+**Concrete structure:**
+
+```
+src/content/
+├── home/                    (long: hero, welcome, theodore-moment, footer-cta)
+│   ├── hero.md
+│   ├── welcome.md
+│   ├── theodore-moment.md
+│   └── footer-cta.md
+├── about/                   (long: intro, family-story, ranch-history, marty, roianne, theodore)
+│   ├── intro.md
+│   ├── family-story.md
+│   ├── ranch-history.md
+│   ├── marty.md
+│   ├── roianne.md
+│   └── theodore.md
+├── contact.md               (short: form header, contact info)
+├── gallery.md               (short: intro text, if any)
+├── privacy.md               (long: potentially; single file if under threshold)
+├── terms.md
+├── navigation.md            (menu labels)
+├── footer.md                (copyright, tagline)
+├── tooltips/                (one file per admin field tooltip)
+│   ├── weaning-weight.md
+│   ├── birth-weight.md
+│   ├── scrotal-circumference.md
+│   └── ... etc
+└── nudge-templates/         (one file per nudge message template)
+    ├── stale-photo-for-sale.md
+    ├── missing-birth-weight.md
+    └── ... etc
+```
+
+Astro Content Collections natively handles this pattern — Markdown files are the source of truth, components import and render at build time.
+
+**Reasoning:** Matt can open any file directly to edit copy. Tooltips and nudge templates are individually editable without diving into component code. Small pages don't get unnecessarily split.
+
+---
+
+### A16. `docs/` holds three authoritative documents only
+
+**Supersedes:** Section 22 (Appendix: cross-reference to earlier handoff documents) is substantially revised.
+
+**What changes:**
+
+At v2 cutover, the `docs/` directory contains exactly three Markdown files:
+
+- `docs/CARD-REDESIGN-SPEC.md` — authoritative product + technical spec (this document, post-amendment consolidation)
+- `docs/HOW-TO-CHANGE-THINGS.md` — plain-language guide for Matt, pulled from Section 18 of the main spec
+- `docs/DESIGN-HISTORY.md` — single narrative document written once at cutover, telling the story of how the v1 brochure site evolved through design rounds into v2. Reference material for future humans or agents who want context. Clearly labeled as historical narrative, not active spec.
+
+**All other historical documents** from `Website_Review-and-Redesign/` (`PROJECT-SYNOPSIS-AND-HISTORY.md`, `RECOMMENDED-ARCHITECTURE.md`, `BEHAVIOR-PRESERVATION-CHECKLIST.md`, `PHASE-1-IMPLEMENTATION.md`, all appendix documents, this amendments file once folded in) are **deleted from the working tree** at cutover. They remain accessible in git history for anyone who wants them.
+
+**Reasoning:** agents reading the repo should find exactly one authoritative spec. Ambiguity about which document is current creates the confusion risk Matt flagged. Git history preserves everything without cluttering the working tree.
+
+**CLAUDE.md stays at repo root** (Claude Code reads it from root by default). It points at `docs/CARD-REDESIGN-SPEC.md` as the authoritative spec.
+
+---
+
+### A17. `data/` flat for Phase 1; split to seed/production for Phase 2
+
+**Supersedes:** Nothing in the main spec directly.
+
+**What changes:**
+
+**Phase 1 structure:**
+
+```
+data/
+├── animals.json
+├── media.json
+├── links.json
+└── site-config.json
+```
+
+**Phase 2 structure (when admin write paths and R2 come online):**
+
+```
+data/
+├── seed/                    (test fixtures for development)
+│   ├── animals.json
+│   ├── media.json
+│   └── links.json
+└── production/              (or moves to a DB; TBD at Phase 2 design time)
+    └── (live data, possibly Cloudflare KV or D1 instead of files)
+```
+
+**Reasoning:** Phase 1 is simple; Phase 2 needs clear separation so test data doesn't pollute live records. The Phase 2 structure may evolve if production moves to a database rather than files (KV or D1) — spec the split conceptually, let Phase 2 design fill in specifics.
+
+---
+
+### A18. CLAUDE.md at repo root: ~100-200 line agent orientation
+
+**Supersedes:** Section 21.4 (CLAUDE.md at repo root) expanded.
+
+**What changes:**
+
+At v2 cutover, `CLAUDE.md` at repo root is rewritten from scratch to contain:
+
+- One-paragraph project description (what the site is, who it's for)
+- Tech stack summary (Astro 5+, TypeScript strict, Zod, Cloudflare Pages/R2/Workers)
+- Authoritative spec pointer: "For all product and technical decisions, see `docs/CARD-REDESIGN-SPEC.md`"
+- Branch conventions (main = production live; feature branches for all work; PRs before merge)
+- Directory structure pointer (where things live — short version)
+- Agent guidelines:
+  - Do not commit directly to main without PR review
+  - Respect the architecture; ask Matt for product decisions
+  - Use feature branches for all work
+  - Update `docs/CARD-REDESIGN-SPEC.md` only as directed, never silently
+  - Never hardcode animal folder paths; always resolve via animalId
+  - Never discard Live Photo MOV components in Phase 2 ingest
+- Matt's GitHub handle as primary contact
+
+Length target: ~100-200 lines. Anything deeper lives in `docs/`.
+
+**No `scripts/` directory is pre-created** (Q7). The coding agent may create it when a utility script is first needed.
+
+---
+
+### A19. Cutover deletion list
+
+**Supersedes:** Section 21.3 (What to delete entirely) expanded.
+
+**What changes:**
+
+At v2 cutover, the coding agent deletes from the working tree:
+
+- **All v1 HTML files:** `index.html`, `about.html`, `cattle.html`, `contact.html`, `gallery.html`, `admin.html`, `admin-setup.html`, `roadmap.html`, `index-v2.html`, any other `*.html` at root
+- **Root JSON data files:** `site-config.json`, `cattle-data.json`, `ranch-calendar.json`, `admin-key.json`, anything else at root not tracked as Astro config
+- **Old directories:** `js/`, `spec/`, any old `css/` or `styles/` at root level
+- **Old images:** existing `images/` directory contents (to be rebuilt under `public/images/` with new structure per A14)
+- **Website_Review-and-Redesign/ contents:** after extracting `CARD-REDESIGN-SPEC.md` and `HOW-TO-CHANGE-THINGS.md` to `docs/`, delete the rest from the working tree. Preserved in git history.
+- **Old v2-rebuild branch:** not deleted from git (history), but no further commits on it; all future v2 work happens on a new branch
+
+**Kept:**
+
+- `CNAME` (domain configuration)
+- `.github/` directory (workflows, if any worth preserving)
+- `.gitignore` (update contents to match new structure, but keep the file)
+- `package.json`, `package-lock.json` (updated as part of rebuild but not recreated from scratch)
+- Anything under `node_modules/` is ignored by git anyway
+
+---
+
+### A20. LICENSE.md and COPYRIGHT.md drafted during repo cleanup commit
+
+**Supersedes:** New addition, no prior coverage in main spec.
+
+**What changes:**
+
+Two new files added to repo root at cutover:
+
+**`LICENSE.md`:** Two-license split.
+
+- **Code** (everything under `src/`, `scripts/`, build config): Modified MIT-style license with commercial-use restriction. Grants:
+  - Read, learn from, and non-commercially fork
+  - Perpetual operational license to Summers Ranch (Marty and Matt's ranch operation)
+  - Commercial use, redistribution, or derivative-work-based commercial products require written permission from Matt Cherry
+- **Documentation, design specs, creative assets** (everything under `docs/`, `src/content/`, and design artifacts like the spec itself): Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0). Summary: share and adapt for non-commercial purposes with attribution; derivatives must be shared under the same license.
+
+**`COPYRIGHT.md`:** Short authorship declaration.
+
+- Matt Cherry as primary author of product design, spec, and code architecture
+- Transparent disclosure that AI assistance (Claude, via Anthropic's consumer interface) was used during design conversations and implementation. Human creative direction and curation establish the work as Matt's per current U.S. Copyright Office guidance.
+- Date of first publication
+- Points at LICENSE.md for usage terms
+- Points at the git history as the authoritative record of authorship
+
+**Reasoning:** Establishes clean IP footing before launch (per the earlier light-touch IP plan). Transparency about AI assistance aligns with current best practice in creative fields and the cattle industry's acceptance of AI-assisted tools.
+
+**Both files drafted as part of the cutover commit, reviewed by Matt before merge.**
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -283,13 +534,9 @@ These items are flagged for future workshopping. None of them block the current 
 
 Resolved into amendments A10, A11, A12 (see below).
 
-### P2. Repository layout
+### P2. Repository layout — RESOLVED 2026-04-17
 
-Matt has confirmed the task of designing repo structure. Eight questions (Q1-Q8) have been posed covering: top-level structure (v2 replaces v1 vs. subdirectory), media organization (per-animal folders), copy organization (markdown per page vs. per section), documentation directory (`docs/` vs. `Website_Review-and-Redesign/`), `data/` organization, `CLAUDE.md` contents, `scripts/` directory, deletion list at cutover.
-
-**Matt has also requested:** LICENSE.md and COPYRIGHT.md files added to the repo as part of this workshop, establishing authorship terms (CC BY-NC-SA for docs/design, all-rights-reserved for code with Marty's perpetual license).
-
-**To be locked after Matt answers Q1-Q8.**
+Resolved into amendments A13-A19 (see below).
 
 ### P3. Admin surface model
 
