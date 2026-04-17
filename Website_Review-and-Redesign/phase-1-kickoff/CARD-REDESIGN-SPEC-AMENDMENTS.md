@@ -798,6 +798,162 @@ This document is Matt-facing and agent-facing, not user-facing. Marty and Roiann
 
 ---
 
+### A24. Inquiries inbox built into admin; Formspree scrapped
+
+**Supersedes:** Section 4.7 (Inquire CTA) and Section 10.2 (Contact) are extended; the Formspree dependency is removed.
+
+**What changes:**
+
+Contact form submissions no longer flow through Formspree. A **Cloudflare Worker** handles form submissions directly, writing inquiries to a structured data store and dispatching notifications per each admin user's preferences.
+
+A new admin surface is added as a **Phase 1 deliverable**: the **Inquiries Inbox** at `/admin/inquiries/`.
+
+**Rationale for keeping in Phase 1:** public contact forms exist in Phase 1 (general Contact page + Ask-About-This-Animal modal on for-sale cards), which means inquiries start arriving immediately after launch. They need somewhere to go. The inbox is small enough to build as part of Phase 1 without significantly expanding scope.
+
+**Form submission paths (unchanged on public side):**
+
+- `/contact` page — general contact form. Fields: name, email, phone (optional), subject, message.
+- Ask-About-This-Animal modal on for-sale animal cards. Fields: name, email, phone (optional), message, with `animalId` and `animalTag` auto-attached.
+
+Both submit to the same Worker endpoint. Worker normalizes and stores them in the same inquiries data store. All buyer inquiries, general or animal-specific, land in the same shared inbox.
+
+**Inquiry data model:**
+
+```typescript
+interface Inquiry {
+  inquiryId: string           // UUID
+  createdAt: string           // ISO timestamp
+  source: 'contact-form' | 'ask-about-animal'
+  animalId: string | null     // Set when from ask-about-animal modal
+  animalTag: string | null    // Snapshot at submission time for historical reference
+  senderName: string
+  senderEmail: string
+  senderPhone: string | null
+  subject: string | null      // Present on general contact form, absent on animal modal
+  message: string
+  status: 'new' | 'in-progress' | 'responded' | 'archived'
+  assignedTo: string | null   // AdminUser.id
+  respondedBy: string | null  // AdminUser.id
+  respondedAt: string | null  // ISO timestamp
+  internalNotes: InquiryNote[]
+}
+
+interface InquiryNote {
+  noteId: string
+  authorId: string            // AdminUser.id
+  body: string
+  createdAt: string
+}
+```
+
+**Admin inbox at `/admin/inquiries/` — UX:**
+
+- Shared pool model. Every admin sees every inquiry.
+- Default view: **Active** inquiries (status `new` or `in-progress`), sorted by date descending
+- Status filter chips: All / Active / Responded / Archived
+- Each row shows: sender name, which animal (if applicable, linked to their card), message preview (first ~100 characters), received date, status badge, assigned-to indicator (if claimed)
+- Tap a row to open the full inquiry: sender info, animal reference with direct link, full message, internal notes thread, action buttons
+
+**Inquiry actions:**
+
+- **Claim** — "I'll handle this" button. Sets `assignedTo: currentUserId`. Visible to all admins; others see "Marty is handling this" indicator.
+- **Unassign / reassign** — any admin can clear or change the assignment. No permission gating beyond being admin.
+- **Mark in-progress** — optional intermediate state: "I've reached out, waiting for reply"
+- **Mark responded** — sets status to `responded`, records `respondedBy` and `respondedAt` automatically. Inquiry moves out of Active view but remains searchable.
+- **Archive** — removes from active workflow entirely. For dead leads, spam, or completed transactions. Distinct from responded.
+- **Add note** — free-text note appended to the inquiry's thread. Notes include author and timestamp. Visible only to admins.
+- **Contact actions** — direct `mailto:` link for email, `tel:` link for phone, copy-to-clipboard button for each contact field (mobile-friendly)
+
+**Notifications (see A25 for full detail):**
+
+When a new inquiry arrives, each admin user with enabled notifications receives a message per their preferences (email, SMS, or both). Claims, status changes, and notes do NOT generate notifications — only new inquiries do. This prevents notification spam as the team grows.
+
+**Phase 1 seed data:** 3-5 placeholder inquiries included in seed data so the inbox UI has content to render during development. Mix of general and animal-specific, mix of statuses, at least one with an internal notes thread.
+
+**Formspree migration:**
+
+Matt cancels or ignores the existing Formspree account (ID `mzdybyjl`) when v2 launches. The form on the existing v1 site continues using Formspree until v2 replaces it at cutover — no mid-flight migration needed.
+
+---
+
+### A25. Per-user notification preferences with SMS and email support
+
+**Supersedes:** A23 (Admin user management) is extended.
+
+**What changes:**
+
+The `AdminUser` schema gains a phone number field and a notifications preferences object:
+
+```typescript
+interface AdminUser {
+  // ... existing fields from A23
+  phone: string | null   // E.164 format, e.g. "+12095551234"
+  notifications: {
+    newInquiryEmail: boolean
+    newInquirySms: boolean
+    // Future expansions: weeklyDigest, animalEvents, coverageNudges, etc.
+  }
+}
+```
+
+**Default values on account creation:**
+
+- `newInquiryEmail: true` (email is always available; all users can receive by default)
+- `newInquirySms: true` if phone number is provided at account creation; `false` otherwise
+
+Users can toggle these in their own Settings → Notifications page.
+
+**Expected per-user preferences** (informed by known user patterns, to be confirmed with users):
+
+- **Matt**: Email on, SMS on (though may turn SMS off for personal preference)
+- **Marty**: SMS on, email off (doesn't use email meaningfully)
+- **Roianne**: Email on, SMS on (lives in inbox all day but SMS is faster)
+- **Future hires**: both on by default
+
+**SMS infrastructure:**
+
+- Provider: **Twilio** (industry standard, reliable, reasonable pricing)
+- One phone number registered with Twilio for sending (~$1.15/month rental)
+- Per-message cost: ~$0.0083 US domestic
+- Estimated annual cost at Summers Ranch volume: $15-25/year total
+- API called from Cloudflare Worker on new inquiry event, dispatches to all opted-in users' numbers
+
+**SMS message format** (kept short for carrier delivery):
+
+```
+Summers Ranch: New inquiry from 
+[SenderName] about [Animal ref or "general"]. 
+mrsummersranch.com/admin/inquiries
+```
+
+Example: *"Summers Ranch: New inquiry from Sarah Johnson about #840 Sweetheart. mrsummersranch.com/admin/inquiries"*
+
+Total ~110 characters, fits in a single SMS segment.
+
+**Email infrastructure:**
+
+- Provider: **Cloudflare Email Routing** (free tier sufficient) OR **SendGrid** (free tier 100/day, richer formatting) — coding agent picks based on implementation simplicity
+- Sending domain: `notifications@mrsummersranch.com` or similar (DNS setup required)
+- Template includes: sender info, animal reference with deep-link, full message, direct link to inquiry in admin
+
+**Edge cases handled:**
+
+- **User with no phone number:** SMS toggle is disabled in their settings UI with an inline note "Add a phone number in your profile to enable SMS."
+- **User with notifications disabled entirely:** they still see new inquiries when they log in, just without push notification. Useful for backup admins or paused users.
+- **SMS delivery failure:** Worker logs the failure but does not retry. Email dispatch is independent and still attempts.
+- **Twilio rate-limiting on new Summers Ranch number:** Matt registers the number with Twilio's brand registry at launch (one-time setup, ~20 minutes) to prevent delivery throttling.
+
+**Future notification classes (out of scope for Phase 1 but data model supports):**
+
+- Weekly inquiry digest summary
+- Animal events (calf born, animal sold, registration complete)
+- Coverage nudges for admin (gallery slot unfilled, etc.)
+- Security events (login from new IP, etc.) — already covered in A22, going to `security@` address
+
+These get added as boolean fields in the `notifications` object when the corresponding features ship. Phase 1 only implements `newInquiryEmail` and `newInquirySms`.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
