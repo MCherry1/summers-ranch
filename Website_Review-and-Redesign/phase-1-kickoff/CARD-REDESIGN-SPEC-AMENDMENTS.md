@@ -600,58 +600,201 @@ Log Out
 
 ---
 
-### A22. Auth mechanism: password-only with full hygiene stack
+### A22. Auth mechanism: passwordless passkeys (WebAuthn) with biometric auth
 
-**Supersedes:** Section 11.4 (Login page) is substantially revised and moved under admin architecture.
+**Supersedes:** Section 11.4 (Login page) is substantially revised. An earlier version of A22 proposing password-only auth is superseded by this one (see git history).
 
 **What changes:**
 
-Auth is password-only. No MFA in Phase 1, Phase 2, or near-term roadmap. The threat model (no financial transactions, low-value target, reversible site defacement) and the multi-user operational complexity make password-only the correct choice.
+Auth is **passwordless**, using WebAuthn passkeys with biometric authentication (Face ID, Touch ID, Windows Hello). No passwords exist anywhere in the system. This replaces the password-based approach previously proposed.
 
-**Required auth hygiene stack:**
+**Why passkeys, not passwords:**
 
-*Password storage:*
-- Argon2id hashing with appropriate cost parameters (m=64MB, t=3, p=4 minimum)
-- Never store plaintext anywhere, including logs
-- Per-password salts stored alongside the hash
+- Marty's daily login becomes a Face ID glance — literally zero typing
+- Cross-device via iCloud Keychain (Apple users) and 1Password or Microsoft sync (Windows users)
+- Phishing-proof, credential-stuffing-proof, brute-force-proof — there is no credential to steal
+- Face ID / Touch ID / Windows Hello IS the second factor by design (something you have = device, something you are = biometric)
+- Genuinely more secure than password + TOTP, while simultaneously more usable
 
-*Password requirements for users:*
-- Minimum 16 characters, any composition (no forced complexity rules — they encourage weaker passwords in practice)
-- Passphrase encouraged in UX copy ("try a memorable phrase")
-- No periodic forced rotation (NIST SP 800-63B explicitly recommends against this)
+**Supported auth devices:**
 
-*Session management:*
-- Session cookie: 30 days if "Remember me" checked, otherwise expires at browser close
-- Known-device cookie: 6 months, set ONLY on successful login AND when Remember-me was checked
-- Known-device cookie is a random nonce, validated server-side against a per-user trusted-devices list
-- Session cookie is HTTP-only, Secure, SameSite=Strict
+- iPhone/iPad with Face ID or Touch ID (iOS 16+, any device from 2018+ qualifies; Marty's iPhone 12 is fully supported)
+- Windows with Windows Hello (face, fingerprint, or PIN — any Windows 10+ machine)
+- Macs with Touch ID or passkey via connected iPhone
+- Any device with 1Password installed (1Password handles passkey storage and sync across all platforms, including Windows + iOS for users who don't want Apple ecosystem lock-in)
 
-*Protection mechanisms:*
-- HTTPS everywhere (Cloudflare Pages default), with HSTS header
-- CSRF tokens on all admin POST/PUT/DELETE requests
-- Rate limiting at the Cloudflare edge: 5 failed login attempts trigger a 15-minute block on that IP
-- Cloudflare WAF in front of `/admin/*` routes for automated attack filtering
-- No password reset via email alone; recovery is out-of-band (Matt resets Marty's password manually if lost; documented in `docs/SECURITY-RECOVERY.md`)
+**Auth flow:**
 
-*Login event notifications:*
-- Notifications sent to `security@mrsummersranch.com` (DNS forwarder to Matt's personal email)
-- Triggers:
-  - Successful login from a novel IP or geographic region (heuristic: IP not seen in previous 60 days, or country change)
-  - 5+ failed attempts in 10 minutes from any IP
-  - Not triggered on routine logins from known IPs (avoids noise)
-- Notification contents: timestamp, IP, User-Agent, geographic approximation, relevant details
-- Notifications go only to Matt, never to Marty (Marty is not the security monitor)
+*Initial setup of a user account* (admin provisioning, see A23):
 
-*Critical bug-prevention rules:*
-- Known-device cookie is set ONLY on successful login, NEVER on failed password attempts (prevents an attacker from submitting wrong passwords with Remember-me checked to seed trusted devices)
-- Known-device cookie is set ONLY when Remember-me is explicitly checked (not by default)
-- "Clear all trusted devices" button in `/admin/settings/` revokes every known-device cookie globally; next login on every device requires full footer-Admin re-entry
+1. Admin (Matt, or in future Marty if he's set up) generates a setup code for a new or existing user
+2. Setup code is 8 alphanumeric characters, case-insensitive, one-time use, expires in 24 hours
+3. Code delivered out-of-band (text, in-person, whatever works)
 
-**Future consideration — multi-user TOTP MFA:**
+*First login on a device* (new user, or existing user adding a device):
 
-If ever added, use TOTP (Time-based One-Time Passwords, RFC 6238) with authenticator apps (Google Authenticator, Authy, 1Password, Apple Passwords). Not SMS. Each user would have a personal `totpSecret` and pre-printed recovery codes. Setup is one-time QR scan per user per device. Works offline (critical for ranch environment with spotty cell service). No per-message cost. Adds schema fields (`users.totpSecret`, `users.recoveryCodes`) and a code-entry step to the login flow.
+1. User taps Admin link in footer
+2. Modal appears: "Sign in" or "Set up this device"
+3. Tap "Set up this device"
+4. Modal prompts: select username from the admin list
+5. User enters the 8-character setup code
+6. Server validates code against pending setup for that user
+7. Browser triggers WebAuthn registration ceremony (`navigator.credentials.create()`)
+8. Device prompts for biometric (Face ID, Touch ID, Windows Hello)
+9. On success: passkey created on device, public key and metadata stored in `admin-users.json` under that user's `registeredCredentials`
+10. Session cookie set; user is logged in
+11. Setup code consumed and discarded
 
-**Not in Phase 1. Not in Phase 2. Deferred indefinitely unless a specific concern emerges.**
+*Subsequent logins on a previously-set-up device:*
+
+1. User taps Admin link in footer (or Admin entry in hamburger if known-device cookie exists from prior session)
+2. Browser triggers WebAuthn authentication ceremony (`navigator.credentials.get()`)
+3. Device prompts for biometric
+4. On success: server verifies signed challenge; session established
+5. Logged in — typically 1-2 seconds total
+
+*Adding a second device to an existing account:*
+
+Two paths, both supported:
+
+- **Self-serve from existing device:** logged-in user goes to Settings → "Add another device" → system generates a setup code → user opens the site on the new device and follows first-login flow
+- **Admin-assisted:** owner (Matt) generates a setup code for the user from User Management → delivers out-of-band → user follows first-login flow
+
+Cross-device passkey sync (e.g., iCloud Keychain on Apple devices) is a user-managed OS-level feature. When Marty sets up his iPhone, the passkey may automatically sync to his iPad via iCloud Keychain without needing a separate setup. When it does, the iPad works without additional registration. When it doesn't (e.g., iCloud Keychain disabled, or cross-ecosystem like Roianne's Windows + iOS), the user registers each device separately.
+
+**Recovery mechanisms:**
+
+*Primary recovery (user still has one working device):*
+- User logs in on a working device
+- Settings → "Add another device" to bring new device online
+- Optional: remove old lost-device credential from the list
+
+*Secondary recovery (user has lost all devices, but has recovery codes):*
+- User holds 8 pre-generated one-time recovery codes, printed and stored securely
+- At login, user selects "I've lost access to all my devices"
+- Enters recovery code + proves identity (email or out-of-band verification with Matt)
+- Can register a new passkey on a new device
+- Recovery codes are regenerated; old ones discarded
+
+*Ultimate backdoor (all recovery paths exhausted):*
+- Matt logs into GitHub with his passkey
+- Edits `data/admin-users.json` directly to remove the affected user's `registeredCredentials` entries
+- Pushes change, Cloudflare rebuilds
+- Affected user can now set up from scratch as if first-time, using a new setup code
+- This backdoor is only accessible to users with GitHub passkey access (just Matt)
+
+This three-tier recovery model covers every realistic failure case.
+
+**Session management:**
+
+- On successful passkey auth, session cookie set
+- Session duration: 30 days if "Keep me signed in" toggle is checked during login, or session-only (expires on browser close) otherwise
+- Known-device cookie (6 months) set when session is established with "Keep me signed in" — this drives whether hamburger shows the admin entry after session expiry (per A21)
+- Session cookie: HTTP-only, Secure, SameSite=Strict
+- "Log Out" in hamburger clears both session and known-device cookie for that device
+- "Clear all trusted devices" in Settings → Security clears known-device cookies globally (forces footer re-entry on every device next time)
+
+**Infrastructure:**
+
+- Server-side WebAuthn via `@simplewebauthn/server` package running in Cloudflare Worker
+- Client-side via standard browser `navigator.credentials` API; no library needed
+- User records stored in `data/admin-users.json` in the repo (small file, low write frequency, fine to version-control)
+- Setup codes stored in short-lived Cloudflare KV (24-hour TTL)
+- Session tokens stored in Cloudflare KV keyed to the session cookie
+
+**Critical implementation requirements for the coding agent:**
+
+- Follow WebAuthn Level 3 spec (current standard)
+- Relying Party ID should be `mrsummersranch.com` (or whatever primary domain)
+- Require platform authenticators (user's device) or cross-platform authenticators (security keys, 1Password) — accept both
+- Use resident credentials (passkeys proper), not merely WebAuthn credentials, so the user doesn't have to type a username during login
+- Counter validation for replay protection
+- Set `userVerification: "required"` — always require biometric/PIN on login, not just device presence
+
+**Login event notifications** (unchanged from previous A22 draft):
+
+- To `security@mrsummersranch.com` → Matt's personal email
+- Triggers: novel IP login, country change, 5+ failed setup code attempts in 10 minutes, new passkey registered, passkey removed, "Clear all trusted devices" invoked
+- Never sent to Marty (he's not the security monitor)
+
+---
+
+### A23. Admin user management and initial provisioning
+
+**Supersedes:** New addition, no prior coverage.
+
+**What changes:**
+
+Admin users are defined in `data/admin-users.json`, version-controlled in the repo. The schema:
+
+```typescript
+interface AdminUser {
+  id: string              // short username, e.g., "matt", "marty", "roianne"
+  displayName: string     // human-readable name
+  email: string           // for recovery and notifications; not used for login
+  role: 'owner' | 'admin' // owner can manage other admin users; admin cannot
+  registeredCredentials: RegisteredCredential[]
+  recoveryCodesHash: string[]  // hashed recovery codes, one-time use
+  createdAt: string       // ISO date
+}
+
+interface RegisteredCredential {
+  credentialId: string    // WebAuthn credential ID
+  publicKey: string       // Base64-encoded public key
+  counter: number         // Anti-replay counter
+  deviceName: string      // User-supplied or auto-detected ("iPhone 14", "Windows PC")
+  createdAt: string
+  lastUsedAt: string
+  transports: string[]    // ["internal", "hybrid", "usb", etc.]
+}
+```
+
+**Adding a new admin user (owner-only action):**
+
+Navigate to Settings → User Management → Add Admin. Fill in: displayName, id (username), email, role. Save.
+
+System generates:
+- A setup code (random 8 alphanumeric, 24-hour TTL)
+- 10 pre-generated recovery codes for the user (stored hashed server-side; plaintext shown once to the owner)
+
+Owner delivers setup code to the new user out-of-band. Owner is responsible for securely delivering the recovery codes to the new user (printed, sent via secure channel, etc.) — the system shows them once and never stores them plaintext.
+
+**Modifying an admin user:**
+
+Owner can change any field except `registeredCredentials` (which is managed by the user via their own device management). Owner can revoke a user's access by removing all their credentials, which forces them to re-register via a new setup code.
+
+**Removing an admin user:**
+
+Owner can delete the user record. Next time that user tries to authenticate, no account exists — auth fails at the username-selection step.
+
+**Self-service for non-owner admins:**
+
+An admin (role: `admin`, not `owner`) can:
+- View their own registered credentials
+- Add new devices (self-generated setup codes)
+- Remove devices they no longer use
+- Regenerate their own recovery codes
+- Log out globally
+
+An admin cannot: add/remove/edit other admin users, change their own role.
+
+**Default users at v2 cutover:**
+
+- `matt` (Matt Cherry) — role: owner. Matt sets up his passkey first on his primary device.
+- `marty` (Marty Summers) — role: admin. Matt generates a setup code, sends to Marty, Marty registers his iPhone and iPad.
+- `roianne` (Roianne Summers) — role: admin. Matt generates a setup code, sends to Roianne, Roianne registers her Windows machine and iPhone separately.
+
+Additional users added over time as needed.
+
+**Recovery documentation:**
+
+A file `docs/SECURITY-RECOVERY.md` (written during v2 cutover) documents:
+- How to use a recovery code
+- How to add a new device after total device loss
+- How Matt can use the GitHub backdoor if all recovery paths fail
+- How to revoke a compromised device
+
+This document is Matt-facing and agent-facing, not user-facing. Marty and Roianne don't need to read it; if they ever need recovery help, they contact Matt.
 
 ---
 
