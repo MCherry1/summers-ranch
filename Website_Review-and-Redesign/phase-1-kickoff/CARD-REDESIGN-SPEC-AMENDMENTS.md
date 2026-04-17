@@ -185,21 +185,103 @@ Add to the Foundation (Checkpoint 1) requirements:
 
 ---
 
+### A10. Herd cards are static forever — no motion on the evaluation surface
+
+**Supersedes:** Section 3.2 (Photo cycling behavior) is extended, not replaced.
+
+**What changes:**
+
+Add to Section 3.2:
+
+> **Cards do not display video, animated images, or motion of any kind.** The front of a card cycles between still photos with a crossfade; this is the only motion on the card surface. Cattle evaluation is a still-photo activity — buyers assess conformation from posed stills, which is how shows, catalogs, and AHA registration all present animals. A moving cow is harder to evaluate than a static side-profile shot.
+>
+> This is a permanent design decision, not a Phase 1 limitation. Even in Phase 2+ when the media pipeline handles iPhone Live Photos, the video components of those captures are **never** displayed on cards. They are preserved in storage for potential use on atmospheric surfaces only (see A11).
+
+**Reasoning:**
+
+- Industry convention is stills for evaluation
+- Motion on cards adds file size (10-30x) with negligible buyer value and potential negative (distraction from conformation review)
+- Autoplay is finicky on mobile; older devices may struggle
+- Matt's explicit call: "paying a lot to serve motion with, at best, minor increase in value"
+
+---
+
+### A11. Atmospheric surfaces are motion-eligible (Phase 2+) with deliberate enablement
+
+**Supersedes:** Section 9.1 (Home page Structure) and Section 8 (Gallery / The Wall).
+
+**What changes:**
+
+Add to Section 9.1 as a new paragraph under "Above the fold":
+
+> The full-viewport hero image may be still or motion depending on what's available and what the Phase 2+ workshop decides. Atmospheric video is eligible here. See A11 in the amendments file for details on when motion is acceptable.
+
+Add as a new subsection §8.10 to Section 8 (The Wall):
+
+> **§8.10 Motion eligibility**
+>
+> Wall slots (hero, secondary, supporting) may display short looping video clips *in addition to* stills, as of Phase 2+. This is the only public surface besides the Home page hero where motion is permitted. The herd card surface (§3) is permanently static.
+>
+> Motion guidelines for Wall slots:
+> - Clip length: 2-5 seconds, looping seamlessly
+> - Muted, autoplay (with graceful fallback when autoplay is blocked — display the static poster frame)
+> - Respect `prefers-reduced-motion` — static poster frame only
+> - Format: MP4 (H.264) as baseline, WebM as progressive enhancement
+> - Poster frame is the still component of the source (typically the iPhone Live Photo still); this is what displays if video doesn't load or the user has reduced-motion preferences
+>
+> Motion content prioritization in Wall curation:
+> - A slot may be filled with either still or motion content; the curation engine treats them as candidates in the same pool
+> - Seasonal affinity and category rules apply equally to both
+> - A small bias toward stills (to avoid the Wall feeling like a video collage) — roughly 1-2 motion clips in a 9-13 item Wall
+>
+> **Phase 2 enablement is a deliberate decision, not automatic.** When the pipeline is ready to surface motion, Matt makes a specific decision to enable it per-surface (Home hero, Wall). Default before that decision is still-only. If motion is deemed not-worth-it, it stays off indefinitely; the pipeline still preserves the MOV components (see A12) at zero cost.
+
+Add a related note to Section 9.1:
+
+> The Home hero can also use the **Ken Burns effect** — a slow zoom/pan applied to a still image to create atmospheric motion without actual video. This is much cheaper than video and often indistinguishable at typical viewing. Ken Burns may be used on still images in the hero slot regardless of the motion decision. Ken Burns and real video can coexist on the same slot or be layered for enhanced effect (e.g., a gentle zoom applied to an already-moving clip).
+
+**Reasoning:**
+
+- Motion on atmospheric surfaces is genuinely additive: wind in grass, cattle crossing pasture at sunset, Theodore playing
+- These surfaces don't carry the evaluation accuracy burden that cards do
+- Ken Burns gives 80% of the perceived-motion value at 0% of the video-pipeline cost, so we get "atmospheric motion" even in Phase 1 purely from still images
+- Real video in Phase 2+ is a nice enhancement, not a requirement
+- Deliberate enablement means we don't accidentally ship distracting video just because the pipeline supports it
+
+---
+
+### A12. Phase 2 media pipeline preserves iPhone Live Photo MOV components
+
+**Supersedes:** Section 20 (Deferred) — extends A8 (Phase 2 media pipeline requirements).
+
+**What changes:**
+
+Add to Section 20's Phase 2 media pipeline requirements (extending the list from A8):
+
+> - **iPhone Live Photo handling:** when a Live Photo is uploaded, ingest preserves both the HEIC still and the MOV motion components. The still becomes the card-eligible image; the MOV is transcoded to MP4/WebM and stored alongside for potential use on atmospheric surfaces. Neither component is discarded at ingest.
+
+**Reasoning:**
+
+- Storage cost is negligible (~50-300MB annually for Marty's upload volume)
+- Preservation is reversible (we can decide later whether to use motion)
+- Discarding is not reversible (once lost, capture data is gone)
+- Matt's framing: "storage is cheap and it leaves us flexible"
+
+**Implication for iOS Shortcut configuration (Phase 2 spec):**
+
+The iOS Shortcut must send both the HEIC and the MOV to the Worker endpoint. Standard iOS Shortcut actions support this — the share sheet exposes the Live Photo container as a multi-component object. When designing the Shortcut, the "send to server" step must encode both components, not just the still.
+
+This is a sub-detail for the future Share Sheet Mechanics workshop (P4), noted here so it's not forgotten.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
 
-### P1. Motion / video on cards (flagged 2026-04-17 during walk)
+### P1. Motion / video on cards — RESOLVED 2026-04-17
 
-Matt has flagged for decision: whether short looping video clips (e.g., from iPhone Live Photos) should appear anywhere on the site, on cards or elsewhere.
-
-**Current thinking (not yet locked):**
-- Cards should stay static forever — buyers evaluate conformation from stills; motion distracts
-- Atmospheric surfaces (home hero, gallery, about page) could accommodate motion in Phase 2+ via short looping video
-- iPhone Live Photo MOV component should be preserved through ingest in Phase 2 regardless of whether we use motion immediately
-- WebP + AVIF for still images with JPEG fallback is modern best practice; this is a separate, less controversial improvement that should happen regardless of the motion decision
-
-**To be locked after Matt reads the pending response.**
+Resolved into amendments A10, A11, A12 (see below).
 
 ### P2. Repository layout
 
