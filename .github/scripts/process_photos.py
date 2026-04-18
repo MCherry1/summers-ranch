@@ -914,7 +914,7 @@ def process_cattle():
     print(f"\nFound {len(oversized)} oversized cattle photo(s) to optimize.")
     for photo in oversized:
         print(f"  Optimizing: {photo.name} ({photo.stat().st_size / 1024:.0f} KB)")
-        strip_and_resize(photo, max_width=1200, quality=JPEG_QUALITY)
+        strip_and_resize(photo, max_width=MAX_WIDTH, quality=JPEG_QUALITY)
         print(f"    -> {photo.stat().st_size / 1024:.0f} KB")
 
 
