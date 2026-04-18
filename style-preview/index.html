@@ -7,7 +7,7 @@
 <title>Summers Ranch — Style Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lato:wght@300;400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lato:wght@300;400;700;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Work+Sans:wght@300;400;500;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
      SHARED FRAMEWORK
@@ -147,6 +147,204 @@
   }
   @media (min-width: 900px) {
     body { padding: 0; }
+  }
+
+  /* =========================================================
+     SHARED RIBBON SYSTEM
+     These ribbon assets are visually consistent across all four
+     panels. They represent industry-standard badges (For Sale,
+     Dam/Sire of Distinction, Birthday celebration) that don't
+     need per-panel theming.
+
+     Techniques:
+     - Corner ribbon: 150x150 wrapper with overflow:hidden clips
+       tail; rotated 225px span with ::before/::after triangles
+       behind creates folded-tail illusion.
+     - Hanging ribbon: 56x120 swallowtail via clip-path; two-layer
+       gradient (vertical fabric weight + horizontal edge shading)
+       gives fabric depth. Real ★ and ✦ glyphs.
+     ========================================================= */
+  :root {
+    --ribbon-gold: #c9a227;
+    --ribbon-gold-deep: #9a7a0f;
+    --ribbon-gold-light: #f0d874;
+    --ribbon-gold-shine: #fff2c4;
+    --ribbon-ink: #2c2416;
+
+    --ribbon-dod-blue: #1e4a7e;
+    --ribbon-dod-blue-deep: #0f2d52;
+    --ribbon-dod-blue-light: #3b6ba5;
+    --ribbon-dod-blue-shine: #5a8bc4;
+
+    --ribbon-sod-red: #8b1e1e;
+    --ribbon-sod-red-deep: #4a0f0f;
+    --ribbon-sod-red-light: #b03030;
+    --ribbon-sod-red-shine: #c94848;
+
+    --ribbon-baby-blue: #9ec5e8;
+    --ribbon-baby-blue-deep: #6a9dc4;
+    --ribbon-baby-blue-shine: #c8dff0;
+
+    --ribbon-baby-pink: #eabecb;
+    --ribbon-baby-pink-deep: #c48799;
+    --ribbon-baby-pink-shine: #f5dae3;
+  }
+
+  /* --- Corner ribbon (For Sale) --- */
+  .ribbon-corner {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    overflow: hidden;
+    z-index: 10;
+  }
+  .ribbon-corner-tr {
+    top: -6px;
+    right: -6px;
+  }
+  .ribbon-corner span {
+    position: absolute;
+    display: block;
+    width: 225px;
+    padding: 10px 0;
+    background: linear-gradient(
+      180deg,
+      var(--ribbon-gold-shine) 0%,
+      var(--ribbon-gold-light) 30%,
+      var(--ribbon-gold) 55%,
+      var(--ribbon-gold-deep) 100%
+    );
+    box-shadow:
+      0 6px 12px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.5),
+      inset 0 -1px 0 rgba(0,0,0,0.2);
+    color: var(--ribbon-ink);
+    font-family: "Lato", sans-serif;
+    font-weight: 900;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .ribbon-corner-tr span {
+    left: -25px;
+    top: 34px;
+    transform: rotate(45deg);
+  }
+  .ribbon-corner-tr::before,
+  .ribbon-corner-tr::after {
+    position: absolute;
+    content: '';
+    display: block;
+    border: 5px solid var(--ribbon-gold-deep);
+    z-index: -1;
+  }
+  .ribbon-corner-tr::before {
+    top: 0;
+    left: 30px;
+    border-top-color: transparent;
+    border-right-color: transparent;
+  }
+  .ribbon-corner-tr::after {
+    bottom: 30px;
+    right: 0;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+
+  /* --- Hanging ribbon (DOD, SOD, Birthday) --- */
+  .ribbon-hanging {
+    position: absolute;
+    top: 0;
+    width: 56px;
+    height: 120px;
+    z-index: 10;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 82%,
+      50% 100%,
+      0 82%
+    );
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+  }
+  .ribbon-hanging-position-1 { left: 14px; }
+  .ribbon-hanging-position-2 { left: 82px; }
+
+  .ribbon-hanging.dod {
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.25) 100%),
+      linear-gradient(180deg, var(--ribbon-dod-blue-shine) 0%, var(--ribbon-dod-blue-light) 20%, var(--ribbon-dod-blue) 55%, var(--ribbon-dod-blue-deep) 100%);
+  }
+  .ribbon-hanging.sod {
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.12) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.25) 100%),
+      linear-gradient(180deg, var(--ribbon-sod-red-shine) 0%, var(--ribbon-sod-red-light) 20%, var(--ribbon-sod-red) 55%, var(--ribbon-sod-red-deep) 100%);
+  }
+  .ribbon-hanging.birthday-boy {
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.3) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.15) 100%),
+      linear-gradient(180deg, var(--ribbon-baby-blue-shine) 0%, var(--ribbon-baby-blue) 40%, var(--ribbon-baby-blue-deep) 100%);
+  }
+  .ribbon-hanging.birthday-girl {
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.3) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.15) 100%),
+      linear-gradient(180deg, var(--ribbon-baby-pink-shine) 0%, var(--ribbon-baby-pink) 40%, var(--ribbon-baby-pink-deep) 100%);
+  }
+
+  .ribbon-hanging-emblem {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--ribbon-gold-light);
+    text-shadow:
+      0 1px 0 rgba(0,0,0,0.5),
+      0 0 4px rgba(255,210,110,0.4);
+    opacity: 0.85;
+  }
+
+  .ribbon-hanging-text {
+    position: absolute;
+    top: 24px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: "Cinzel", serif;
+    font-weight: 800;
+    font-size: 1.15rem;
+    line-height: 1.1;
+    letter-spacing: 0.04em;
+    color: var(--ribbon-gold-light);
+    text-shadow:
+      0 1px 0 rgba(0,0,0,0.6),
+      0 0 3px rgba(255,210,110,0.3);
+  }
+  .ribbon-hanging-text .letter { display: block; }
+
+  .ribbon-hanging.birthday-boy .ribbon-hanging-text,
+  .ribbon-hanging.birthday-girl .ribbon-hanging-text {
+    top: 28px;
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 700;
+    font-size: 2.1rem;
+    line-height: 1;
+    color: var(--ribbon-gold-deep);
+    text-shadow:
+      0 1px 0 rgba(255,255,255,0.6),
+      0 0 4px rgba(154,122,15,0.3);
+  }
+
+  .ribbon-hanging.birthday-boy .ribbon-hanging-emblem,
+  .ribbon-hanging.birthday-girl .ribbon-hanging-emblem {
+    color: var(--ribbon-gold-deep);
+    opacity: 0.8;
+    font-size: 0.65rem;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
   }
 
   /* =========================================================
@@ -345,38 +543,6 @@
   }
   .foundation .card-photo.photo-hereford {
     background-image: url('../images/cattle/hereford-profile.jpg');
-  }
-  .foundation .card-ribbon {
-    position: absolute;
-    top: 0;
-    right: -2px;
-    background: var(--color-gold);
-    color: var(--color-bg);
-    padding: 0.3rem 1.25rem;
-    font-family: var(--body-font);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    transform: rotate(45deg) translate(28%, -50%);
-    transform-origin: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  }
-  .foundation .card-ribbon-tl {
-    position: absolute;
-    top: 0;
-    left: 1rem;
-    width: 36px;
-    background: #4a6fa5;
-    color: white;
-    padding: 0.55rem 0 0.75rem;
-    text-align: center;
-    font-family: var(--body-font);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
-    line-height: 1.1;
   }
   .foundation .card-date {
     position: absolute;
@@ -684,47 +850,6 @@
   }
   .heritage .card-photo.photo-hereford {
     background-image: url('../images/cattle/hereford-profile.jpg');
-  }
-  .heritage .card-ribbon {
-    position: absolute;
-    top: 12px;
-    right: -4px;
-    background: var(--color-ochre);
-    color: var(--color-deep);
-    padding: 0.35rem 1rem;
-    font-family: var(--body-font);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  }
-  .heritage .card-ribbon::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    bottom: -5px;
-    width: 0;
-    height: 0;
-    border-left: 5px solid var(--color-deep);
-    border-top: 5px solid transparent;
-  }
-  .heritage .card-ribbon-tl {
-    position: absolute;
-    top: 0;
-    left: 1.1rem;
-    width: 38px;
-    background: #4a6fa5;
-    color: white;
-    padding: 0.6rem 0 0.8rem;
-    text-align: center;
-    font-family: var(--body-font);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
-    line-height: 1.1;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   }
   .heritage .card-date, .heritage .card-reg {
     position: absolute;
@@ -1056,37 +1181,6 @@
   .weathered .card-photo.photo-hereford {
     background-image: url('../images/cattle/hereford-profile.jpg');
   }
-  .weathered .card-ribbon {
-    position: absolute;
-    top: 0;
-    right: -2px;
-    background: var(--color-bronze);
-    color: var(--color-paper);
-    padding: 0.3rem 1.2rem;
-    font-family: var(--body-font);
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    transform: rotate(45deg) translate(30%, -50%);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-  }
-  .weathered .card-ribbon-tl {
-    position: absolute;
-    top: 0;
-    left: 1rem;
-    width: 38px;
-    background: #4a6fa5;
-    color: var(--color-paper);
-    padding: 0.6rem 0 0.75rem;
-    text-align: center;
-    font-family: var(--body-font);
-    font-size: 0.66rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
-    line-height: 1.1;
-  }
   .weathered .card-date, .weathered .card-reg {
     position: absolute;
     bottom: 8px;
@@ -1347,36 +1441,6 @@
   .classic .card-photo.photo-hereford {
     background-image: url('../images/cattle/hereford-profile.jpg');
   }
-  .classic .card-ribbon {
-    position: absolute;
-    top: 0;
-    right: -2px;
-    background: var(--color-red);
-    color: #fff;
-    padding: 0.3rem 1.2rem;
-    font-family: var(--font);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    transform: rotate(45deg) translate(28%, -50%);
-  }
-  .classic .card-ribbon-tl {
-    position: absolute;
-    top: 0;
-    left: 1rem;
-    width: 36px;
-    background: #4a6fa5;
-    color: #fff;
-    padding: 0.55rem 0 0.75rem;
-    text-align: center;
-    font-family: var(--font);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
-    line-height: 1.1;
-  }
   .classic .card-date, .classic .card-reg {
     position: absolute;
     bottom: 8px;
@@ -1571,8 +1635,23 @@
     <div class="spec-label">Example cow card</div>
     <div class="card">
       <div class="card-photo photo-hereford">
-        <div class="card-ribbon-tl">D<br>O<br>D</div>
-        <div class="card-ribbon">For Sale</div>
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
         <div class="card-date">May 2025</div>
         <div class="card-reg">AHA #44109820</div>
       </div>
@@ -1661,8 +1740,23 @@
     <div class="spec-label">Example cow card</div>
     <div class="card">
       <div class="card-photo photo-hereford">
-        <div class="card-ribbon-tl">D<br>O<br>D</div>
-        <div class="card-ribbon">For Sale</div>
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
         <div class="card-date">May 2025</div>
         <div class="card-reg">AHA #44109820</div>
       </div>
@@ -1752,8 +1846,23 @@
     <div class="spec-label">Example cow card</div>
     <div class="card">
       <div class="card-photo photo-hereford">
-        <div class="card-ribbon-tl">D<br>O<br>D</div>
-        <div class="card-ribbon">For Sale</div>
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
         <div class="card-date">May 2025</div>
         <div class="card-reg">AHA #44109820</div>
       </div>
@@ -1839,8 +1948,23 @@
     <div class="spec-label">Example cow card</div>
     <div class="card">
       <div class="card-photo photo-hereford">
-        <div class="card-ribbon-tl">D<br>O<br>D</div>
-        <div class="card-ribbon">For Sale</div>
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
         <div class="card-date">May 2025</div>
         <div class="card-reg">AHA #44109820</div>
       </div>
