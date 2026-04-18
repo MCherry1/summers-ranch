@@ -813,16 +813,22 @@
         "images/cattle/tag-TESTER-2.jpg",
         "images/cattle/tag-TESTER-3.jpg",
         "images/cattle/tag-TESTER-4.jpg",
-        "images/cattle/tag-TESTER-5.jpg"
+        "images/cattle/tag-TESTER-5.jpg",
+        "images/cattle/tag-TESTER-6.jpg",
+        "images/cattle/tag-TESTER-7.jpg"
       ],
       "photo_dates": [
         "2022-06-18",
         "2026-02-21",
         "2025-02-11",
         "2025-08-26",
-        "2025-08-26"
+        "2025-08-26",
+        "2026-01-30",
+        "2025-12-17"
       ],
       "photo_types": [
+        "",
+        "",
         "",
         "",
         "",
@@ -834,9 +840,13 @@
         50,
         50,
         50,
+        50,
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
+        50,
         50,
         50,
         50,
@@ -848,9 +858,13 @@
         null,
         null,
         null,
+        null,
+        null,
         null
       ],
       "photo_quality": [
+        "",
+        "",
         "",
         "",
         "",
@@ -865,7 +879,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-18 14:24 UTC",
+    "last_updated": "2026-04-18 14:25 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
