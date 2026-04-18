@@ -815,7 +815,8 @@
         "images/cattle/tag-TESTER-4.jpg",
         "images/cattle/tag-TESTER-5.jpg",
         "images/cattle/tag-TESTER-6.jpg",
-        "images/cattle/tag-TESTER-7.jpg"
+        "images/cattle/tag-TESTER-7.jpg",
+        "images/cattle/tag-TESTER-8.jpg"
       ],
       "photo_dates": [
         "2022-06-18",
@@ -824,9 +825,11 @@
         "2025-08-26",
         "2025-08-26",
         "2026-01-30",
-        "2025-12-17"
+        "2025-12-17",
+        "2025-03-06"
       ],
       "photo_types": [
+        "",
         "",
         "",
         "",
@@ -842,9 +845,11 @@
         50,
         50,
         50,
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
         50,
         50,
         50,
@@ -860,6 +865,7 @@
         null,
         null,
         null,
+        null,
         null
       ],
       "photo_quality": [
@@ -869,9 +875,58 @@
         "",
         "",
         "",
+        "",
         ""
       ],
       "primary_photo": "images/cattle/tag-TESTER-2.jpg"
+    },
+    {
+      "tag": "TESTED",
+      "name": "",
+      "born": "",
+      "date_entered": "",
+      "registration": "",
+      "sire": "",
+      "dam": "",
+      "breed": "",
+      "breed_detail": "",
+      "sex": "",
+      "status": "",
+      "source": "",
+      "source_ranch": "",
+      "breeding_stock": false,
+      "birth_weight": null,
+      "weaning_weight": null,
+      "yearling_weight": null,
+      "calving_ease": null,
+      "disposition": "",
+      "pregnancy_status": "",
+      "expected_calving": "",
+      "calves": 0,
+      "calves_manual": false,
+      "notes": "",
+      "photos": [
+        "images/cattle/tag-TESTED-1.jpg"
+      ],
+      "photo_dates": [
+        "2025-03-15"
+      ],
+      "photo_types": [
+        ""
+      ],
+      "photo_focus_x": [
+        50
+      ],
+      "photo_focus_y": [
+        50
+      ],
+      "photo_boxes": [
+        null
+      ],
+      "photo_quality": [
+        ""
+      ],
+      "primary_photo": "images/cattle/tag-TESTED-1.jpg"
     }
   ],
   "sires": [],
@@ -879,7 +934,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-18 14:25 UTC",
+    "last_updated": "2026-04-18 14:58 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
