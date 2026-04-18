@@ -1099,7 +1099,11 @@ The text at 0.42rem Cinzel is **below the project's typical 12px / 0.75rem reada
 </div>
 ```
 
-The two `.column` divs use flexbox to vertically center their contents independently, so HAPPY (5 letters, shorter) appears centered in its half while BIRTHDAY (8 letters, taller) fills more of its column's height. The outer `.ribbon-hanging-text` uses `display: flex` with `justify-content: space-around` to lay the two columns side-by-side.
+The two `.column` divs use flexbox to vertically center their contents independently, so HAPPY (5 letters, shorter) appears centered in its half while BIRTHDAY (8 letters, taller) fills more of its column's height. The outer `.ribbon-hanging-text` uses `display: flex` with `justify-content: center` and a small `gap: 3px` between columns — the two words sit as a tight pair in the center of the ribbon with breathing room on the outer edges.
+
+**Spacing refinement note:**
+
+An earlier version used `justify-content: space-around` which gave half-gaps at the edges and a full gap between columns. That made the inter-word gap visually oversized compared to the outer gaps, causing HAPPY and BIRTHDAY to read as two isolated columns drifting apart rather than as two words of a unified phrase. Switching to `justify-content: center` + `gap: 3px` pulled them back toward center as a coherent pair.
 
 **Emblem change:**
 

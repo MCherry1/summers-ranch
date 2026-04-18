@@ -330,14 +330,19 @@
   .ribbon-hanging.birthday-girl .ribbon-hanging-text {
     /* Override the shared ribbon-hanging-text positioning. Birthday ribbons
        use a two-column layout (HAPPY on left, BIRTHDAY on right), each
-       column vertically centered independently within the text zone. */
+       column vertically centered independently within the text zone.
+       Columns are pinned toward the center with a small gap; the extra
+       breathing room sits on the outer edges of the ribbon, which reads
+       more like proper set-word spacing and less like two isolated
+       columns floating apart. */
     top: 9px;
     bottom: 22px; /* leave room for the swallowtail clip */
     left: 0;
     right: 0;
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
+    gap: 3px;
     font-family: "Cinzel", serif;
     font-weight: 700;
     /* Intentionally below the project's typical 12px/0.75rem readability
