@@ -106,21 +106,21 @@ p.subtitle {
    ===================================================================== */
 .ribbon-corner {
   position: absolute;
-  width: 150px;
-  height: 150px;
+  width: 110px;
+  height: 110px;
   overflow: hidden;
   z-index: 10;
 }
 .ribbon-corner-tr {
-  top: -6px;
-  right: -6px;
+  top: -5px;
+  right: -5px;
 }
 
 .ribbon-corner span {
   position: absolute;
   display: block;
-  width: 225px;
-  padding: 10px 0;
+  width: 170px;
+  padding: 7px 0;
   background: linear-gradient(
     180deg,
     var(--gold-shine) 0%,
@@ -135,7 +135,7 @@ p.subtitle {
   color: var(--ink);
   font-family: "Lato", sans-serif;
   font-weight: 900;
-  font-size: 0.78rem;
+  font-size: 0.62rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   text-align: center;
@@ -143,8 +143,8 @@ p.subtitle {
 }
 
 .ribbon-corner-tr span {
-  left: -25px;
-  top: 34px;
+  left: -20px;
+  top: 22px;
   transform: rotate(45deg);
 }
 
@@ -153,17 +153,17 @@ p.subtitle {
   position: absolute;
   content: '';
   display: block;
-  border: 5px solid var(--gold-deep);
+  border: 4px solid var(--gold-deep);
   z-index: -1;
 }
 .ribbon-corner-tr::before {
   top: 0;
-  left: 30px;
+  left: 22px;
   border-top-color: transparent;
   border-right-color: transparent;
 }
 .ribbon-corner-tr::after {
-  bottom: 30px;
+  bottom: 22px;
   right: 0;
   border-bottom-color: transparent;
   border-left-color: transparent;
@@ -179,8 +179,8 @@ p.subtitle {
 .ribbon-hanging {
   position: absolute;
   top: 0;
-  width: 56px;
-  height: 120px;
+  width: 42px;
+  height: 86px;
   z-index: 10;
   clip-path: polygon(
     0 0,
@@ -189,10 +189,10 @@ p.subtitle {
     50% 100%,
     0 82%
   );
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
 }
-.ribbon-hanging-position-1 { left: 14px; }
-.ribbon-hanging-position-2 { left: 82px; }
+.ribbon-hanging-position-1 { left: 12px; }
+.ribbon-hanging-position-2 { left: 62px; }
 
 .ribbon-hanging.dod {
   background:
@@ -270,11 +270,11 @@ p.subtitle {
 
 .ribbon-hanging-emblem {
   position: absolute;
-  top: 8px;
+  top: 6px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.58rem;
   line-height: 1;
   color: var(--gold-light);
   text-shadow:
@@ -285,13 +285,13 @@ p.subtitle {
 
 .ribbon-hanging-text {
   position: absolute;
-  top: 24px;
+  top: 18px;
   left: 0;
   right: 0;
   text-align: center;
   font-family: "Cinzel", serif;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 0.88rem;
   line-height: 1.1;
   letter-spacing: 0.04em;
   color: var(--gold-light);
@@ -303,10 +303,10 @@ p.subtitle {
 
 .ribbon-hanging.birthday-boy .ribbon-hanging-text,
 .ribbon-hanging.birthday-girl .ribbon-hanging-text {
-  top: 28px;
+  top: 20px;
   font-family: "Cormorant Garamond", serif;
   font-weight: 700;
-  font-size: 2.1rem;
+  font-size: 1.6rem;
   line-height: 1;
   color: var(--gold-deep);
   text-shadow:
@@ -318,7 +318,7 @@ p.subtitle {
 .ribbon-hanging.birthday-girl .ribbon-hanging-emblem {
   color: var(--gold-deep);
   opacity: 0.8;
-  font-size: 0.65rem;
+  font-size: 0.52rem;
   text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 
