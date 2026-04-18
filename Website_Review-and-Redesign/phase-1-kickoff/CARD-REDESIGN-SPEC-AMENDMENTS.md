@@ -1090,7 +1090,26 @@ Matt has flagged for workshop. Two distinct dimensions:
 - **Outgoing:** social share previews (OpenGraph / Twitter cards) — what gets shared when someone taps their phone's share button on a herd card or page
 - **Incoming:** iOS Shortcut photo upload pipeline from Marty's phone share sheet — how the share-sheet workflow sends photos into the Cloudflare Worker ingest
 
-**To be workshopped. Incoming is more complex and more Phase 2; outgoing is simpler and may touch Phase 1.**
+**Incoming upload-UX observations (2026-04-18, from Matt's Shortcut testing):**
+
+The current v1 Shortcut PUTs photos directly to GitHub's Contents API. Two UX problems observed:
+
+- **Uploads are slow** (30-90 seconds per photo over LTE). Photo is base64-encoded into JSON body, sent as one HTTP PUT with no chunking. The phone UI blocks waiting for response.
+- **Uploads are cancellable.** Shortcut runs in foreground. If Marty gets impatient and taps Cancel, or the phone locks, or he switches apps, the upload aborts. He has no confidence the upload will complete, which creates background anxiety ("did this actually send?").
+
+The desired behavior is **iMessage-like**: tap send, the system handles it reliably in background, the sender app can be dismissed, uploads survive network loss and resume automatically.
+
+**Three architectural paths for Phase 2:**
+
+1. **iCloud Drive intermediary.** Shortcut saves to `iCloud/Shortcuts/SummersRanchInbox/`. iOS's native iCloud Drive daemon handles background upload to Apple's CDN. A GitHub Action polls iCloud via CloudKit API on a schedule, pulls new files, commits to `images/inbox/`. Cleanest UX but requires Apple Developer account + CloudKit setup.
+
+2. **Cloudflare R2 with presigned PUT + background URLSession.** Shortcut requests a presigned PUT URL from a Cloudflare Worker, uploads via iOS's native URLSession background upload API (survives app dismissal). A Worker subscribes to R2 events and forwards to GitHub. Most Phase-2-aligned since R2 is already in the stack. Requires Worker endpoint + R2 event handling.
+
+3. **Cloudflare Worker as fast-ack upload proxy (minimum viable).** Shortcut PUTs to a Worker endpoint instead of GitHub directly. Worker returns 202 Accepted in 1-5 seconds, then asynchronously commits to GitHub. Shortcut still runs foreground but finishes ~10x faster, making "is this stable?" anxiety go away. Not true background but much better.
+
+**Recommendation:** Path 3 for Phase 2 kickoff (fast ack, keeps current conceptual model), Path 2 for Phase 2.5+ if background becomes important, Path 1 only if Marty ends up using Shortcut heavily and the CloudKit investment is justified.
+
+**To be workshopped together with P4 outgoing. Incoming is more complex and more Phase 2; outgoing is simpler and may touch Phase 1.**
 
 ### P5. Photo quality competition — ongoing per-animal leaderboard
 
