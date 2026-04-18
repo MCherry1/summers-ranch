@@ -1174,6 +1174,108 @@ The canonical status value in `cattle-data.json` (when it lands in v2) should be
 
 ---
 
+### A31. Outgoing share sheet — OpenGraph and Twitter Card implementation
+
+**Supersedes:** New addition, no prior coverage in main spec. Partially resolves P4 (outgoing half).
+
+**What changes:**
+
+Every page on the site ships with OpenGraph and Twitter Card meta tags so that URLs shared via iMessage, WhatsApp, SMS, Discord, Slack, email clients, and social platforms produce rich previews instead of bare URLs. Share-sheet previews become a first-class surface of the site.
+
+**Standards:**
+
+- OpenGraph (`og:*` meta tags) covers iMessage, WhatsApp, Android SMS, LinkedIn, Discord, Slack, Facebook, Signal, most email clients
+- Twitter Cards (`twitter:*` meta tags) cover Twitter/X only; layered on top of OG
+- Both standards target a **1200×630 pixel image** (1.91:1 landscape ratio) as the canonical preview dimension
+- No `twitter:site` or `twitter:creator` tags — Summers Ranch has no social media accounts and will not. `twitter:card` (type declaration) is still used.
+
+**Per-surface rules:**
+
+| Surface | Canonical URL | Image | Title |
+|---|---|---|---|
+| Animal front `/herd/[id]` | `/herd/[id]` | Card-front composite for that animal | `#[tag] [name] — [breed]` (or `#[tag] — [breed]` if unnamed) |
+| Animal details `/herd/[id]/details` | `/herd/[id]` *(rewritten to front)* | Card-front composite for that animal | Same as front |
+| Herd index `/herd` | `/herd` | Ranch-level hero composite | `Summers Ranch — The Herd` |
+| Filtered herd `/herd?filter=...&sort=...` | Full URL with query string preserved | Phase 1: generic hero; Phase 2: filter-aware composite | `Summers Ranch — [filter label]` |
+| Home `/` | `/` | Ranch-level hero composite | `Summers Ranch — Registered Herefords` |
+| About `/about` | `/about` | Ranch-level hero composite | `About Summers Ranch` |
+| Contact `/contact` | `/contact` | Ranch-level hero composite | `Contact Summers Ranch` |
+
+**The details-page OG rewrite (operational rule):**
+
+When a user is on `/herd/840/details` and uses the system share sheet, the OS scrapes the page's meta tags. Those meta tags point `og:url` at `/herd/840` (the front), not the details URL. The share preview shows the front of the card, and tapping the preview lands the recipient on the front. This is intentional: the front is the canonical animal representation; details is a drill-down, not a standalone shareable surface.
+
+**Description tags:**
+
+- Animal pages, available: *"Sired by [sire reg], out of [dam reg]. Currently available at Summers Ranch in Sutter Creek, California."*
+- Animal pages, not available: *"Member of the registered Hereford herd at Summers Ranch in Sutter Creek, California."*
+- Filtered/list pages: *"Eleven registered Herefords. Sutter Creek, California."* (count derived from current herd)
+- Other pages: static per-surface descriptions.
+
+**Image generation — architectural decision:**
+
+Card-front composites are generated at **build time** in Phase 1, not dynamically at request time.
+
+- Build step pre-renders a 1200×630 image per animal, output to `/public/og/animal-[id]-v[version].png` or an R2 `og/` prefix.
+- Image URL includes a version token that bumps when content changes (throne-holder swap, stat update, photo change, ribbon state change).
+- Version bump forces scrapers to re-fetch rather than serve stale cached previews.
+- Generation via an Astro integration such as `astro-og-canvas` or a custom Satori-based renderer; coding agent picks based on available tooling at implementation time.
+
+**Phase 2** upgrades to Cloudflare Worker-rendered dynamic composites *if and when* the operational need arises (e.g., filter-aware composites where the set of matching animals changes faster than the build cadence). Phase 1 ships static.
+
+**Card-front composite design at 1200×630:**
+
+The landscape composite is not a literal scaled card front (which is portrait). It is a deliberate 1200×630 arrangement that references card design language without trying to force the portrait ratio:
+
+- Left ~60%: hero photo of the animal, cropped to fill (landscape-crop is acceptable here since the composite format is fixed)
+- Right ~40%: card-chrome column with tag number (prominent), name, breed line, status line, and ranch wordmark at the bottom
+- Ribbons from the card front (DOD/SOD, Available, Happy Birthday) appear in the composite if active, in the corners, using the same design vocabulary and typography as the card ribbons (per A28/A29/A30)
+- Typography matches the chosen style direction (from Marty/Roianne style preview selection)
+- Background and palette use the chosen direction's tokens
+
+**Ranch-level hero composite (for list, home, about, contact):**
+
+One static 1200×630 image designed once, reused across non-animal surfaces:
+
+- Hero pasture photograph or clean ranch scene (to be sourced/commissioned)
+- Ranch wordmark overlaid
+- "Registered Herefords · Sutter Creek, California" tagline
+- This single image anchors the ranch's visual identity in share previews until filter-aware composites ship in Phase 2
+
+**Compact view share behavior:**
+
+When a user shares from the compact (multi-animal-per-screen) view, the share URL is the herd list URL (with filters and sort query string preserved), not any specific animal. No per-card share affordance exists in compact mode — to share a specific animal, the user taps in to that animal's card front first. This keeps card corners uncluttered (already occupied by ribbons, photo date, reg#) and keeps the "share what you're looking at" mental model consistent.
+
+**Phase 2 filter-aware composites:**
+
+When the Worker-rendered path lights up in Phase 2, filtered herd URLs get composites showing a small collage (2-3 matching animals) with the filter label overlaid — e.g., "Available · 3 Herefords at Summers Ranch". This is the one case where preserving specific filter state in the share payload actually pays off, because the recipient sees exactly what the sender saw. Phase 1 ships a generic ranch hero for filter URLs and defers the collage generation.
+
+**Cache invalidation:**
+
+Image URLs include a version token (e.g., `?v=3` or `-v3` in the filename). When underlying content changes, the version bumps and scrapers re-fetch on next access. This avoids the common "shared URL still shows old preview weeks later" failure mode that plagues sites with static OG image paths.
+
+**What this does NOT spec (out of scope for Phase 1):**
+
+- Share tracking / click analytics on shared URLs (Phase 2+ if ever)
+- oEmbed endpoints for richer embeds in platforms that support them (Phase 2+)
+- AMP or other alternate-representation formats (not planned)
+
+**Implementation checklist for the coding agent:**
+
+1. Astro layout wraps every page with a base `<head>` that emits OG + Twitter meta tags from page-level frontmatter or data
+2. Per-page frontmatter declares `ogImage`, `ogTitle`, `ogDescription`, `ogUrl` (the last one enabling the details-page rewrite rule)
+3. Build-time OG image generation integrated into `astro build` pipeline; composite assets output alongside page HTML
+4. Version token strategy wired up so image filenames bump when animal data changes
+5. Validation: every published page produces a valid preview when tested via [opengraph.xyz](https://www.opengraph.xyz/) or similar tooling
+
+**Reasoning:**
+
+Share-sheet previews are a surprisingly high-impact surface. When a buyer texts a herd card to their spouse, the preview is the first impression. A clean card-front composite conveys animal identity, ranch identity, and design care in a single payload. The baseball-card metaphor ships all the way through to the messaging apps where buying conversations actually happen.
+
+Build-time generation (rather than Worker-rendered) keeps Phase 1 infrastructure simple: no new Worker endpoints, no caching strategy beyond standard static asset caching, no cold-start latency. Works entirely within the existing Cloudflare Pages build pipeline. Phase 2 migrates to dynamic rendering only if filter-aware composites justify the additional infrastructure.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -1190,12 +1292,9 @@ Resolved into amendments A13-A19 (see below).
 
 Admin architecture and authentication are locked in amendments A21-A22. The remaining work is detailing the *contents* of the admin surfaces themselves — what's on the Dashboard specifically, what Manage Herd shows beyond the herd view, what Media and Calendar and Settings contain. This is a workshop continuation, not a new workshop.
 
-### P4. Share sheet mechanics
+### P4. Share sheet mechanics — PARTIALLY RESOLVED 2026-04-18
 
-Matt has flagged for workshop. Two distinct dimensions:
-
-- **Outgoing:** social share previews (OpenGraph / Twitter cards) — what gets shared when someone taps their phone's share button on a herd card or page
-- **Incoming:** iOS Shortcut photo upload pipeline from Marty's phone share sheet — how the share-sheet workflow sends photos into the Cloudflare Worker ingest
+Outgoing half resolved in A31 (OpenGraph / Twitter Card previews with build-time card-front composites). Incoming half (iOS Shortcut photo upload pipeline) remains open.
 
 **Incoming upload-UX observations (2026-04-18, from Matt's Shortcut testing):**
 
