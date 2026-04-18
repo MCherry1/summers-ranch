@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ribbon Design Lab v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a227;
+  --gold-deep: #9a7a0f;
+  --gold-light: #f0d874;
+  --gold-shine: #fff2c4;
+  --ink: #2c2416;
+
+  --dod-blue: #1e4a7e;
+  --dod-blue-deep: #0f2d52;
+  --dod-blue-light: #3b6ba5;
+  --dod-blue-shine: #5a8bc4;
+
+  --sod-red: #8b1e1e;
+  --sod-red-deep: #4a0f0f;
+  --sod-red-light: #b03030;
+  --sod-red-shine: #c94848;
+
+  --baby-blue: #9ec5e8;
+  --baby-blue-deep: #6a9dc4;
+  --baby-blue-shine: #c8dff0;
+
+  --baby-pink: #eabecb;
+  --baby-pink-deep: #c48799;
+  --baby-pink-shine: #f5dae3;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #2a2218;
+  color: #fff;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+}
+
+h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 500;
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+p.subtitle {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.9rem;
+  margin-bottom: 2.5rem;
+}
+
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.specimen {
+  background: #3a2f22;
+  border-radius: 6px;
+  padding: 1.25rem;
+}
+
+.specimen-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.specimen-name {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #f5e9cc;
+}
+
+.card-surface {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 4/5;
+  background-image: url('../images/cattle/hereford-profile.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  margin: 0 auto;
+}
+
+/* =====================================================================
+   RIBBON 1: FOR SALE corner (top-right)
+   ===================================================================== */
+.ribbon-corner {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  z-index: 10;
+}
+.ribbon-corner-tr {
+  top: -6px;
+  right: -6px;
+}
+
+.ribbon-corner span {
+  position: absolute;
+  display: block;
+  width: 225px;
+  padding: 10px 0;
+  background: linear-gradient(
+    180deg,
+    var(--gold-shine) 0%,
+    var(--gold-light) 30%,
+    var(--gold) 55%,
+    var(--gold-deep) 100%
+  );
+  box-shadow:
+    0 6px 12px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+  color: var(--ink);
+  font-family: "Lato", sans-serif;
+  font-weight: 900;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.ribbon-corner-tr span {
+  left: -25px;
+  top: 34px;
+  transform: rotate(45deg);
+}
+
+.ribbon-corner-tr::before,
+.ribbon-corner-tr::after {
+  position: absolute;
+  content: '';
+  display: block;
+  border: 5px solid var(--gold-deep);
+  z-index: -1;
+}
+.ribbon-corner-tr::before {
+  top: 0;
+  left: 30px;
+  border-top-color: transparent;
+  border-right-color: transparent;
+}
+.ribbon-corner-tr::after {
+  bottom: 30px;
+  right: 0;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+/* =====================================================================
+   RIBBON 2: HANGING RIBBON
+   56x120 (taller than v1's 52x92 — more elegant proportions).
+   Two-layer gradient: vertical for fabric weight (lighter top, darker
+   bottom); horizontal overlay for side-edge shading. Real ★/✦ glyphs.
+   Larger Cinzel stacked text.
+   ===================================================================== */
+.ribbon-hanging {
+  position: absolute;
+  top: 0;
+  width: 56px;
+  height: 120px;
+  z-index: 10;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 82%,
+    50% 100%,
+    0 82%
+  );
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+}
+.ribbon-hanging-position-1 { left: 14px; }
+.ribbon-hanging-position-2 { left: 82px; }
+
+.ribbon-hanging.dod {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.25) 0%,
+      rgba(0,0,0,0) 15%,
+      rgba(255,255,255,0.15) 50%,
+      rgba(0,0,0,0) 85%,
+      rgba(0,0,0,0.25) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--dod-blue-shine) 0%,
+      var(--dod-blue-light) 20%,
+      var(--dod-blue) 55%,
+      var(--dod-blue-deep) 100%
+    );
+}
+
+.ribbon-hanging.sod {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.25) 0%,
+      rgba(0,0,0,0) 15%,
+      rgba(255,255,255,0.12) 50%,
+      rgba(0,0,0,0) 85%,
+      rgba(0,0,0,0.25) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--sod-red-shine) 0%,
+      var(--sod-red-light) 20%,
+      var(--sod-red) 55%,
+      var(--sod-red-deep) 100%
+    );
+}
+
+.ribbon-hanging.birthday-boy {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.15) 0%,
+      rgba(0,0,0,0) 15%,
+      rgba(255,255,255,0.3) 50%,
+      rgba(0,0,0,0) 85%,
+      rgba(0,0,0,0.15) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--baby-blue-shine) 0%,
+      var(--baby-blue) 40%,
+      var(--baby-blue-deep) 100%
+    );
+}
+
+.ribbon-hanging.birthday-girl {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.15) 0%,
+      rgba(0,0,0,0) 15%,
+      rgba(255,255,255,0.3) 50%,
+      rgba(0,0,0,0) 85%,
+      rgba(0,0,0,0.15) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--baby-pink-shine) 0%,
+      var(--baby-pink) 40%,
+      var(--baby-pink-deep) 100%
+    );
+}
+
+.ribbon-hanging-emblem {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--gold-light);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.5),
+    0 0 4px rgba(255,210,110,0.4);
+  opacity: 0.85;
+}
+
+.ribbon-hanging-text {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: "Cinzel", serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--gold-light);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.6),
+    0 0 3px rgba(255,210,110,0.3);
+}
+.ribbon-hanging-text .letter { display: block; }
+
+.ribbon-hanging.birthday-boy .ribbon-hanging-text,
+.ribbon-hanging.birthday-girl .ribbon-hanging-text {
+  top: 28px;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 700;
+  font-size: 2.1rem;
+  line-height: 1;
+  color: var(--gold-deep);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.6),
+    0 0 4px rgba(154,122,15,0.3);
+}
+
+.ribbon-hanging.birthday-boy .ribbon-hanging-emblem,
+.ribbon-hanging.birthday-girl .ribbon-hanging-emblem {
+  color: var(--gold-deep);
+  opacity: 0.8;
+  font-size: 0.65rem;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.scenarios {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.scenario-caption {
+  font-size: 0.72rem;
+  color: #b8a878;
+  text-align: center;
+  font-style: italic;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Ribbon Design Lab v2</h1>
+<p class="subtitle">Deliberate ribbons — taller proportions, real glyphs, larger Cinzel text</p>
+
+<div class="lab-grid">
+
+  <div class="specimen">
+    <div class="specimen-label">Corner Ribbon</div>
+    <div class="specimen-name">For Sale</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
+      </div>
+      <div class="scenario-caption">Tucked into top-right corner with folded tail</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Hanging Ribbon</div>
+    <div class="specimen-name">Dam of Distinction (DOD)</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+      </div>
+      <div class="scenario-caption">Stacked Cinzel in gold on blue</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Hanging Ribbon</div>
+    <div class="specimen-name">Sire of Distinction (SOD)</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging sod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">S</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+      </div>
+      <div class="scenario-caption">Same shape, red palette</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Birthday — Male</div>
+    <div class="specimen-name">6-year-old bull</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging birthday-boy ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">6</span>
+          </div>
+        </div>
+      </div>
+      <div class="scenario-caption">Baby blue with gold Cormorant number</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Birthday — Female</div>
+    <div class="specimen-name">9-year-old cow</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+      </div>
+      <div class="scenario-caption">Baby pink with gold Cormorant number</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Combined</div>
+    <div class="specimen-name">DOD cow on her birthday</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+      </div>
+      <div class="scenario-caption">Two hanging ribbons, side by side</div>
+    </div>
+  </div>
+
+  <div class="specimen">
+    <div class="specimen-label">Maximum state</div>
+    <div class="specimen-name">DOD · Birthday · For Sale</div>
+    <div class="scenarios">
+      <div class="card-surface">
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span>
+            <span class="letter">O</span>
+            <span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">9</span>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr">
+          <span>For Sale</span>
+        </div>
+      </div>
+      <div class="scenario-caption">Rare but supported</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
