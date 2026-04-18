@@ -1208,6 +1208,39 @@ P3's architecture and auth are resolved (A21-A25). What remains: designing the *
 
 **To be workshopped.**
 
+### P7. Compare view for cross-shopping buyers
+
+Flagged 2026-04-18. Public-side feature for buyers evaluating multiple for-sale animals against each other.
+
+**The scenario:** a buyer browses the herd binder with a specific goal — "I'm looking for a yearling bull with strong maternal pedigree and a calm temperament." They're interested in three or four candidates. Currently, evaluating them means swiping back and forth between card backs, trying to remember which sire belonged to which animal. A compare view collapses this into a single surface where the same attributes from each animal sit next to each other.
+
+**Two separate questions the workshop needs to answer:**
+
+First: **is this actually warranted at Summers Ranch scale?** Marty may have only 3-5 animals for sale at any time. If a buyer's entire candidate pool is the for-sale filter, they don't need a compare tool — they already see everything on two scrolls. The argument for building it anyway: compare becomes useful as the operation grows, and the pattern is low infrastructure cost once the schema supports it. The argument against: every unused feature is UI weight and maintenance burden, and "restraint over expression" is a core principle.
+
+Second: **if we build it, what does it look like on mobile?** The card system is already swipe-heavy (front ↔ back, card ↔ card). A selection gesture (checkbox, long-press, swipe-pin) must not collide with existing interaction vocabulary. The compare surface itself also has a mobile layout problem: columns get narrow fast at 2+ animals on a phone screen. Options include horizontal scroll with a sticky attribute column, a tab-switcher with a persistent highlighted attribute, or capping compare at 2 animals on mobile and 3 on desktop.
+
+**Dimensions to workshop:**
+
+- **Phase placement** — Phase 1, Phase 2, or Phase 3? Ties to scale question above. Could be Phase 2 with Phase 1 schema-level support if close to free.
+- **Selection mechanism** — "Add to compare" button on the card front? Long-press? A dedicated compare-mode toggle in the binder view? Persistent tray showing currently-selected animals?
+- **Selection persistence** — session-only, localStorage, or URL-shareable? A URL-encoded compare (`/compare?animals=840,842,855`) lets a buyer share "these are the ones I like" with a spouse or partner, which is real buyer behavior.
+- **Max animals** — 2? 3? Bounded by screen width on mobile, probably 3 on desktop.
+- **Attributes shown** — core identity (tag/name/sex/breed/age), pedigree (sire/dam), status/price/availability, registration number, performance data if disclosed. Photos: primary only, or a small thumbnail strip? Should attributes be fixed in order, or reorderable by the buyer to surface what they care about?
+- **Empty / partial data handling** — "better empty than wrong" means absent attributes are hidden on cards. In compare, asymmetric data is visible by definition (animal A has performance data, animal B doesn't). The missing cell needs honest treatment (explicit "not disclosed" label? blank? inline note?) — different from card-level hiding because the comparison itself is the point.
+- **Entry points** — compare accessible only from within the for-sale filter, or from the full herd binder? Admins may want to compare any two animals for their own planning (culling decisions, breeding pairings). Different modes on the same surface or entirely separate tools?
+- **Integration with inquire flow** — from the compare surface, does "Ask About These Animals" let a buyer inquire about multiple at once? That's a meaningful workflow affordance if compare is meant to support actual decision-making.
+
+**Relationship to existing spec:**
+
+- Public surface, no auth required
+- New URL pattern, probably `/compare?animals=...` with URL as source of truth
+- Reuses card back section vocabulary (same attribute groupings, same "better empty than wrong" tone)
+- May interact with Section 6 photo selection (compare uses a single still photo per animal, not the cycling 5s carousel)
+- Touches §13 inquiry flow if multi-animal inquiries supported
+
+**To be workshopped. Lower urgency than P4-P6 — likely Phase 2 material but worth locking the Phase 1 schema implications early so attribute selection doesn't require a backfill later.**
+
 ---
 
 ## IP plan (light-touch, per 2026-04-17 discussion)
@@ -1224,9 +1257,9 @@ Nothing beyond this is recommended until a specific scenario (someone reaches ou
 
 ## How this file gets resolved
 
-When all pending workshops (P1-P4) are locked and the amendments accumulated here reach a stable state:
+When all pending workshops (P4-P7) are locked and the amendments accumulated here reach a stable state:
 
-1. I fold every amendment (A1-A9 plus whatever emerges from P1-P4) directly into `CARD-REDESIGN-SPEC.md` as edits to the relevant sections.
+1. I fold every amendment (A1-A27 plus whatever emerges from P4-P7) directly into `CARD-REDESIGN-SPEC.md` as edits to the relevant sections.
 2. This amendments file gets deleted, or reduced to a single historical note saying "see git history for the amendment-consolidation commit."
 3. The main spec file becomes the single source of truth again.
 
