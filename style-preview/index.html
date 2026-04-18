@@ -328,31 +328,50 @@
 
   .ribbon-hanging.birthday-boy .ribbon-hanging-text,
   .ribbon-hanging.birthday-girl .ribbon-hanging-text {
-    top: 22px;
+    /* Override the shared ribbon-hanging-text positioning. Birthday ribbons
+       use a two-column layout (HAPPY on left, BIRTHDAY on right), each
+       column vertically centered independently within the text zone. */
+    top: 9px;
+    bottom: 22px; /* leave room for the swallowtail clip */
     left: 0;
     right: 0;
-    font-family: "Cormorant Garamond", serif;
-    font-style: italic;
-    font-weight: 600;
-    font-size: 0.56rem;
-    line-height: 1.25;
-    letter-spacing: -0.005em;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    font-family: "Cinzel", serif;
+    font-weight: 700;
+    /* Intentionally below the project's typical 12px/0.75rem readability
+       floor. Text is below the usual design-guideline floor because the
+       ribbon fires once per year and its visual form — a pennant in baby
+       blue or baby pink — communicates "birthday" regardless of whether
+       the text is legible at a glance. Users who zoom can confirm. */
+    font-size: 0.42rem;
+    letter-spacing: 0.04em;
+    line-height: 1.08;
     color: var(--ribbon-gold-deep);
     text-shadow:
       0 1px 0 rgba(255,255,255,0.6),
       0 0 4px rgba(154,122,15,0.3);
   }
-  .ribbon-hanging.birthday-boy .ribbon-hanging-text .letter,
-  .ribbon-hanging.birthday-girl .ribbon-hanging-text .letter {
+  .ribbon-hanging.birthday-boy .ribbon-hanging-text .column,
+  .ribbon-hanging.birthday-girl .ribbon-hanging-text .column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .ribbon-hanging.birthday-boy .ribbon-hanging-text .column span,
+  .ribbon-hanging.birthday-girl .ribbon-hanging-text .column span {
     display: block;
   }
 
   .ribbon-hanging.birthday-boy .ribbon-hanging-emblem,
   .ribbon-hanging.birthday-girl .ribbon-hanging-emblem {
-    color: var(--ribbon-gold-deep);
-    opacity: 0.8;
-    font-size: 0.48rem;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+    /* Hidden on birthday — text now fills the ribbon. The two-column
+       HAPPY/BIRTHDAY layout leaves no room for a decorative emblem,
+       and the pastel color + text content together communicate the
+       birthday meaning without it. */
+    display: none;
   }
 
   /* =========================================================
@@ -1654,8 +1673,23 @@
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
         <div class="ribbon-corner ribbon-corner-tr">
@@ -1760,8 +1794,23 @@
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
         <div class="ribbon-corner ribbon-corner-tr">
@@ -1867,8 +1916,23 @@
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
         <div class="ribbon-corner ribbon-corner-tr">
@@ -1970,8 +2034,23 @@
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
         <div class="ribbon-corner ribbon-corner-tr">

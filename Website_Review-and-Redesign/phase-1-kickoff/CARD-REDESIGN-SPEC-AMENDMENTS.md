@@ -1067,6 +1067,46 @@ Not in Phase 1 because a half-broken dark mode (only the public side themed, adm
 
 ---
 
+### A28. Birthday ribbon says "Happy Birthday" not the age number
+
+**Supersedes:** earlier ribbon spec that showed the age as a large gold numeral on the birthday ribbon (e.g., "9" centered in Cormorant Garamond).
+
+**What changes:**
+
+The birthday ribbon's text content is now **"HAPPY" and "BIRTHDAY" in two vertical columns**, each column with one letter per line, each independently vertically centered within the ribbon's text zone. The pennant dimensions (34×90) remain unchanged.
+
+**Reasoning:**
+
+Marty saw the first version of the ribbon (showing "9" for Sweetheart's age in Cormorant Garamond 1.4rem) and said he didn't understand what the 9 meant. The ribbon was failing its primary job — communicating "this animal is celebrating a birthday" — because the meaning depended on context (the pastel color + ribbon form) that wasn't obvious to a first-time viewer. The age is already displayed in the card body's Age field, so the ribbon doesn't need to carry that data.
+
+**Design exception noted:**
+
+The text at 0.42rem Cinzel is **below the project's typical 12px / 0.75rem readability floor**. This exception is deliberate and authorized by Matt: the birthday ribbon fires at most once per year per animal, its pennant form plus pastel color (baby blue for males, baby pink for females) already signals "celebration," and the text is ornamental confirmation rather than primary information. Users who need to verify can zoom.
+
+**Structure:**
+
+```html
+<div class="ribbon-hanging birthday-girl ...">
+  <!-- emblem (✦) is hidden via display:none on birthday ribbons -->
+  <div class="ribbon-hanging-text">
+    <div class="column">
+      <span>H</span><span>A</span><span>P</span><span>P</span><span>Y</span>
+    </div>
+    <div class="column">
+      <span>B</span><span>I</span><span>R</span><span>T</span><span>H</span><span>D</span><span>A</span><span>Y</span>
+    </div>
+  </div>
+</div>
+```
+
+The two `.column` divs use flexbox to vertically center their contents independently, so HAPPY (5 letters, shorter) appears centered in its half while BIRTHDAY (8 letters, taller) fills more of its column's height. The outer `.ribbon-hanging-text` uses `display: flex` with `justify-content: space-around` to lay the two columns side-by-side.
+
+**Emblem change:**
+
+The ✦ sparkle emblem previously shown at the top of birthday ribbons is now `display: none` — the two-column text layout fills the ribbon top-to-bottom, and the pastel coloring plus text content together communicate the birthday meaning without a decorative emblem.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.

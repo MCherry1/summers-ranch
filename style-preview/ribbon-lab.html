@@ -303,27 +303,38 @@ p.subtitle {
 
 .ribbon-hanging.birthday-boy .ribbon-hanging-text,
 .ribbon-hanging.birthday-girl .ribbon-hanging-text {
-  top: 22px;
+  top: 9px;
+  bottom: 22px;
   left: 0;
   right: 0;
-  font-family: "Cormorant Garamond", serif;
-  font-style: italic;
-  font-weight: 600;
-  font-size: 0.56rem;
-  line-height: 1.25;
-  letter-spacing: -0.005em;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 0.42rem;
+  letter-spacing: 0.04em;
+  line-height: 1.08;
   color: var(--gold-deep);
   text-shadow:
     0 1px 0 rgba(255,255,255,0.6),
     0 0 4px rgba(154,122,15,0.3);
 }
+.ribbon-hanging.birthday-boy .ribbon-hanging-text .column,
+.ribbon-hanging.birthday-girl .ribbon-hanging-text .column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ribbon-hanging.birthday-boy .ribbon-hanging-text .column span,
+.ribbon-hanging.birthday-girl .ribbon-hanging-text .column span {
+  display: block;
+}
 
 .ribbon-hanging.birthday-boy .ribbon-hanging-emblem,
 .ribbon-hanging.birthday-girl .ribbon-hanging-emblem {
-  color: var(--gold-deep);
-  opacity: 0.8;
-  font-size: 0.48rem;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  display: none;
 }
 
 .scenarios {
@@ -406,8 +417,23 @@ p.subtitle {
         <div class="ribbon-hanging birthday-boy ribbon-hanging-position-1">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
       </div>
@@ -423,8 +449,23 @@ p.subtitle {
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-1">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
       </div>
@@ -448,8 +489,23 @@ p.subtitle {
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
       </div>
@@ -473,8 +529,23 @@ p.subtitle {
         <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
           <div class="ribbon-hanging-emblem">✦</div>
           <div class="ribbon-hanging-text">
-            <span class="letter">Happy</span>
-            <span class="letter">Birthday</span>
+            <div class="column">
+              <span>H</span>
+              <span>A</span>
+              <span>P</span>
+              <span>P</span>
+              <span>Y</span>
+            </div>
+            <div class="column">
+              <span>B</span>
+              <span>I</span>
+              <span>R</span>
+              <span>T</span>
+              <span>H</span>
+              <span>D</span>
+              <span>A</span>
+              <span>Y</span>
+            </div>
           </div>
         </div>
         <div class="ribbon-corner ribbon-corner-tr">
