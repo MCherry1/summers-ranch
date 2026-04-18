@@ -41,17 +41,17 @@ These questions shape how prominent/lightweight various features should be, how 
 Specific probes:
 - "Do you keep a calendar or journal of ranch activities now? If so, in what form — paper, phone notes, nothing?"
 - "Would you find it useful to log when you fed, watered, moved pastures, medicated an animal?"
-- "Would you want others (Perry, Matt, a future hired hand) to see those logs?"
+- "Would you want others (your son, a future hired hand) to see those logs?"
 
 **If you can't ask:** default to NO ranch activity logging in Phase 1. Revisit in Phase 2 if it emerges as a real need.
 
 ### A3. Who else actually uses the ranch physically?
 
 **Who:** Marty
-**Why it matters:** Matt mentioned Perry (Marty's son) sometimes fills in — hay, water — when Marty's traveling. If there are regular helpers, they might benefit from admin accounts or logging. Currently the spec only plans for Matt/Marty/Roianne.
+**Why it matters:** Matt mentioned Marty's son sometimes fills in — hay, water — when Marty's traveling. If there are regular helpers, they might benefit from admin accounts or logging. Currently the spec only plans for Matt/Marty/Roianne.
 
 Specific probes:
-- "Who handles the cattle when you're away — Perry, anyone else, hired hands, neighbors watching the place?"
+- "Who handles the cattle when you're away — your son, anyone else, hired hands, neighbors watching the place?"
 - "Do they know which animals need what? Would a simple phone-friendly checklist be useful for them when you're not there?"
 
 **If you can't ask:** default to admin being just Matt/Marty/Roianne. Helper-mode features can be added later.
@@ -189,7 +189,7 @@ Specific probes:
 Specific probes:
 - "Where do you see the ranch in five years — same size, growing, different mix?"
 - "If you had time, would you do more — more animals, more registration, more shows?"
-- "Would the ranch become Perry's someday, or someone else's? Is the site building something that outlasts this generation?"
+- "Would the ranch become your son's someday, or someone else's? Is the site building something that outlasts this generation?"
 
 **If you can't ask:** design for the current scale with modular additions; don't over-engineer for hypothetical growth.
 
@@ -226,35 +226,9 @@ Specific probes:
 
 ---
 
-## Section F: Quality-of-life / small things
+## Section F: One small question
 
-A handful of smaller assumptions worth confirming.
-
-### F1. Does Marty use Face ID?
-
-**Who:** Marty
-**Why it matters:** The auth design (passkeys with Face ID) depends on his phone having Face ID enabled and his being comfortable with it. If he never set it up or actively disabled it, the auth UX plan changes.
-**If you can't ask:** safe assumption given he has an iPhone 12, but confirming removes one surprise.
-
-### F2. Does Marty know what a "passkey" is?
-
-**Who:** Marty
-**Why it matters:** Not critical — the first-time setup walks him through it — but knowing his baseline comfort helps calibrate how much hand-holding the setup UI needs.
-**If you can't ask:** assume no technical familiarity; design explanations for a first-time user.
-
-### F3. Does Marty want the site bookmarked on his home screen?
-
-**Who:** Marty
-**Why it matters:** If the site gets "home screen" treatment, we might add a PWA manifest so it gets an app-like icon and can open without Safari chrome. That's a small additional scope item worth flagging if valued.
-**If you can't ask:** assume yes; add basic PWA manifest during Phase 1 regardless (low cost).
-
-### F4. Would Marty use the site at night with dim lighting?
-
-**Who:** Marty
-**Why it matters:** Dark mode is a real question for ranch-use. If he's checking the site in bed or after sundown outside, dark mode would be useful. If he's always at a desk or in daylight, dark mode is extra work for little gain.
-**If you can't ask:** default to no dark mode in Phase 1; add in Phase 2 if desired.
-
-### F5. What does Marty call his animals — by tag number, by name, by something else?
+### F1. What does Marty call his animals — by tag number, by name, by something else?
 
 **Who:** Marty (and Roianne — they may differ)
 **Why it matters:** The spec uses "tag + name" conventionally, with name shown prominently. If Marty actually refers to animals by tag number and names are rarely used, the card front might de-emphasize name. Conversely if every animal has a name, we should nudge admin to always have one.

@@ -954,6 +954,119 @@ These get added as boolean fields in the `notifications` object when the corresp
 
 ---
 
+### A26. Progressive Web App manifest with ranch brand as home screen icon
+
+**Supersedes:** New addition, no prior coverage in main spec.
+
+**What changes:**
+
+The site ships with a PWA (Progressive Web App) manifest that enables users to install it to their device home screen. On iOS, tapping the Share sheet → "Add to Home Screen" creates a native-feeling app icon that opens the site in a standalone frame without Safari chrome. On Android, browsers prompt users to install after repeated visits.
+
+**Icon requirements:**
+
+The home screen icon uses **the actual Summers Ranch brand** — the physical cattle brand the ranch uses, which already exists on printed materials (shirts, equipment) and is recognizably theirs. Matt will provide a clean high-resolution vector or photograph of the brand for the coding agent to use.
+
+Required icon sizes (standard Apple + PWA set):
+- 180×180 (iOS home screen, high-density)
+- 192×192 (PWA baseline)
+- 512×512 (PWA large, splash screen)
+- 1024×1024 (iOS App Store / large display, for future-proofing)
+- `favicon.ico` at 32×32 and 16×16 for browser tabs
+
+All icons rendered on a deliberate background (cream or deep-ink depending on final palette selection from style preview) with sufficient padding around the brand mark so it doesn't touch the edges when iOS applies its rounded-corner mask.
+
+**Manifest fields:**
+
+```json
+{
+  "name": "Summers Ranch",
+  "short_name": "Summers Ranch",
+  "description": "Registered Herefords — Sutter Creek, California",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "[primary-bg from chosen palette]",
+  "theme_color": "[accent from chosen palette]",
+  "icons": [ ... per sizes above ... ],
+  "orientation": "portrait-primary"
+}
+```
+
+**Splash screen (iOS-specific):**
+
+iOS generates a splash screen from the icon + background color when the user launches the PWA from home screen. The splash matches the chosen palette's primary background. A brief ranch name fade-in on cold launch is optional polish — coding agent's call based on complexity.
+
+**What this NOT spec:**
+
+- No iOS widgets (those require a native app, not a PWA)
+- No push notifications in the home screen app (requires a native app on iOS until 2024+ and still finicky)
+- No offline mode in Phase 1 (cached assets are fine, but no full offline herd browsing)
+
+Phase 2 may add limited offline support via service workers if use patterns suggest value.
+
+**Reasoning:**
+
+A home-screen icon with the actual ranch brand turns the site into a feels-like-his-app moment. Marty will see his own brand on his phone home screen. For a gift, this is the kind of small, meaningful personalization that pays emotional dividends disproportionate to the implementation cost (~half a day of coding agent work plus asset preparation).
+
+---
+
+### A27. Dark mode support — Phase 2 priority, Phase 1 foundations
+
+**Supersedes:** Section 17.3 (Design tokens — structural requirement) is extended.
+
+**What changes:**
+
+Dark mode is a genuine Phase 2 priority, not an indefinite deferral. Phase 1 lays the groundwork so Phase 2 implementation is a token-file addition, not a components rewrite.
+
+**Phase 1 requirements:**
+
+- Design tokens in `src/styles/tokens.css` use semantic names (`--color-bg`, `--color-ink`, `--color-muted`, `--color-paper`, `--color-accent`) rather than literal color values at usage sites
+- Any hardcoded color in a component file is a bug
+- Components reference tokens exclusively; swapping tokens produces a complete theme change
+- No Phase 1 dark-mode UI (no toggle, no media query handling yet)
+- `prefers-color-scheme: dark` media query NOT respected in Phase 1 (would produce a broken dark-mode preview with only the public palette swapped; worse than not trying)
+
+**Phase 2 deliverables:**
+
+- Dark-mode palette designed in parallel with the final Phase 1 palette review with Marty and Roianne (both selected together)
+- `prefers-color-scheme: dark` media query in tokens.css swaps the full palette
+- Optional explicit toggle in admin settings (override system preference)
+- All cards, forms, admin surfaces, images (consider CSS filter for image tint adjustment) tested in both modes
+- Inline-edit highlights, gold nudge pulses, ribbon colors all retuned for dark context
+
+**Reasoning:**
+
+Dark mode has become a user expectation, especially for admin workflows that may happen evenings. Respecting `prefers-color-scheme` is good web citizenship. Matt uses dark mode on his personal devices and would use the admin panel in dark contexts. Roianne's Windows workflow likely honors system dark mode as well.
+
+Not in Phase 1 because a half-broken dark mode (only the public side themed, admin white) is worse than none. Full dark-mode treatment is Phase 2 workshop material — deserves its own palette design round, not rushed.
+
+**Tokens to introduce for Phase 1 (prepares for Phase 2):**
+
+```css
+:root {
+  /* Light mode — primary palette from style selection */
+  --color-bg: /* chosen */;
+  --color-paper: /* chosen */;
+  --color-ink: /* chosen */;
+  --color-muted: /* chosen */;
+  --color-accent: /* chosen */;
+  --color-ribbon-sale: /* gold */;
+  --color-ribbon-distinction: /* DOD blue / SOD red */;
+  --color-ribbon-birthday-bull: /* blue */;
+  --color-ribbon-birthday-cow: /* pink */;
+  
+  /* Semantic tokens that may or may not change in dark mode */
+  --card-shadow: /* light mode shadow */;
+  --overlay-chrome-bg: /* semi-transparent light */;
+  /* ... */
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Phase 2 fills this in */
+}
+```
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
