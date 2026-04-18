@@ -906,27 +906,48 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-TESTED-1.jpg"
+        "images/cattle/tag-TESTED-1.jpg",
+        "images/cattle/tag-TESTED-2.jpg",
+        "images/cattle/tag-TESTED-3.jpg",
+        "images/cattle/tag-TESTED-4.jpg"
       ],
       "photo_dates": [
-        "2025-03-15"
+        "2025-03-15",
+        "2026-01-30",
+        "2025-12-08",
+        "2025-12-17"
       ],
       "photo_types": [
+        "",
+        "",
+        "",
         ""
       ],
       "photo_focus_x": [
+        50,
+        50,
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
+        50,
+        50,
         50
       ],
       "photo_boxes": [
+        null,
+        null,
+        null,
         null
       ],
       "photo_quality": [
+        "",
+        "",
+        "",
         ""
       ],
-      "primary_photo": "images/cattle/tag-TESTED-1.jpg"
+      "primary_photo": "images/cattle/tag-TESTED-2.jpg"
     }
   ],
   "sires": [],
@@ -934,7 +955,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-18 14:58 UTC",
+    "last_updated": "2026-04-18 15:00 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
