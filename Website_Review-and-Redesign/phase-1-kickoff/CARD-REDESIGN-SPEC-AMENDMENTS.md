@@ -1132,6 +1132,52 @@ The real problem: Marty visits the ranch, takes several photos of a calf. A few 
 
 **To be workshopped. Policy decisions benefit from being locked during Phase 1 so ingest captures the right fields from day one.**
 
+#### P5 appendix: industry-prescribed cattle photography criteria (research notes)
+
+Research conducted during P5 framing confirms that cattle seedstock photography has **real, published, industry-specific guidelines** about what makes a "good" photo for evaluation purposes. Sources: Beef Central (Australian industry), AgWeb, Progressive Cattle, Drovers, CattleToday.com. The guidelines are consistent across sources and prescriptive.
+
+**Positional rules:**
+- Camera positioned directly off the point of the shoulder (forward = animal looks shoulder-heavy; back = hindquarter under-emphasized)
+- Camera height ~1.5m, slightly crouched shooting position
+- 90° angle to animal's side spine, animal's head facing forward, ears forward, legs square
+
+**Environmental rules:**
+- Ground slope: slightly uphill produces flatter backline; downhill produces "swampy" back
+- Surface: grass ~4 inches tall, straw bedding, or cornstalks; NOT bare concrete/dirt/mud
+- Lighting: early-morning or late-afternoon light; avoid 11am-2pm harsh overhead summer sun; flash for dark cattle even in sunlight
+- Background: simple, uncluttered; tan windscreen, clean panels, or clean pasture
+
+**Subject rules:**
+- Animal cleaned of mud, manure, debris
+- Head up and forward, ears forward
+- All four legs visible, front square under, rear nearest camera set back enough
+- Fill most of frame with the animal (but leave room for silhouette context)
+
+**Implication for P5 scoring model:**
+
+Quality score should split into **generic photographic quality** (sharpness, exposure, lighting quality, composition, background cleanliness) and **cattle-specific conformation presentation** (axis angle, shoulder-point alignment, camera height, head/ear position, leg visibility, full-body visibility, ground/footing quality, animal cleanliness).
+
+Draft weighting: generic 40%, cattle-specific 60%. The cattle-specific category dominates because a beautifully-lit 30°-off-axis shot is less useful for evaluation than a modestly-lit dead-perpendicular shot. Subject to workshop refinement.
+
+**Shot-type sub-weights:**
+
+- **Side profile** heavily weights axis angle, shoulder-point alignment, leg visibility, full-body visibility
+- **Head shots** heavily weight head/ear position; relax full-body and leg requirements
+- **Three-quarter** uses ~45° target axis; same general framework with different target
+
+**Shot-type auto-classification:**
+
+The classifier should detect the actual shot type of each photo based on its angle, not rely on Marty's intent. A "failed side profile" at 30° off-axis should be reclassified as a three-quarter shot and compete in that bucket. Marty doesn't need to intentionally compose for each category — classifier sorts what he uploads.
+
+**Implementation model for P5 workshop:**
+
+- Phase 1: MediaAsset schema includes `qualityScore`, `qualityScoreComponents` (breakdown by criterion), `detectedShotType` (may differ from `assignedShotType` if manually overridden), `lastEvaluatedAt`
+- Phase 2: classifier wired up. Likely starts with a general vision model (Claude vision API or similar) with structured prompt encoding the criteria above; may fine-tune a specific cattle model later if accuracy warrants
+- Phase 2: Matt-override still available via Prefer flag (overrides classifier)
+- Phase 2: confidence-based fallback — low-confidence criteria contribute 0 weight rather than neutral score (so ambiguous photos don't artificially inflate or deflate scores)
+
+**To be workshopped. When we do, the specific decisions to lock are weighting ratios, shot-type angle boundaries, minimum-viable-score threshold, classifier infrastructure choice.**
+
 ### P6. Admin surface contents (continuation of P3)
 
 P3's architecture and auth are resolved (A21-A25). What remains: designing the *contents* of each admin surface beyond the inquiries inbox.
