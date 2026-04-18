@@ -1092,6 +1092,30 @@ Matt has flagged for workshop. Two distinct dimensions:
 
 **To be workshopped. Incoming is more complex and more Phase 2; outgoing is simpler and may touch Phase 1.**
 
+### P5. Photo burst discrimination and growth-profile curation
+
+Flagged 2026-04-17 during ranch visit prep. When Marty uploads multiple photos of the same animal within a short period (e.g., a photo burst of 4-8 shots captured the same day, or multiple upload sessions within a week), the system needs a policy for:
+
+- **Best-photo selection** — given N photos of the same animal in a narrow time bucket, how does the system (or the AI classifier, or the admin) pick which one to display? Current spec picks by canonical shot type (side / head / three-quarter) but says nothing about when multiple photos of the same type exist close in time.
+- **Growth-profile minimum separation** — the card's Timeline section shows photos chronologically to document the animal's growth. How far apart should two consecutive Timeline entries be? Should this scale with animal age (newborn: daily photos are meaningful; mature cow: yearly photos are plenty)?
+- **Rejection without deletion** — photos that lost the "best of the bunch" competition shouldn't necessarily be deleted. They may be valid alternates, evidence of a specific event, or rehabilitatable later. What's the data model for "not currently displayed but preserved"? Soft-hide? Excluded-from-default-selection flag? How does this interact with the existing `forceInclude` / `forceExclude` flags?
+- **Upload clustering awareness** — when the system detects a burst (multiple uploads within minutes or hours), should it prompt the admin to pick a favorite proactively? Or silently choose and let admin correct via Prefer-flag if wrong? Low-friction workflow matters here because Marty is the uploader.
+
+This affects the MediaAsset schema, the card photo-selection logic (Section 3.5), the Timeline section (Section 4.2), and the admin Media tab (Phase 2+).
+
+**To be workshopped. Phase 2+ in implementation but the policy decisions should be locked during Phase 1 so the data model captures the right fields at ingest.**
+
+### P6. Admin surface contents (continuation of P3)
+
+P3's architecture and auth are resolved (A21-A25). What remains: designing the *contents* of each admin surface beyond the inquiries inbox.
+
+- **Dashboard (`/admin/`)** — landing view after login. Contents TBD. Possible collapse into admin herd view with "Needs Attention" sort.
+- **Media (`/admin/media/`)** — photo library, Prefer/Hide controls, upload, Gallery Wall candidate view. Phase 2+ but rough sketch during admin workshop.
+- **Calendar (`/admin/calendar/`)** — breeding/calving/events log. Phase 2+.
+- **Settings (`/admin/settings/`)** — personal (notification prefs, passkey devices, phone), user management (owner-only), site config, recovery.
+
+**To be workshopped.**
+
 ---
 
 ## IP plan (light-touch, per 2026-04-17 discussion)
