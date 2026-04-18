@@ -1120,6 +1120,34 @@ The ✦ sparkle emblem previously shown at the top of birthday ribbons is now `d
 
 ---
 
+### A29. Unified ribbon-system treatment: vertical centering + pixel units for all ribbon text
+
+**Supersedes:** the DOD/SOD hanging ribbon's original `top: 16px` positioning (top-aligned) and the various rem-based font-sizes on `.ribbon-corner span`, `.ribbon-hanging-emblem`, `.ribbon-hanging-text` generic.
+
+**What changes:**
+
+Two parallel improvements to the whole ribbon system for consistency with the birthday ribbon (A28):
+
+1. **DOD/SOD hanging text is now vertically centered** within its text zone (between the emblem at the top and the swallowtail clip point at the bottom). Previously, D-O-D sat top-aligned below the emblem, which looked correct with 3 letters but wouldn't scale well to 2-letter or 4-letter abbreviations. Now any letter count will sit centered. The implementation uses flexbox: `top: 18px; bottom: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;`.
+
+2. **All ribbon text now uses px, not rem.** The ribbons are fixed-size graphic components and must render identically regardless of the user's iOS/browser accessibility text scaling. Values:
+   - For Sale corner: `0.62rem → 10px`
+   - Hanging emblem (★): `0.52rem → 8px`
+   - Hanging text (D-O-D / S-O-D): `0.76rem → 12px`
+   - Birthday text (HAPPY/BIRTHDAY): `0.42rem → 7px` (was already px per A28)
+
+**Side effect:** the birthday override now explicitly sets `flex-direction: row` because the generic `.ribbon-hanging-text` now uses `flex-direction: column` (for DOD's vertical letter stacking). Without the explicit override, birthday would inherit `column` and stack HAPPY above BIRTHDAY instead of side-by-side.
+
+**Reasoning:**
+
+A28 established `px` as the right unit for the birthday ribbon's fixed-size graphic nature. The same reasoning applies to every other ribbon component — they're all fixed-size graphic chrome, not responsive text. Consistency here prevents a future user-text-scale complaint from affecting any one ribbon type. The vertical centering on DOD is similarly a consistency improvement: matches how birthday centers its text within the ribbon's text zone.
+
+**Body text unaffected.**
+
+This change applies ONLY to the ribbon system (`.ribbon-corner`, `.ribbon-hanging-*`). Card body text (animal name, tag, stat labels, stat values) continues to use rem so accessibility text scaling still works for content the user actually reads.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.

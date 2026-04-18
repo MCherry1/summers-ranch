@@ -221,7 +221,11 @@
     color: var(--ribbon-ink);
     font-family: "Lato", sans-serif;
     font-weight: 900;
-    font-size: 0.62rem;
+    /* Units: px not rem. See the birthday ribbon's text block for the
+       full rationale. Short version: the ribbon is a fixed-size graphic
+       component (110x110 wrapper, 170px inner span), so locking text
+       sizing in px prevents user text scaling from breaking the layout. */
+    font-size: 10px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     text-align: center;
@@ -299,7 +303,8 @@
     left: 0;
     right: 0;
     text-align: center;
-    font-size: 0.52rem;
+    /* Units: px for text-scaling durability (see birthday ribbon block). */
+    font-size: 8px;
     line-height: 1;
     color: var(--ribbon-gold-light);
     text-shadow:
@@ -309,14 +314,27 @@
   }
 
   .ribbon-hanging-text {
+    /* DOD/SOD text zone: starts below the emblem's bottom edge (~13px:
+       emblem top 5 + emblem height ~8) with 5px breathing, ends above
+       the swallowtail clip point (at 82% of 90 = 74px, so 16px from
+       bottom = ample clearance). Flexbox centers the stacked letters
+       vertically within this zone, so shorter words (2 letters, e.g.
+       hypothetical "OK") still sit centered rather than top-aligned.
+
+       Units: px for text-scaling durability (see birthday ribbon block). */
     position: absolute;
-    top: 16px;
+    top: 18px;
+    bottom: 16px;
     left: 0;
     right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     font-family: "Cinzel", serif;
     font-weight: 800;
-    font-size: 0.76rem;
+    font-size: 12px;
     line-height: 1.15;
     letter-spacing: 0.04em;
     color: var(--ribbon-gold-light);
@@ -346,6 +364,7 @@
     left: 0;
     right: 0;
     display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 8px;
