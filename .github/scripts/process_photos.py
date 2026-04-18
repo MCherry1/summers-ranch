@@ -77,12 +77,17 @@ VIEW_TYPE_PRIORITY = {
 }
 VALID_VIEW_TYPES = set(VIEW_TYPE_PRIORITY.keys())
 
-# Max width for processed photos
-MAX_WIDTH = 1200
+# Max width for processed photos. 2400px is the HiDPI sweet spot:
+# - A full 4032x3024 iPhone shot becomes ~2400x1800 at JPEG q82 (~400-600KB)
+# - Looks crisp on 2K/4K monitors and retina phones
+# - Small enough to be bandwidth-friendly for mobile users
+# - Responsive images (srcset) can still serve smaller variants to low-DPI screens
+MAX_WIDTH = 2400
 JPEG_QUALITY = 82
 
-# Size threshold — skip files already under 300KB (likely already processed)
-SIZE_THRESHOLD = 300_000
+# Size threshold — skip files already under 500KB (likely already processed).
+# Was 300KB when MAX_WIDTH was 1200; bumped proportionally for 2400.
+SIZE_THRESHOLD = 500_000
 
 
 def file_hash(filepath):
@@ -180,6 +185,56 @@ def build_existing_hashes():
             if photo.suffix.lower() in (".jpg", ".jpeg", ".png") and photo.name != ".gitkeep":
                 hashes.add(file_hash(photo))
     return hashes
+
+
+def is_heic_file(filepath):
+    """
+    Detect HEIC by file content, not extension. iOS shares HEIC images with
+    .jpg extensions when sent through the Shortcut / share-sheet pipeline
+    without an explicit "Convert Image" step, so extension alone is unreliable.
+
+    Returns True if the file is HEIC/HEIF, False otherwise.
+    """
+    try:
+        result = subprocess.run(
+            ["file", "--brief", str(filepath)],
+            capture_output=True, text=True, timeout=5,
+        )
+        output = (result.stdout or "").lower()
+        # `file` reports HEIC as "ISO Media, HEIF Image ..." or similar
+        return "heif" in output or "heic" in output
+    except Exception:
+        return False
+
+
+def convert_heic_to_jpeg(filepath):
+    """
+    Convert a HEIC file in-place to a JPEG. Uses heif-convert (from
+    libheif-examples, installed in the workflow). Preserves the original
+    filename — only the content changes.
+
+    Returns True on success, False on failure.
+    """
+    try:
+        # heif-convert writes to a separate file; we then replace the original.
+        # -q 95 keeps near-lossless quality for the intermediate step;
+        # strip_and_resize() will re-encode at JPEG_QUALITY for the final file.
+        tmp_jpeg = filepath.with_suffix(".converted.jpg")
+        subprocess.run(
+            ["heif-convert", "-q", "95", str(filepath), str(tmp_jpeg)],
+            check=True, capture_output=True, timeout=60,
+        )
+        # Replace the original HEIC bytes with the JPEG bytes, keeping
+        # the same filename/path so downstream logic doesn't need to care.
+        tmp_jpeg.rename(filepath)
+        return True
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode()[:300] if e.stderr else str(e)
+        print(f"  ERROR converting HEIC {filepath}: {stderr}")
+        return False
+    except Exception as e:
+        print(f"  ERROR converting HEIC {filepath}: {e}")
+        return False
 
 
 def strip_and_resize(filepath, max_width=MAX_WIDTH, quality=JPEG_QUALITY):
@@ -643,7 +698,7 @@ def process_inbox():
         print("No inbox directory found, nothing to process.")
         return
 
-    photos = list(INBOX.glob("*.jpg")) + list(INBOX.glob("*.jpeg")) + list(INBOX.glob("*.png"))
+    photos = list(INBOX.glob("*.jpg")) + list(INBOX.glob("*.jpeg")) + list(INBOX.glob("*.png")) + list(INBOX.glob("*.heic")) + list(INBOX.glob("*.HEIC"))
     # Also catch files with no extension (broken uploads)
     for f in INBOX.iterdir():
         if f.name == '.gitkeep' or f in photos:
@@ -737,6 +792,16 @@ def process_inbox():
             captured_date = extract_iso_date(photo.name)
             if captured_date:
                 print(f"  Filename date: {captured_date}")
+
+        # Step 0: HEIC preconversion. iOS Shortcuts often upload HEIC with a
+        # .jpg extension (or an actual .heic extension). Detect by content
+        # and convert to JPEG before the main resize step, since ImageMagick
+        # on stock Ubuntu may not have libheif delegate support built in.
+        if is_heic_file(photo):
+            print(f"  HEIC detected — converting to JPEG before resize")
+            if not convert_heic_to_jpeg(photo):
+                print(f"  SKIPPED (HEIC conversion failed)")
+                continue
 
         # Step 1: Resize and strip EXIF
         if not strip_and_resize(photo):
