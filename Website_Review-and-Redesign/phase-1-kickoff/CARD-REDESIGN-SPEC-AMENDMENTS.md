@@ -1099,11 +1099,20 @@ The text at 0.42rem Cinzel is **below the project's typical 12px / 0.75rem reada
 </div>
 ```
 
-The two `.column` divs use flexbox to vertically center their contents independently, so HAPPY (5 letters, shorter) appears centered in its half while BIRTHDAY (8 letters, taller) fills more of its column's height. The outer `.ribbon-hanging-text` uses `display: flex` with `justify-content: center` and a small `gap: 3px` between columns — the two words sit as a tight pair in the center of the ribbon with breathing room on the outer edges.
+The two `.column` divs use flexbox to vertically center their contents independently, so HAPPY (5 letters, shorter) appears centered in its half while BIRTHDAY (8 letters, taller) fills more of its column's height. The outer `.ribbon-hanging-text` uses `display: flex` with `justify-content: center` and `gap: 8px` between columns — the two words sit as a tight pair in the center of the ribbon with breathing room on the outer edges, tight enough to read as a single phrase but loose enough that the length difference between HAPPY and BIRTHDAY doesn't feel jarring.
 
-**Spacing refinement note:**
+**Units: px, not rem.**
 
-An earlier version used `justify-content: space-around` which gave half-gaps at the edges and a full gap between columns. That made the inter-word gap visually oversized compared to the outer gaps, causing HAPPY and BIRTHDAY to read as two isolated columns drifting apart rather than as two words of a unified phrase. Switching to `justify-content: center` + `gap: 3px` pulled them back toward center as a coherent pair.
+The ribbon is a **fixed-size graphic component** — 34×90 pixels, styled with absolute positioning, intended to occupy the same physical space regardless of device. The text inside uses `px` (7px font-size, 8px gap) rather than `rem` so that iOS/browser accessibility text scaling doesn't leak in and overflow the column widths. A user with 130% system text size would see rem-based values expand by 30% and push the letters out of the ribbon frame; px locks the proportions.
+
+If the ribbon system ever needs to scale as a whole (e.g., 20% larger ribbons for larger card sizes), all the pixel values get touched together — but that's a known, one-time proportional scale, not a per-user unpredictable one.
+
+**Spacing iteration note:**
+
+This spacing landed through three attempts:
+1. `justify-content: space-around` with no gap → inter-word gap was visually oversized vs. outer edges; words read as two isolated columns drifting apart.
+2. `justify-content: center` with `gap: 3px` → words too close together; the length difference between HAPPY (5 letters) and BIRTHDAY (8 letters) became jarring because the tight pair couldn't absorb it.
+3. `justify-content: center` with `gap: 8px` (final) → splits the difference; words feel anchored to each other as a single phrase while the length asymmetry reads as natural.
 
 **Emblem change:**
 

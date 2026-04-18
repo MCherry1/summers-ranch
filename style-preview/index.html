@@ -331,10 +331,16 @@
     /* Override the shared ribbon-hanging-text positioning. Birthday ribbons
        use a two-column layout (HAPPY on left, BIRTHDAY on right), each
        column vertically centered independently within the text zone.
-       Columns are pinned toward the center with a small gap; the extra
+       Columns are pulled toward the center with a small gap; the extra
        breathing room sits on the outer edges of the ribbon, which reads
        more like proper set-word spacing and less like two isolated
-       columns floating apart. */
+       columns floating apart.
+
+       Units are px rather than rem throughout: the ribbon as a whole is
+       a fixed-size graphic component (34x90 px), and the letter sizing
+       needs to stay stable even if the user has iOS/browser accessibility
+       text scaling turned up — a 130% root font size on rem-based values
+       would overflow the column width. px locks the proportions. */
     top: 9px;
     bottom: 22px; /* leave room for the swallowtail clip */
     left: 0;
@@ -342,15 +348,15 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 3px;
+    gap: 8px;
     font-family: "Cinzel", serif;
     font-weight: 700;
-    /* Intentionally below the project's typical 12px/0.75rem readability
-       floor. Text is below the usual design-guideline floor because the
-       ribbon fires once per year and its visual form — a pennant in baby
-       blue or baby pink — communicates "birthday" regardless of whether
-       the text is legible at a glance. Users who zoom can confirm. */
-    font-size: 0.42rem;
+    /* Intentionally below the project's typical 12px readability floor.
+       The ribbon fires once per year and its visual form — a pennant in
+       baby blue or baby pink — communicates "birthday" regardless of
+       whether the text is legible at a glance. Users who zoom can
+       confirm. */
+    font-size: 7px;
     letter-spacing: 0.04em;
     line-height: 1.08;
     color: var(--ribbon-gold-deep);
