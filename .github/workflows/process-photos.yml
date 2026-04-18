@@ -24,7 +24,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q imagemagick exiftool
+          # imagemagick for resize/strip, exiftool for metadata,
+          # libheif-examples provides heif-convert for HEIC→JPEG preconversion
+          # (iOS shares HEIC by default; ImageMagick on stock Ubuntu doesn't
+          # always have HEIC delegate support built in, so we preconvert).
+          sudo apt-get install -y -q imagemagick exiftool libheif-examples
           pip install anthropic 2>/dev/null || true
 
       - name: Process inbox photos
