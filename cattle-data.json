@@ -1038,24 +1038,45 @@
       "calves_manual": false,
       "notes": "",
       "photos": [
-        "images/cattle/tag-HERE-1.jpg"
+        "images/cattle/tag-HERE-1.jpg",
+        "images/cattle/tag-HERE-2.jpg",
+        "images/cattle/tag-HERE-3.jpg",
+        "images/cattle/tag-HERE-4.jpg"
       ],
       "photo_dates": [
-        "2026-02-21"
+        "2026-02-21",
+        "2025-05-03",
+        "2025-03-15",
+        "2021-12-04"
       ],
       "photo_types": [
+        "",
+        "",
+        "",
         ""
       ],
       "photo_focus_x": [
+        50,
+        50,
+        50,
         50
       ],
       "photo_focus_y": [
+        50,
+        50,
+        50,
         50
       ],
       "photo_boxes": [
+        null,
+        null,
+        null,
         null
       ],
       "photo_quality": [
+        "",
+        "",
+        "",
         ""
       ],
       "primary_photo": "images/cattle/tag-HERE-1.jpg"
@@ -1066,7 +1087,7 @@
     "215"
   ],
   "meta": {
-    "last_updated": "2026-04-18 15:18 UTC",
+    "last_updated": "2026-04-18 15:19 UTC",
     "photo_base_url": "images/cattle/"
   }
 }
