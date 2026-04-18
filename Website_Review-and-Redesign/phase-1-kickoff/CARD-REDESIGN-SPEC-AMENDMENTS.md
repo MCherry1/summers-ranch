@@ -1148,6 +1148,32 @@ This change applies ONLY to the ribbon system (`.ribbon-corner`, `.ribbon-hangin
 
 ---
 
+### A30. Sale-status copy: "Available" not "For Sale"
+
+**Supersedes:** all earlier references to "For Sale" as the corner-ribbon text and the card-body Status field value.
+
+**What changes:**
+
+Every instance of "For Sale" in the ribbon system and the card body is now "Available":
+
+- Corner ribbon text (the gold 45° pennant in the top-right): `FOR SALE` → `AVAILABLE`
+- Card body Status field value: `For Sale` → `Available`
+- All supporting CSS comments and spec references
+
+**Reasoning:**
+
+"For Sale" carried a commercial/ecommerce register that didn't belong next to ceremonial pennants. The ribbon system's vocabulary is dignified and ornamental — DOD, SOD, HAPPY BIRTHDAY. "FOR SALE" stamped on top of that read like a used-car dealer sticker grafted onto a trophy display.
+
+"Available" is how breeders actually talk about their stock in catalog copy, on breeding-association websites, in auction previews. It's quieter, more professional, and fits the warm-but-serious tone target Matt set for the site. Same semantic meaning, better register.
+
+The Status field in the card body also changes to keep the card internally consistent — the ribbon and the status field should always match, since they describe the same animal attribute.
+
+**Data-model implication:**
+
+The canonical status value in `cattle-data.json` (when it lands in v2) should be `available` (lowercase enum), not `for-sale` or `forSale`. Other status values in the enum may include `not-available` / `retired` / `sold` — TBD when the full status enum is workshopped.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
