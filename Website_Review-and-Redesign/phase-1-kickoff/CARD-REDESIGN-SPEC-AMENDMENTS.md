@@ -1092,18 +1092,45 @@ Matt has flagged for workshop. Two distinct dimensions:
 
 **To be workshopped. Incoming is more complex and more Phase 2; outgoing is simpler and may touch Phase 1.**
 
-### P5. Photo burst discrimination and growth-profile curation
+### P5. Photo quality competition — ongoing per-animal leaderboard
 
-Flagged 2026-04-17 during ranch visit prep. When Marty uploads multiple photos of the same animal within a short period (e.g., a photo burst of 4-8 shots captured the same day, or multiple upload sessions within a week), the system needs a policy for:
+Flagged 2026-04-17; reframed in conversation from "burst discrimination" (initial misreading) to **ongoing quality competition** (actual intent).
 
-- **Best-photo selection** — given N photos of the same animal in a narrow time bucket, how does the system (or the AI classifier, or the admin) pick which one to display? Current spec picks by canonical shot type (side / head / three-quarter) but says nothing about when multiple photos of the same type exist close in time.
-- **Growth-profile minimum separation** — the card's Timeline section shows photos chronologically to document the animal's growth. How far apart should two consecutive Timeline entries be? Should this scale with animal age (newborn: daily photos are meaningful; mature cow: yearly photos are plenty)?
-- **Rejection without deletion** — photos that lost the "best of the bunch" competition shouldn't necessarily be deleted. They may be valid alternates, evidence of a specific event, or rehabilitatable later. What's the data model for "not currently displayed but preserved"? Soft-hide? Excluded-from-default-selection flag? How does this interact with the existing `forceInclude` / `forceExclude` flags?
-- **Upload clustering awareness** — when the system detects a burst (multiple uploads within minutes or hours), should it prompt the admin to pick a favorite proactively? Or silently choose and let admin correct via Prefer-flag if wrong? Low-friction workflow matters here because Marty is the uploader.
+The real problem: Marty visits the ranch, takes several photos of a calf. A few days later, visits again, takes several more. A week later, again. He never sits down and says "this is my favorite; delete the others." He just uploads everything. Within a week there may be 6-8 photos of the same calf across 3 visits. The site needs to pick which one is shown without Marty having to curate.
 
-This affects the MediaAsset schema, the card photo-selection logic (Section 3.5), the Timeline section (Section 4.2), and the admin Media tab (Phase 2+).
+**The mechanism: per-animal, per-shot-type leaderboard, continuously updated.**
 
-**To be workshopped. Phase 2+ in implementation but the policy decisions should be locked during Phase 1 so the data model captures the right fields at ingest.**
+- Every animal has three "throne" slots: best side-profile photo, best head shot, best three-quarter shot
+- When a new photo is uploaded and classified (AI classifier determines shot type and assigns a quality score), it challenges the current throne-holder for that slot
+- If the new photo scores higher, it takes the throne. The previous throne-holder is demoted but preserved.
+- The card's cycling photos always show the three current throne-holders.
+- Over time, an animal's displayed photos can only get better, never worse.
+
+**Dimensions to workshop:**
+
+- **Quality scoring** — what does the AI classifier evaluate? (Sharpness, lighting, framing/composition, subject pose, subject visibility, absence of obstructions, motion blur.) Is the score a single 0-100 or a vector that gets reduced?
+- **Throne challenge threshold** — does a new photo need to exceed the current throne by a margin, or any amount? A 1% improvement triggering a throne change sounds like your instinct; worth confirming. Too-low threshold causes constant churn on visually similar photos.
+- **Demoted-photo preservation** — losers are not deleted. They move to a "reserves" pool visible in admin. Do they remain eligible for the Timeline (growth profile) section? Can they resurface later if the current throne photo degrades (e.g., admin reveals they were wrong about it)?
+- **Timeline density by age** — the card's Timeline section showing chronological growth shouldn't render all 30+ photos of a 1-year-old. Probably one Timeline entry per life-stage-appropriate interval: newborn weekly, young-calf bi-weekly, weanling monthly, yearling quarterly, mature annually. Which photo represents each interval? The throne-holder at that time, or the best-quality photo within the interval, or something else?
+- **Override patterns** — Marty's Prefer flag (§6 / §13) currently overrides automatic selection with a 1-shot-stage-lifetime duration. How does this interact with the leaderboard? If Marty Prefers photo X and photo Y later scores higher in AI evaluation, does Prefer still win until it expires?
+- **Classifier uncertainty** — what happens when the AI can't confidently score a photo? (Obscured subject, poor lighting, side-profile-but-partly-occluded.) Does it default to "hold throne" (conservative: don't demote a known-good photo for something uncertain) or "challenge anyway"?
+- **Seasonal / contextual rotation** — separate from quality, should cards rotate between throne-holders so the same photo isn't shown forever? Or does the 3-photo cycle (side / head / three-quarter) already provide enough rotation?
+
+**Relationship to existing spec:**
+
+- Extends MediaAsset schema: `qualityScore`, `qualityScoreComponents` (breakdown), `lastEvaluatedAt`
+- Extends CattleMediaLink: `thronePosition` (currently holds side / head / three-quarter / none), `demotedAt` (if previously held, when displaced)
+- Ties into Section 3.5 (photo selection logic)
+- Ties into Section 4.2 Timeline rendering
+- Ties into §13 Prefer/Hide flags
+- Coverage nudges (A6 / §8.5) may fire when no photo in a shot-type exists or all candidates score below a viability threshold
+
+**Implementation phasing:**
+
+- Phase 1: data model fields exist on MediaAsset and CattleMediaLink even if AI classifier isn't wired up yet. Selection logic falls back to most-recent-by-shot-type. Admin Prefer/Hide flags still work.
+- Phase 2: AI classifier wired up, quality scores populate, leaderboard mechanic activates. Throne takes its position as the authoritative photo-selection mechanism.
+
+**To be workshopped. Policy decisions benefit from being locked during Phase 1 so ingest captures the right fields from day one.**
 
 ### P6. Admin surface contents (continuation of P3)
 
