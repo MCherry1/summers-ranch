@@ -1,0 +1,40 @@
+---
+/**
+ * Add new animal — target of the FAB on /admin/herd. Inline-edit
+ * system handles the creation flow with chained input progression
+ * (§12.7). Stubbed until that checkpoint.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "edit-animals");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Add animal" user={user}>
+  <AdminPageHeader
+    kicker="Admin · Herd"
+    title="Add an animal"
+    lead="Create a new animal record. Tag first, then name, sex, DOB — the fields focus in sequence."
+  />
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="Chained input progression: type a tag → Enter advances to name field (optional) → sex selector → DOB picker → all set. Auto-save as you go. Per-field audit trail from the first stroke."
+  />
+
+  <p class="back">
+    <a href="/admin/herd">&lsaquo; Back to herd</a>
+  </p>
+</AdminLayout>
+
+<style>
+  .back {
+    margin-top: var(--space-8);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+  }
+</style>

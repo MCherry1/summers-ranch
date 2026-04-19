@@ -1,0 +1,265 @@
+---
+/**
+ * Admin herd landing — spec §7.4.
+ *
+ * Same binder-ordered card grid as the public /herd, plus admin-only
+ * affordances:
+ *   - Status strip (4 counts): inquiries awaiting response, animals
+ *     to review, animals needing attention, total animals
+ *   - "+ Add animal" FAB (Owner/Admin/Editor only)
+ *   - NeedsAttention sort option (lands with filter controls)
+ *
+ * The full card grid reuses CardFront from the public surface. When
+ * the seed is empty, an empty-state block invites the first record.
+ *
+ * Inline-edit on /admin/herd/[id] (§12.7) lands in the next push —
+ * this file is the landing, not the per-animal editor.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import CardFront from "~/components/cattle/CardFront.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+import { can } from "~/lib/auth/rbac";
+import { animals, groupByBinder, getPrimaryPhoto } from "~/lib/cattle";
+
+const result = await requireAdmin(Astro);
+if (result instanceof Response) return result;
+const user = result;
+
+const sections = groupByBinder(animals);
+const isEmpty = animals.length === 0;
+
+// Status strip counts (stubs until the admin operational queues land)
+const statusStrip = {
+  inquiriesWaiting: 0,       // wired when /admin/inquiries KV lands
+  toReview: 0,                // wired when Contributor uploads land
+  needingAttention: 0,        // wired when nudge generation lands
+  totalAnimals: animals.length,
+};
+
+// FAB visible to Owner/Admin/Editor per §7.4 — matches edit-animals.
+const fabVisible = can(user.role, "edit-animals");
+---
+
+<AdminLayout title="Herd" user={user}>
+  <header class="admin-header">
+    <p class="kicker">Admin</p>
+    <h1 class="title">The herd</h1>
+  </header>
+
+  <dl class="status-strip">
+    <div class:list={["stat", { zero: statusStrip.inquiriesWaiting === 0 }]}>
+      <dt>Inquiries waiting</dt>
+      <dd>{statusStrip.inquiriesWaiting}</dd>
+    </div>
+    <div class:list={["stat", { zero: statusStrip.toReview === 0 }]}>
+      <dt>To review</dt>
+      <dd>{statusStrip.toReview}</dd>
+    </div>
+    <div class:list={["stat", { zero: statusStrip.needingAttention === 0 }]}>
+      <dt>Needing attention</dt>
+      <dd>{statusStrip.needingAttention}</dd>
+    </div>
+    <div class="stat">
+      <dt>Total animals</dt>
+      <dd>{statusStrip.totalAnimals}</dd>
+    </div>
+  </dl>
+
+  {isEmpty ? (
+    <div class="empty-state">
+      <h2>No animals in the seed yet</h2>
+      <p>
+        When Marty or Roianne adds the first record, it appears here.
+        Until inline-edit ships, records are added by editing
+        <code>data/seed/animals.json</code> and pushing.
+      </p>
+    </div>
+  ) : (
+    <div class="binder">
+      {sections.map((section) => (
+        <section class="binder-section">
+          <h3 class="binder-label">{section.label}</h3>
+          <div class="card-grid">
+            {section.animals.map((animal) => (
+              <CardFront
+                animal={animal}
+                primaryPhoto={getPrimaryPhoto(animal.id)}
+                detailsHref={`/admin/herd/${animal.id}`}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  )}
+
+  {fabVisible && (
+    <a href="/admin/herd/new" class="fab" aria-label="Add animal">
+      <span aria-hidden="true">+</span>
+    </a>
+  )}
+</AdminLayout>
+
+<style>
+  .admin-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-2);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-normal);
+    letter-spacing: var(--letter-spacing-tight);
+    margin: 0;
+  }
+
+  .status-strip {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--color-cream-deep);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    overflow: hidden;
+    margin: 0 0 var(--space-10);
+    padding: 0;
+  }
+
+  .stat {
+    background: var(--color-paper);
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .stat.zero dd {
+    color: var(--color-muted);
+  }
+
+  .stat dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .stat dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 640px) {
+    .status-strip {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .binder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+  }
+
+  .binder-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .binder-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  @media (min-width: 640px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1200px) { .card-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .empty-state {
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    padding: var(--space-10);
+    text-align: center;
+  }
+
+  .empty-state h2 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
+    margin: 0 0 var(--space-3);
+  }
+
+  .empty-state p {
+    color: var(--color-muted);
+    margin: 0 auto;
+    max-width: var(--max-width-prose);
+  }
+
+  .empty-state code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-1);
+  }
+
+  .fab {
+    position: fixed;
+    right: var(--space-6);
+    bottom: calc(60px + var(--space-6));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 28px;
+    font-weight: var(--font-weight-normal);
+    box-shadow: var(--shadow-resting);
+    z-index: calc(var(--z-sticky) + 1);
+    transition: var(--transition-default);
+  }
+
+  .fab:hover {
+    background: var(--color-accent-deep);
+    box-shadow: var(--shadow-hover);
+    text-decoration: none;
+    color: var(--color-bg);
+  }
+
+  @media (min-width: 960px) {
+    .fab {
+      bottom: var(--space-6);
+    }
+  }
+</style>

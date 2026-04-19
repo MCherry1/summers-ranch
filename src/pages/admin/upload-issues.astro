@@ -1,0 +1,27 @@
+---
+/**
+ * Upload issues — spec §14.6. System anomalies from the upload
+ * pipeline.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "resolve-pending-tags");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Upload issues" user={user}>
+  <AdminPageHeader
+    kicker="Admin"
+    title="Upload issues"
+    lead="Photos uploaded against deleted tags, corrupted files, classifier flags, duplicates."
+  />
+
+  <ComingSoon
+    milestone="photo pipeline checkpoint"
+    detail="List of issues with suggested resolution and manual override per entry. Non-blocking — the upload pipeline keeps running while issues accumulate."
+  />
+</AdminLayout>

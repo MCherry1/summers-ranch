@@ -1,0 +1,28 @@
+---
+/**
+ * Devices — spec §17.3. Passkey devices + upload token + recovery.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+
+const result = await requireAdmin(Astro);
+if (result instanceof Response) return result;
+const user = result;
+
+const deviceCount = user.passkeyDevices.length;
+---
+
+<AdminLayout title="Devices" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Devices"
+    lead={`You have ${deviceCount} passkey device${deviceCount === 1 ? "" : "s"} registered. Add more for convenient login across phone, laptop, tablet.`}
+  />
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="Passkey list with per-device nicknames and last-used timestamps, add-device flow, and upload-token management (rotate, reinstall on phone). Recovery codes for the Owner."
+  />
+</AdminLayout>

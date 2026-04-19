@@ -1,0 +1,52 @@
+---
+/**
+ * Common admin page header — kicker + Playfair title + optional lead.
+ * Consistent vocabulary across every admin surface.
+ */
+interface Props {
+  kicker?: string;
+  title: string;
+  lead?: string;
+}
+
+const { kicker = "Admin", title, lead } = Astro.props;
+---
+
+<header class="admin-header">
+  <p class="kicker">{kicker}</p>
+  <h1 class="title" set:html={title} />
+  {lead && <p class="lead">{lead}</p>}
+</header>
+
+<style>
+  .admin-header {
+    margin-bottom: var(--space-8);
+    max-width: var(--max-width-prose);
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-2);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-normal);
+    letter-spacing: var(--letter-spacing-tight);
+    margin: 0;
+  }
+
+  .lead {
+    font-family: var(--font-body);
+    font-size: var(--font-size-md);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: var(--space-4) 0 0;
+  }
+</style>

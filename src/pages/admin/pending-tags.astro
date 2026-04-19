@@ -1,0 +1,28 @@
+---
+/**
+ * Pending tags queue — spec §14.5. New animals created via the
+ * "Add new tag" Shortcut path have only a tag number + photo until
+ * name/sex/DOB are filled in here.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "resolve-pending-tags");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Pending tags" user={user}>
+  <AdminPageHeader
+    kicker="Admin"
+    title="Pending tags"
+    lead="Animals created with just a tag — name, sex, and birth date needed before they graduate into the herd."
+  />
+
+  <ComingSoon
+    milestone="photo pipeline checkpoint"
+    detail="Stub animals with recent photos, quick-action inputs for name/sex/DOB, link to full record. Animal exits the queue once minimum required fields are set."
+  />
+</AdminLayout>

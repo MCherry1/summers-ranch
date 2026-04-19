@@ -1,0 +1,26 @@
+---
+/**
+ * Notifications — spec §17.2. Per-user email/SMS prefs.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+
+const result = await requireAdmin(Astro);
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Notifications" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Notifications"
+    lead="Choose how you want to hear about inquiries, uploads, and nudges."
+  />
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="A matrix of event × channel toggles. SMS requires your phone number from Profile; rows without it are disabled with a hint linking back."
+  />
+</AdminLayout>

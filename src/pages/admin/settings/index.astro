@@ -1,0 +1,83 @@
+---
+/**
+ * Profile — spec §17.1. Display name, email, phone, timezone,
+ * admin accent color. Every user manages their own.
+ * Inline-edit + accent picker ship in the next checkpoint.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+
+const result = await requireAdmin(Astro);
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Profile" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Profile"
+    lead="Your display name, contact info, timezone, and admin accent color."
+  />
+
+  <section class="summary">
+    <dl>
+      <div class="row"><dt>Name</dt><dd>{user.displayName}</dd></div>
+      <div class="row"><dt>Email</dt><dd>{user.email}</dd></div>
+      {user.phone && <div class="row"><dt>Phone</dt><dd>{user.phone}</dd></div>}
+      <div class="row"><dt>Timezone</dt><dd>{user.timeZone}</dd></div>
+      <div class="row"><dt>Role</dt><dd>{user.role}</dd></div>
+    </dl>
+  </section>
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="Fields above become click-to-edit with auto-save on blur. An accent color picker (8-12 curated swatches) lets you personalize the admin chrome without affecting public pages."
+  />
+</AdminLayout>
+
+<style>
+  .summary {
+    max-width: var(--max-width-data);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+  }
+
+  dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+  }
+
+  .row { display: contents; }
+
+  dt, dd {
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-cream-deep);
+    margin: 0;
+  }
+
+  .row:first-child dt, .row:first-child dd {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  dd {
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+  }
+</style>

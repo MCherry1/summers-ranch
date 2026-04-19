@@ -1,0 +1,33 @@
+---
+/**
+ * Team — spec §17.4 / §17.5. Owner/Admin only. Owner-only actions
+ * gated further within the page (add/remove users of any role,
+ * change roles, etc.) per §12.4.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+import { can } from "~/lib/auth/rbac";
+
+const result = await requireAdmin(Astro);
+if (result instanceof Response) return result;
+const user = result;
+
+if (!can(user.role, "manage-team-contributors")) {
+  return Astro.redirect("/admin/herd", 302);
+}
+---
+
+<AdminLayout title="Team" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Team"
+    lead="Manage team members and Contributor trust states."
+  />
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="Team roster with role badges, last-active timestamps, invite flow for new admins (email + passkey registration link), self-service Contributor creation with iOS Shortcut install link. Audit log at the bottom for Owner."
+  />
+</AdminLayout>

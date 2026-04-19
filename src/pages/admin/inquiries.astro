@@ -1,0 +1,26 @@
+---
+/**
+ * Inquiries inbox — spec §13. Owner/Admin only.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "view-inquiries");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Inquiries" user={user}>
+  <AdminPageHeader
+    kicker="Admin"
+    title={`Inquiries`}
+    lead="Messages from the public contact form and Ask-about-this-animal CTAs land here."
+  />
+
+  <ComingSoon
+    milestone="admin operational checkpoint"
+    detail="List view (sender / timestamp / subject / preview / unread indicator), detail view with reply-via-default-mail-client action, email + SMS notifications on new inquiry."
+  />
+</AdminLayout>

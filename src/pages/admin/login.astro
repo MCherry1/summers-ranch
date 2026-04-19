@@ -1,0 +1,333 @@
+---
+/**
+ * Admin login — passwordless via WebAuthn passkey per spec §12.2.
+ *
+ * Flow:
+ *   1. User enters their email (or the page attempts conditional UI
+ *      which offers a registered passkey directly without an email)
+ *   2. Server resolves the email to an admin user and returns either:
+ *        - registration options (first device for this user), or
+ *        - authentication options (existing passkey)
+ *   3. Browser prompts Face ID / Touch ID / Windows Hello / key
+ *   4. Signed attestation/assertion goes back to the server
+ *   5. Server verifies and sets the session cookie
+ *   6. Redirect to ?next or /admin/herd
+ *
+ * This page is the container. The actual WebAuthn calls happen in
+ * the inline <script> via @simplewebauthn/browser, hitting the
+ * /api/auth/* endpoints implemented as Astro API routes.
+ */
+import { currentUser } from "~/lib/auth/session";
+import "~/styles/global.css";
+
+// If already logged in, bounce straight to the admin surface.
+const user = await currentUser(Astro.request);
+const nextParam = Astro.url.searchParams.get("next") ?? "/admin/herd";
+if (user) {
+  return Astro.redirect(nextParam, 302);
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Log in · Summers Ranch admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Work+Sans:wght@400;500;600&display=swap"
+    />
+  </head>
+  <body>
+    <main class="login-surface">
+      <div class="card">
+        <p class="kicker">Summers Ranch</p>
+        <h1 class="title">Welcome <em>back.</em></h1>
+        <p class="lead">
+          Sign in with the passkey on this device — Face&nbsp;ID, Touch&nbsp;ID,
+          Windows&nbsp;Hello, or a security key.
+        </p>
+
+        <form id="login-form" class="form" data-next={nextParam}>
+          <label for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="username webauthn"
+            required
+            spellcheck="false"
+            autocapitalize="none"
+          />
+
+          <button type="submit" class="primary" id="submit">
+            Continue
+          </button>
+
+          <p id="status" class="status" aria-live="polite"></p>
+        </form>
+
+        <details class="trouble">
+          <summary>Trouble signing in?</summary>
+          <p>
+            If you're Marty or Roianne and this is your first time on a new
+            device, ask Matt to send an invite link from his Team page. If
+            you've lost access to every device, Matt can reset your passkey
+            registration.
+          </p>
+        </details>
+      </div>
+    </main>
+
+    <script>
+      import {
+        startRegistration,
+        startAuthentication,
+      } from "@simplewebauthn/browser";
+
+      const form = document.getElementById("login-form") as HTMLFormElement;
+      const emailInput = document.getElementById("email") as HTMLInputElement;
+      const submitBtn = document.getElementById("submit") as HTMLButtonElement;
+      const statusEl = document.getElementById("status") as HTMLParagraphElement;
+      const nextPath = form.dataset.next ?? "/admin/herd";
+
+      function setStatus(msg: string, kind: "info" | "error" = "info") {
+        statusEl.textContent = msg;
+        statusEl.dataset.kind = kind;
+      }
+
+      async function handleSubmit(evt: Event) {
+        evt.preventDefault();
+        submitBtn.disabled = true;
+        setStatus("Checking…");
+
+        const email = emailInput.value.trim();
+        if (!email) {
+          setStatus("Please enter your email.", "error");
+          submitBtn.disabled = false;
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/auth/options", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          if (!res.ok) {
+            const err = (await res.json().catch(() => ({}))) as { error?: string };
+            setStatus(err.error ?? "Couldn't start login.", "error");
+            submitBtn.disabled = false;
+            return;
+          }
+          const payload = (await res.json()) as {
+            mode?: "register" | "authenticate";
+            options?: unknown;
+          };
+
+          if (payload.mode === "register") {
+            setStatus("Registering your device…");
+            const attResp = await startRegistration({ optionsJSON: payload.options as any });
+            const verify = await fetch("/api/auth/register-finish", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, attResp }),
+            });
+            if (!verify.ok) {
+              const err = (await verify.json().catch(() => ({}))) as { error?: string };
+              setStatus(err.error ?? "Couldn't register this device.", "error");
+              submitBtn.disabled = false;
+              return;
+            }
+          } else if (payload.mode === "authenticate") {
+            setStatus("Confirm with Face ID / Touch ID / your key…");
+            const authResp = await startAuthentication({ optionsJSON: payload.options as any });
+            const verify = await fetch("/api/auth/authenticate-finish", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, authResp }),
+            });
+            if (!verify.ok) {
+              const err = (await verify.json().catch(() => ({}))) as { error?: string };
+              setStatus(err.error ?? "That didn't work — try again?", "error");
+              submitBtn.disabled = false;
+              return;
+            }
+          } else {
+            setStatus("Unexpected response from server.", "error");
+            submitBtn.disabled = false;
+            return;
+          }
+
+          setStatus("Signed in.");
+          window.location.href = nextPath;
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "Something went wrong.";
+          setStatus(message, "error");
+          submitBtn.disabled = false;
+        }
+      }
+
+      form.addEventListener("submit", handleSubmit);
+    </script>
+
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-ink);
+        font-family: var(--font-body);
+        min-height: 100vh;
+      }
+
+      .login-surface {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: var(--space-6);
+      }
+
+      .card {
+        width: 100%;
+        max-width: 440px;
+        background: var(--color-paper);
+        border-radius: var(--radius-3);
+        padding: var(--space-10);
+        box-shadow: var(--shadow-resting);
+      }
+
+      .kicker {
+        font-family: var(--font-body);
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-xs);
+        letter-spacing: var(--letter-spacing-kicker);
+        text-transform: uppercase;
+        color: var(--color-accent);
+        margin: 0 0 var(--space-4);
+      }
+
+      .title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-normal);
+        letter-spacing: var(--letter-spacing-tight);
+        margin: 0 0 var(--space-4);
+      }
+
+      .title em {
+        color: var(--color-accent);
+        font-style: italic;
+      }
+
+      .lead {
+        font-size: var(--font-size-sm);
+        color: var(--color-muted);
+        margin: 0 0 var(--space-8);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+
+      label {
+        font-family: var(--font-body);
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-xs);
+        letter-spacing: var(--letter-spacing-kicker);
+        text-transform: uppercase;
+        color: var(--color-muted);
+      }
+
+      input {
+        font-family: var(--font-body);
+        font-size: var(--font-size-base);
+        padding: 0.65rem 0.85rem;
+        border: 1px solid var(--color-cream-deep);
+        border-radius: var(--radius-1);
+        background: var(--color-paper);
+        color: var(--color-ink);
+        transition: var(--transition-default);
+      }
+
+      input:focus {
+        outline: 0;
+        border-color: var(--color-accent);
+      }
+
+      .primary {
+        margin-top: var(--space-3);
+        font-family: var(--font-body);
+        font-weight: var(--font-weight-semibold);
+        font-size: 0.78rem;
+        letter-spacing: var(--letter-spacing-cta);
+        text-transform: uppercase;
+        padding: 0.85rem 1.8rem;
+        background: var(--color-accent);
+        color: var(--color-bg);
+        border: 1px solid var(--color-accent);
+        border-radius: var(--radius-1);
+        cursor: pointer;
+        transition: var(--transition-default);
+      }
+
+      .primary:hover:not(:disabled) {
+        background: var(--color-accent-deep);
+        border-color: var(--color-accent-deep);
+      }
+
+      .primary:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+
+      .status {
+        font-size: var(--font-size-xs);
+        color: var(--color-muted);
+        min-height: 1.2em;
+        margin: var(--space-1) 0 0;
+      }
+
+      .status[data-kind="error"] {
+        color: var(--color-accent);
+      }
+
+      .trouble {
+        margin-top: var(--space-8);
+        padding-top: var(--space-6);
+        border-top: 1px solid var(--color-cream-deep);
+      }
+
+      .trouble summary {
+        font-family: var(--font-body);
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--font-size-xs);
+        letter-spacing: var(--letter-spacing-kicker);
+        text-transform: uppercase;
+        color: var(--color-muted);
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .trouble summary::-webkit-details-marker { display: none; }
+
+      .trouble[open] summary {
+        margin-bottom: var(--space-3);
+      }
+
+      .trouble p {
+        font-size: var(--font-size-sm);
+        color: var(--color-muted);
+        line-height: var(--line-height-relaxed);
+        margin: 0;
+      }
+    </style>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+---
+/**
+ * Review queue — spec §14. Contributor uploads awaiting approval
+ * (when the Contributor's trust state is "review-required").
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "review-uploads");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Review" user={user}>
+  <AdminPageHeader
+    kicker="Admin"
+    title="Review"
+    lead="Photos uploaded by review-required Contributors land here before going public."
+  />
+
+  <ComingSoon
+    milestone="photo pipeline checkpoint"
+    detail="Queue of pending photos with quick approve / reject / prefer actions. Contributor sees no difference on their phone — uploads appear successful — until reviewed here."
+  />
+</AdminLayout>

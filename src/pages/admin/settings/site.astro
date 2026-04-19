@@ -1,0 +1,27 @@
+---
+/**
+ * Site — spec §17.8. Owner only. Ranch metadata, style tokens
+ * (regenerate), notification defaults, ownership transfer.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "site-config");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Site" user={user}>
+  <AdminPageHeader
+    kicker="Settings · Owner"
+    title="Site"
+    lead="Ranch name, tagline, contact info, default notification settings for new users, ownership transfer."
+  />
+
+  <ComingSoon
+    milestone="inline-edit checkpoint"
+    detail="Inline-edit site metadata. Token regeneration button. Two-step ownership transfer flow per §17.7 (propose → target accepts or declines within 7 days)."
+  />
+</AdminLayout>
