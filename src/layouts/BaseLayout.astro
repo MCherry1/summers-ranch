@@ -1,0 +1,78 @@
+---
+/**
+ * BaseLayout — site-wide shell.
+ *
+ * Wires tokens.css + global.css, loads webfonts, emits OpenGraph stubs
+ * per CARD-REDESIGN-SPEC §20. Page-level nav/footer composes inside
+ * <slot />. Nav and footer components land with the public surfaces
+ * milestone — this layout stays as the minimal foundation.
+ *
+ * OG composites: /og/animal/[id].jpg for animal pages (§20.2), generic
+ * ranch hero for list/home/about/contact (§20.3). Callers pass ogImage
+ * when they have a more specific composite than the default.
+ */
+
+import "~/styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogType?: "website" | "article";
+  canonicalPath?: string;   // e.g. "/herd/840" — joined with site origin
+}
+
+const {
+  title,
+  description = "Summers Ranch — registered Hereford cattle in Sutter Creek, California.",
+  ogImage = "/og/ranch-hero.jpg",
+  ogType = "website",
+  canonicalPath,
+} = Astro.props;
+
+const canonicalUrl = canonicalPath
+  ? new URL(canonicalPath, Astro.site).toString()
+  : Astro.url.toString();
+
+const absoluteOgImage = new URL(ogImage, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- OpenGraph (§20.1) -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={absoluteOgImage} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Summers Ranch" />
+
+    <!-- Twitter (no twitter:site — no ranch handle per §20.1) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteOgImage} />
+
+    <!-- Webfonts: Playfair Display (display + italic), Work Sans (body),
+         Cinzel (ceremonial ribbons), Lato (Available ribbon). Weights
+         scoped tight to what the spec actually uses. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Work+Sans:wght@400;500;600;700&family=Cinzel:wght@700;800&family=Lato:wght@900&display=swap"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

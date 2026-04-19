@@ -1,0 +1,61 @@
+---
+/**
+ * Home placeholder — foundations-milestone stub.
+ *
+ * Real home per §8 lands in the Public Surfaces milestone. This exists so
+ * `astro build` produces a valid output during the Foundations phase. The
+ * kicker/title pattern here is the one we'll use repeatedly across the
+ * site, so this is a live preview of the token system working.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Summers Ranch">
+  <main class="stub">
+    <p class="kicker">Registered Herefords &middot; Est. 1998</p>
+    <h1>Summers <em>Ranch</em></h1>
+    <p class="tagline">
+      A family tradition, <em>honestly kept.</em>
+    </p>
+    <p class="muted">Sutter Creek, California</p>
+  </main>
+</BaseLayout>
+
+<style>
+  .stub {
+    max-width: var(--max-width-page);
+    margin: 0 auto;
+    padding: var(--space-20) var(--space-6);
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: var(--space-6);
+  }
+
+  h1 {
+    font-size: var(--font-size-4xl);
+    margin-bottom: var(--space-4);
+  }
+
+  .tagline {
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
+    color: var(--color-ink);
+    max-width: var(--max-width-hero);
+    margin-bottom: var(--space-8);
+  }
+
+  .muted {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+</style>
