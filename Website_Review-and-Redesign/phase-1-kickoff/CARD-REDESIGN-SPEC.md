@@ -1,1331 +1,1750 @@
-# Summers Ranch — Card Redesign Specification
+# Summers Ranch — Consolidated Specification
 
-*The authoritative document for the herd, card, admin, and gallery surfaces of Summers Ranch v2. This supersedes the herd-related sections of `RECOMMENDED-ARCHITECTURE.md` and `BEHAVIOR-PRESERVATION-CHECKLIST.md`. Where this document and those earlier documents conflict, this document is correct.*
+**Single source of truth.** Supersedes `CARD-REDESIGN-SPEC.md` v1 and folds in amendments A1-A42. The amendments file is archived at `CARD-REDESIGN-SPEC-AMENDMENTS.md` for historical reference; this document is authoritative.
 
-*Date: April 17, 2026*
+**Last updated:** 2026-04-19 by Matt and Claude, session 2.
 
 ---
 
 ## 0. How to read this document
 
-This spec has two audiences. Matt (product owner, physicist, not a web developer) needs to understand what's being built and why. Claude Code (coding agent, implementer) needs the technical specificity to build it correctly.
+**Audience:** this spec is written for two audiences. Product-focused sections (marked 🟦) are for Matt reading through, understanding, and reviewing. Implementation-focused sections (marked 🟧) are for the coding agent to read when implementing. Sections marked 🟨 serve both.
 
-The document is structured so Matt can read the **Product** sections end-to-end in under an hour and skip or skim the **Implementation** sections without losing the thread. Section titles are marked:
+**Style:** definitive statements about the final state. This spec says *what to build*, not *why we chose it*. Reasoning lives in git history (particularly in the amendments file). If the spec and amendments disagree, the spec wins — the amendments are historical.
 
-- **🟦 Product** — what the user experiences and why. Read these.
-- **🟧 Implementation** — how the coding agent builds it. Skim or skip unless curious.
-- **🟨 Both** — integrated sections where product and implementation are too tightly coupled to separate.
-
-Matt's review target for approval: all **🟦 Product** sections plus Section 18 (How to change things later) and Section 19 (Review checkpoints). Estimated reading time: 45–60 minutes.
-
-Claude Code's target: the entire document. Estimated reading time: 90 minutes with cross-references.
+**Phase scope:** Phase 1 is the initial launch build. Phase 2+ items are explicitly marked where relevant. Phase 1 is shippable without any Phase 2 features.
 
 ---
 
-## 1. 🟦 Product: What this is
+## 1. 🟦 What this is
 
-Summers Ranch is a website for a family Hereford operation in Sutter Creek, California. Marty is the operator — retired rancher, iPhone user, not technical. Matt (his son-in-law) is the builder. The site is a gift from Matt to Marty, intended to be both **useful** (a real tool Marty will use to manage his herd) and **inspiring** (a site buyers respect, and that quietly nudges Marty toward professional seedstock practices).
+Summers Ranch is a family-owned registered Hereford cattle operation in Sutter Creek, California. Marty and Roianne Summers have run the herd since 1998. This website is a gift from their son-in-law Matt, built to serve as:
 
-The site has three distinct parts:
+- A public-facing catalog of their herd, organized so each animal has a meaningful presence
+- A sales surface for available animals
+- An operational tool for Marty and Roianne to maintain the site themselves, without needing a web developer
+- A personal archive documenting the animals over time
 
-1. **Public signage.** Home, About, Gallery, Contact. Atmospheric, welcoming, not information-dense. The front porch of the ranch.
-2. **Public herd catalog.** A sectional grid of cattle with baseball-card-style front/back presentations. Information-forward, trust-building, buyer-useful.
-3. **Admin panel.** Password-protected. Marty manages the herd here. Same visual vocabulary as the public catalog so his mental model stays consistent across surfaces.
+**Design principles:**
 
-A fourth part — a media ingestion pipeline that receives photos from Marty's iPhone and routes them — exists as Phase 2 work and is not built as part of this spec. The data model and the curation systems described here are designed to accept that pipeline's output when it comes online.
+1. **The cow is the hero.** Photographs lead, UI chrome recedes.
+2. **Better empty than wrong.** When a data field is null, hide it — don't display "Not set" or "—" or a placeholder.
+3. **Stale content worse than no content.** If an animal's photos haven't been updated in an appropriate window for their life stage, the system gently nudges rather than displaying outdated information.
+4. **Operational innovation over presentation flash.** Admin tools matter as much as the public surface.
+5. **Restraint over expression.** The design is warm but serious, never gimmicky.
+6. **Discovery not duty.** Progressive disclosure reveals complexity as needed; new users see a simple, inviting surface.
 
-**What this spec is not:** a complete v2 spec. It covers the herd, cards, admin surfaces, gallery, and supporting home-page details. It does not cover the iOS Shortcut workflow, the media processing pipeline, the admin authentication details, the calendar/seasonal detection system, the AHA registration workflow, or any Phase 2+ features. Those remain in other documents or are explicitly deferred.
-
----
-
-## 2. 🟦 Product: The baseball card metaphor
-
-The core organizing idea for the herd catalog is a **baseball card**. Every animal in the herd has a card. The card has a **front** (photo-dominant, six essential stats, emotional anchor) and a **back** (detailed information, stats, pedigree, history). The user can flip between front and back by swiping horizontally on mobile or clicking a button on desktop.
-
-Cards live together in a **binder** — the herd page shows them organized into sections by animal type (Bulls, Cows, Heifers, Calves, Reference), the way a physical collectible binder organizes cards by category.
-
-This metaphor is deliberate. Three reasons:
-- **Legibility.** Every buyer, rancher, and family member immediately understands what a baseball card is and how to use one.
-- **Honest to the data.** Cattle are discrete entities that are evaluated individually, which is exactly what baseball cards present.
-- **Differentiation.** Peer Hereford ranch websites present their cattle as static text-heavy pages. The card-binder presentation stands out without being alien.
-
-**Restraint is load-bearing.** The metaphor must stay understated. No page-flip animations between binder sections, no holographic effects, no card-back shadows following the cursor, no skeuomorphic stitched edges. Clean, tasteful, confident. The metaphor guides the flip interaction and the identity relationship between front and back; it does not govern text density or visual decoration.
-
-**The back of the card is not card-shaped.** The front is roughly screen-shaped and photo-dominant. The back is a long-form scrollable document about the animal. The flip animation governs transition between the two; typography on the back follows standard reading-UX conventions (comfortable line length, proper hierarchy, scannable section structure). No attempt to shrink text to preserve card proportions on the back.
+**Tone:** warm but restrained. No emoji in UI copy. Industry-correct terminology where it matters (DOD, SOD, AHA) — plain language elsewhere. The site should feel useful and inspiring, not cute or gifty.
 
 ---
 
-## 3. 🟦 Product: The card — front
+## 2. 🟦 The baseball card metaphor
 
-When a visitor opens an animal's card, the front is the first thing they see. The front is designed to let the viewer evaluate the animal at a glance: who is this, what kind of animal, how do they look, what's their status.
+Each animal has a "card." Cards have a front and a back:
+
+- **Front:** visual and identity. One deliberate photograph plus six core data points and small corner affordances (ribbons, date, registration number).
+- **Back:** information. Pedigree, history, stats, and a compact photo thumbnail.
+
+The card shape is consistent; what differs is commercial status. An available animal's card front displays their side profile (evaluation shot). A not-available animal's card front displays a beauty or action shot (gallery entry). The card adapts to the buyer's likely mindset.
+
+**Interaction:**
+
+- Swipe horizontally to move between animals
+- Swipe vertically (or tap "Details ›") to flip between front and back
+- **Slide transition, not flip** — card front and back are treated as adjacent views, not as two faces of a rotating rectangle. The literal flip animation was scrapped as conceptually broken (real baseball cards don't rotate 180° in 3D space when you turn them; they move in your hand).
+
+Throughout this document, "flip" as a noun is avoided; the two surfaces are called "front" and "back" and the transition is a slide.
+
+---
+
+## 3. 🟦 The card — front
+
+The front shows who this animal is, at a glance. One photograph fills most of the card. A small set of data points live beneath. Four corners each have a defined, narrow purpose.
 
 ### 3.1 Core contents
 
-The front of every card contains:
-
-- **A cycling photo** filling most of the card. Displays the three most recent canonical views of the animal (side profile, headshot, three-quarter) in rotation.
-- **Six core data points** rendered cleanly at the bottom of the card:
+- **One photograph** filling the top ~75% of the card. Photo is static — no cycling, no carousel on the front. See §3.5 for photo selection.
+- **Six core data points** below the photo:
   1. Tag number
-  2. Name (if named — omitted entirely if not)
+  2. Name (omitted entirely if unnamed)
   3. Sex
   4. Breed
   5. Age
-  6. Status (For Sale / Breeding / etc.)
-- **Four corner affordances** with defined purposes:
-  - Top-left: Birthday banner *or* distinction ribbon (DOD / SOD) when applicable
-  - Top-right: "For Sale" diagonal ribbon when status is sale
-  - Bottom-left: Capture date of the currently-displayed photo
-  - Bottom-right: Registration number when registered (display only, not a link on the front)
-- **A "Details ›" affordance** on the right edge indicating the card can be flipped
+  6. Status
+- **Four corner affordances** with defined purposes (§3.3)
+- **"Details ›"** affordance on the right edge indicating the back is one swipe away
 
-The six core data points and the four-corner affordances together constitute the entire non-photo content on the front. If a field is null, it is hidden, not shown as "—" or "Not set." Better empty than wrong.
+Null fields are hidden, not shown as placeholder. If a field is null, its row doesn't render.
 
-### 3.2 Photo cycling behavior
+### 3.2 Photo motion
 
-Photos cycle every **5 seconds** with a **~700ms crossfade** (both photos briefly visible during transition, no snap). If only one photo of the animal exists, the display is static — it does not try to cycle through a single image.
+When the user arrives at a card (swipes to it, or opens directly from a link), the front photograph plays its Live Photo motion once — approximately 2 seconds of subtle movement (cow breathing, shifting weight, ear flick) — then settles to a still. Swiping away and back replays the motion. Tapping does not restart motion (tap is reserved for the detail affordance).
 
-Cycling pauses automatically when the user is engaged with the card (hovers on desktop, touches on mobile, interacts with a control). A small pause/play indicator appears on engagement in the corner of the photo, using semi-transparent-fill-with-defined-border treatment — readable on any photo without reading as a flat white box. Resumes when the user disengages.
+`prefers-reduced-motion` users see still frames only, no Live Photo motion, on any surface.
 
-`prefers-reduced-motion` users see no cycling — first photo is displayed statically.
+Compact herd view (multiple cards per row) shows still frames only — no motion in that density.
 
-### 3.3 Corner affordances in detail
+### 3.3 Corner affordances
 
-**Top-left (birthday / distinction):**
-- The distinction ribbon (Dam of Distinction or Sire of Distinction) occupies the top-left slot permanently when earned. It is a vertical ribbon hanging from the top edge of the card, roughly 40-50px wide, with a flat rectangular top and a chevron-notched bottom. DOD uses blue fill; SOD uses red. Vertical stacked text reads "DOD" or "SOD" in uppercase. Each has a subtle border/shadow to lift it off the photo without reading as sticker-y.
-- When no distinction exists, the birthday banner occupies this slot *on the animal's birthday only*. Same vertical ribbon shape, sex-coded (blue for bulls and bull calves, pink for cows, heifers, and heifer calves — traditional gender color grammar, intentionally chosen because it matches convention).
-- When both distinction and birthday coexist, the distinction ribbon stays in the top-left slot and the birthday ribbon appears immediately to its right, offset. Two ribbons, side-by-side, no collision. The ribbons never merge or compete.
+**Top-left — Distinction ribbon and/or birthday ribbon:**
 
-**Top-right (For Sale):**
-- Diagonal ribbon across the top-right corner, the classic convention for "call attention to this item." Appears only when status is `sale`. Gold fill with white or dark text reading "FOR SALE" in uppercase. Never competes with anything else — the top-right is reserved for this single ribbon.
+- Distinction ribbon (Dam of Distinction or Sire of Distinction) when the animal has earned AHA distinction. Vertical hanging ribbon, ~34px wide × 90px tall with a chevron swallowtail bottom. DOD blue, SOD red. Uppercase stacked text reads "DOD" or "SOD" in Cinzel.
+- Birthday ribbon when today is the animal's birthday, sex-coded (baby blue for males, baby pink for females). Same ribbon shape as distinction. Text reads "HAPPY BIRTHDAY" in two columns (HAPPY on left, BIRTHDAY on right) — **not** the animal's age. Uses Cinzel bold 7px, letters stacked vertically in each column.
+- When both coexist: distinction in position 1 (left:12px), birthday in position 2 (left:54px). Two ribbons, side by side, no collision.
 
-**Bottom-left (photo date):**
-- Small text overlay showing the **capture date** (month and year only) of the currently-displayed photo. Updates as the photo cycles. Same semi-transparent overlay treatment as other chrome.
+**Top-right — Availability ribbon:**
 
-**Bottom-right (registration number):**
-- When registered, the AHA registration number appears as small text in the bottom-right (e.g., "AHA# 44000820"). Display only on the front — it's not tappable from the front. The back of the card turns this into an external verification link (see §4.5).
-- When not registered, this slot is simply empty. No placeholder, no chrome.
+- Diagonal ribbon across the top-right corner. Appears only when the animal's status is `available`. Copy reads "AVAILABLE" (not "For Sale" — industry term is "available"). Gold gradient fill, deep-gold text in Lato 10px with 0.2em tracking, uppercase.
+- Top-right is reserved exclusively for this ribbon. No other corner-right element competes.
+
+**Bottom-left — Photo capture date:**
+
+- Small white text rendered directly on the photo with drop shadow. No background pill, no border. Format: `Month YYYY` generally, shortened to just `Month` for photos taken in the current calendar year. Positioned ~12px from the photo's bottom-left corner. Font size ~11-12px in Work Sans with `rgba(255,255,255,0.9)` color and layered drop shadows for legibility over varied backgrounds.
+
+**Bottom-right — Registration number:**
+
+- Small white text on the photo with same drop shadow treatment as the date. Shows the AHA registration number when the animal is registered (e.g., "AHA #44109820"). Display only on the front — not tappable. Tapping is available on the back (see §4.4).
+- Hidden entirely when the animal is not registered.
 
 ### 3.4 Ribbon interactivity
 
-**Single-tap-shows-tooltip, tap-link-within-tooltip-to-navigate.**
+Single-tap on any ribbon opens a small tooltip near it. The tooltip adds context beyond the ribbon label (never a bare repeat). Tooltip content:
 
-Tapping any ribbon opens a small contextual tooltip near the ribbon. The tooltip adds context beyond the ribbon label — never a bare repeat. Tooltip content:
-
-- **For Sale:** *"This animal is for sale. Ask about [Name]"* with "Ask about [Name]" as the tappable link
-- **Distinction (DOD):** *"Dam of Distinction — awarded by AHA, [year]. Verify on hereford.org ↗"*
-- **Distinction (SOD):** *"Sire of Distinction — awarded by AHA, [year]. Verify on hereford.org ↗"*
+- **Available:** *"This animal is for sale. Ask about [Name] ›"* with the action as a tappable link opening the inquiry form
+- **Distinction DOD:** *"Dam of Distinction — awarded by AHA, [year]. Verify on hereford.org ↗"*
+- **Distinction SOD:** *"Sire of Distinction — awarded by AHA, [year]. Verify on hereford.org ↗"*
 - **Birthday:** *"Happy birthday, [Name] — born [full date]"* (no navigation link)
 
-Tooltip behavior:
-- Appears on tap (mobile) or hover (desktop).
-- Non-modal: the rest of the page remains fully interactive. Scrolling still works. Other taps work.
-- Auto-dismisses after 5 seconds if untouched.
-- Any tap outside the tooltip dismisses it immediately.
-- Tapping the link *within* the tooltip triggers navigation.
+Tooltip behavior: appears on tap (mobile) or hover (desktop), non-modal (the rest of the page remains interactive and scrollable), auto-dismisses after 5 seconds untouched, any outside tap dismisses, the tappable link within the tooltip is the only thing that navigates. This protects older users from fat-finger accidental navigation while preserving one-tap discovery.
 
-This protects Marty and other older-user peers from accidental fat-finger navigation while preserving single-tap discovery for intentional users.
+### 3.5 🟧 Front photo selection
 
-### 3.5 🟧 Implementation: photo selection logic
+The front photo depends on availability status:
 
-The three photos shown in the front cycle come from applying this priority:
+- **Available animal** → current side-profile throne-holder (see §14 for throne mechanics)
+- **Not-available animal** → current "beauty/action" throne-holder
+- **Empty throne** (no candidate photos yet) → best-available photo by aesthetic score regardless of shot type, with a coverage nudge to admin
+- **Reference animal with zero photos** → stylized Hereford silhouette placeholder
 
-1. Most recent photo tagged as `side` canonical view (from the MediaAsset shot-type classification)
-2. Most recent photo tagged as `head` canonical view
-3. Most recent photo tagged as `three-quarter` canonical view
+The two throne slots (`cardFrontThrone` for side profile, `cardFrontBeautyThrone` for beauty/action) persist independently, so a status transition swaps the displayed photo instantly without recomputation.
 
-When a canonical type is missing:
-- Fall back to the most recent non-canonical photo for that animal
-- If fewer than 3 photos total exist, cycle through however many exist
-- If only 1 photo exists, display static (no cycle)
-- If 0 photos exist and the animal is a reference animal, display the stylized Hereford silhouette placeholder (see §15)
-- If 0 photos exist and the animal is not a reference animal, display a neutral placeholder and fire a coverage nudge (see §9.2)
+The side-profile scoring rubric is fully specified in §14. The beauty/action scoring rubric is deferred — Phase 1 uses a fallback: most-recent photo among eligible shot types (`action`, `scenic`, `three-quarter`, `head`, `with-dam`, `other`) by aesthetic score alone.
 
-A photo's `forceInclude` flag (admin-set, time-bounded by life-stage staleness threshold) overrides normal priority for its shot type. `forceExclude` flag removes a photo from candidacy permanently.
+### 3.6 🟧 Orientation handling
 
----
+Photos are tagged with orientation (`portrait`, `landscape`, `square`) via the MediaAsset schema. Card front renderers handle each distinctly:
 
-## 4. 🟦 Product: The card — back
+- **Portrait:** natural fit — photo fills the photo slot with minor top/bottom padding
+- **Landscape:** rendered with letterboxing (dark bars top and bottom) or cropped to focal region (admin choice per photo; default letterbox)
+- **Square:** rendered centered with minor padding
 
-Flipping the card reveals the back — a long-form scrollable surface containing everything a serious buyer (or Marty) could want to know about the animal. The back replaces what the original architecture doc called the "detail page." There is no separate detail page; the back of the card is the detail page.
-
-### 4.1 Structure: eight sections
-
-The back of the card is organized into eight expandable sections, in order:
-
-1. **Identity & Registration** — *default expanded*
-2. **Pedigree** — *default expanded*
-3. **Performance** — *default expanded if any data exists; entire section hidden if all fields null*
-4. **Health Tests** — *default collapsed; entire section hidden if all fields null*
-5. **EPDs** — *default collapsed; entire section hidden if all fields null*
-6. **Breeding Status** (females only) — *default expanded*
-7. **About This Animal** — *default expanded if Marty has written anything; entire section hidden if empty*
-8. **Acquisition** — *default collapsed; entire section hidden unless `showSourcePublicly` is true (admin) or populated (public)*
-9. **Timeline** — *default expanded* (photo history chronologically, always present when any public photos exist)
-
-The ordering follows a buyer's natural reading arc: *who is this animal* (identity, pedigree) → *what can she do* (performance, health, EPDs, breeding) → *who is she as an individual* (about) → *where did she come from* (acquisition) → *what has she looked like* (timeline).
-
-### 4.2 Section contents
-
-**Identity & Registration:**
-- Tag and tag history (if the animal has retagged, show previous tags as context)
-- AHA registration number (tappable external link, see §4.5)
-- Tattoo
-- Date of birth
-- Horn status (horned / polled / dehorned)
-- Sex
-- Co-ownership note, if applicable
-- Distinction designations with year awarded, each linking to hereford.org for verification
-
-**Pedigree:**
-- Sire (internal link to sire's card if in-herd; external hereford.org link if reference-only; plain text if completely unknown)
-- Dam (same logic as sire)
-- Maternal grandsire / grand-dam when available
-- Full and half siblings, as tappable chips, when they exist in the herd
-
-**Performance:**
-- Birth weight
-- Weaning weight (with 205-day adjusted value when calculable)
-- Yearling weight (with 365-day adjusted value when calculable)
-- Scrotal circumference (bulls only, at yearling measurement)
-- Weight ratios when a contemporary group is defined
-- Calving ease score (1-5)
-- Disposition score (1-6 BIF scale)
-
-**Health Tests:**
-- BVD-PI test status (null / negative / positive)
-- Semen test status (bulls only; null / passed / failed / last-test-date)
-- Genetic defect test results (list of test-name-plus-result pairs)
-- Johnes disease status if declared
-
-**EPDs:**
-- Full EPD panel when Marty has submitted TPR data to AHA
-- Top-X% notations surfaced as visual highlights ("Top 5% CE & MCE")
-- For v1 this section will generally be empty for all Marty's animals — he has not submitted TPR data yet. The section materializes as data populates.
-
-**Breeding Status (females only):**
-- Current pregnancy status (open / bred / confirmed)
-- Expected calving date (loose format accepted: "Spring 2026" or "2026-03-15")
-- Breeding method (AI / natural / embryo transfer)
-- Sire of current breeding
-- Calving history count (number of calves to date, public-relevant outcomes only)
-
-**About This Animal:**
-- A short narrative paragraph written by Marty describing the animal's personality, history, what he values about her. This is where the ranch's warmth lives on the card.
-- Length: 50-200 words typical. Not a sales pitch; personal observation.
-- If empty, the entire section is hidden.
-
-**Acquisition:**
-- Source ranch (if `showSourcePublicly` is true on public view)
-- Acquisition method (private treaty, auction, consignment, production, online, other)
-- Acquisition date
-- Always visible in admin. Visible publicly only when the admin has explicitly opted to share.
-
-**Timeline:**
-- All public-eligible photos of this animal in chronological order (oldest to most recent)
-- Each photo shows capture date
-- Click/tap any photo to open a lightbox with that photo enlarged
-- Lightbox navigation pages through the timeline in order
-
-### 4.3 Sticky section headers and edit affordances
-
-The back is a long scrollable document. When a section is expanded and the user scrolls past its header, **the header pins to the top of the scroll area** and remains visible until the next section's header arrives. This is the standard iOS contacts-list pattern, correctly applied to a long document.
-
-**In public mode**, the pinned header shows:
-- Section title (left)
-- Expand/collapse chevron (right)
-
-**In admin mode**, the pinned header additionally shows:
-- An "Edit" button on the right side, next to the collapse chevron
-
-### 4.4 Admin edit interaction on the back of card
-
-See §6 (Admin mode differences) for full details. Summary: tapping Edit converts the section's fields to inputs, replaces Edit with Save + Cancel in the pinned header, supports chained field progression via Enter key, and returns to read-only state on save. Cancel discards all section changes. No auto-save.
-
-### 4.5 External link behavior — registration and hereford.org
-
-**The registration number on the back of the card is a tappable external link.** Tapping it follows the same two-step tooltip protection as ribbons:
-
-- First tap opens a tooltip: *"Verify registration #44000820 on hereford.org ↗"*
-- Second tap on the tooltip link navigates to hereford.org
-- Navigation uses same-tab behavior (scroll position acceptably lost; browser back returns to herd)
-- The tooltip dismisses on outside tap or after 5 seconds
-
-All external links on the back of the card use this same two-step pattern: pedigree fallback links for reference animals, distinction verification links, acquisition-source references, anywhere else external navigation might occur. Internal links (to sire/dam cards within the herd) remain single-tap.
-
-### 4.6 Internal sire/dam links and return navigation
-
-When an internal sire or dam link is tapped, the current card's state is saved and the linked animal's card opens. When the user closes that card (via back chevron, top-right ×, or swipe right), they return to **the originating animal's back of card**, regardless of how deep they navigated.
-
-Memory is **one-level only**: if the user went from Animal A to Dam B to Grandam C, closing returns to Animal A, not to Dam B. This is the baseball-card-binder mental model: pull a card, look at related cards, put them all back when done. Browser back still works normally for users who want finer-grained history.
-
-### 4.7 Inquire CTA — "Ask About This Animal"
-
-For animals with status `sale`, two "Ask About This Animal" buttons appear on the back of the card:
-
-- **Inline near the top**, in the Identity section's status area, where "Status: For Sale" renders. The CTA appears as a prominent button using the gold palette token.
-- **Inline at the end** of the back of card content, after the Timeline.
-
-Both buttons are identical in function and style. Having both positions means a buyer who wants to inquire immediately can do so without scrolling; a buyer who reads everything arrives at the CTA naturally at the end.
-
-For animals *not* for sale, neither button appears. The layout region near the status field remains empty (visible whitespace is preferable to layout-shift-by-status). This region is reserved for future contextual actions on non-sale animals: "View Calves," "View Lineage," etc. — not in Phase 1.
-
-**Button behavior:**
-- Tap opens an overlay modal over the current page (does not navigate away)
-- Modal contains a Formspree form (existing ID: mzdybyjl) pre-filled with:
-  - Subject: "Inquiry about #[Tag] [Name]"
-  - Animal reference fields
-  - Empty user-fillable fields for name, email, phone, message
-- Modal header shows "Inquiring about #[Tag] [Name]"
-- Modal has an × close button in top-right
-- On successful submit, modal fades; a brief "Thanks for your interest" toast appears at the bottom of the page for ~3 seconds, then fades
-- User returns to exact scroll position and view state
-- User can submit inquiries for multiple animals without leaving the herd flow
+Hero slots require landscape. The card front slot accepts all three orientations.
 
 ---
 
-## 5. 🟦 Product: Herd page layout
+## 4. 🟦 The card — back
 
-The herd page (`/herd`) is where visitors browse all the animals. It's the most important public page.
+The back is the evaluation surface. Its primary content is the animal's detail sections. A compact thumbnail of the side-profile evaluation photo lives in the top-right corner, with a toggle-to-expand interaction that reveals the animal's chronological growth story.
 
-### 5.1 Sectional binder organization
+### 4.1 Layout
 
-Cards are grouped into sections by animal category:
+From top to bottom:
 
-1. **Bulls**
-2. **Cows**
-3. **Heifers**
-4. **Calves**
-5. **Reference** (outside animals tracked for pedigree)
+1. **Header strip:** animal's name and tag, large, Playfair Display. For named animals: "Sweetheart · #840". For unnamed: "Cow #842" (sex label + tag).
+2. **Corner thumbnail** (top-right): still image of current side-profile throne-holder, roughly the size of 2-3 stacked stat rows. Subtle expand affordance visible.
+3. **Identity section:** sex, breed, date of birth, age, current status
+4. **Pedigree section:** sire (linked to sire's card if in herd), dam (linked to dam's card if in herd)
+5. **Registration section:** AHA number rendered as tappable external link with ↗ icon, opening hereford.org's registration lookup in a new tab
+6. **Performance data section** (when disclosed): weaning weight, yearling weight, EPDs, whatever Marty has chosen to publish
+7. **Sale details section** (when status is available): asking price, terms, inquiry CTA
+8. **Progeny section** (for cows): "Calves from this cow" — linked list of offspring in the herd (plain-language label, not "progeny")
+9. **History section:** significant dates (arrival, distinction awards, status changes)
+10. **Gallery link:** `"[Name]'s gallery"` or `"[Sex] #[tag]'s gallery"` — text link to the per-animal gallery page
+11. **Inquiry CTA** (available animals only): "Ask About [Name]" or "Ask About This Animal"
 
-Each section has a clear header with the section name. Empty sections are **hidden entirely** — no "Bulls (0)" header, no placeholder text. The herd appears full regardless of composition.
+Sections render only when they have content. Empty sections don't show at all, not even as muted ghost rows (public surface). Admin surface uses a different treatment — see §8.
 
-Sold animals never appear on the public herd page (they remain in admin only, for Marty's records). If all sections are empty (improbable edge case), a warm empty-state message appears: *"The herd is resting. Check back soon."*
+### 4.2 Corner thumbnail interaction
 
-### 5.2 Two display modes
+The thumbnail is a still image at small size. Tapping it toggles to expanded view:
 
-**Cards mode (default):**
-- Desktop: 3 cards per row at standard widths, 2 at tablet, 1 at phone widths
-- Mobile: one full-viewport card at a time, paged vertically
-- Each card shows the full front with all affordances
+- **Expanded:** photo grows to fill the card-back width. Card-back content remains in the background, still scrollable.
+- **Not a modal.** Background content stays active. The user can scroll past the expanded photo and still read details beneath.
+- **Tapping the expanded image again collapses it** back to thumbnail.
 
-**Compact mode:**
-- Both desktop and mobile: list rows with thumbnail (left), summary (middle), and swipe-affordance (right)
-- Swiping right on a mobile compact row flips to the full-screen back
-- Clicking a desktop compact row opens full-screen card view
-- Same back-of-card content regardless of which mode was used to reach it
+When expanded, autoplay begins (see §4.3). When collapsed, autoplay pauses and resets.
 
-Mode toggle is available in the herd-specific header (see §5.4). Choice persists in localStorage per device.
+### 4.3 Expanded carousel — chronological growth story
 
-### 5.3 Sorting and filtering
+When the thumbnail expands, the view becomes a chronological carousel of the animal's side-profile photos across their life.
 
-**Sorts:**
-- Tag number (default)
-- Age (tap to toggle oldest-first vs. youngest-first)
-- Admin mode adds a third sort: **Needs Attention** — flattens sections into one list ordered by nudge priority (high → medium → low → no nudges)
+**Adaptive density (internal — never surfaced to the user):**
 
-Sorts apply *within sections* in binder layout. Sorting by Age in Cards mode shows the youngest cow within the Cows section, not interleaved with the youngest calf.
+| Life stage | Age range | Max photos | Approximate cadence |
+|---|---|---|---|
+| Newborn | 0-60 days | 4 | ~2 weeks |
+| Young calf | 60-205 days | 5 | ~1 month |
+| Weanling | 205-365 days | 3 | ~2 months |
+| Yearling | 1-2 years | 4 | ~3 months |
+| Mature | 2+ years | 1 per year | annual |
 
-**Filters:**
-- All (default)
-- For Sale
+For a 9-year-old cow, theoretical maximum is ~23 photos; in practice far fewer since most life-stage slices won't have four photos to choose from.
 
-Only two filter chips, intentionally. The sectional layout handles category-based filtering (someone looking for "just the bulls" scrolls to the Bulls section). Adding sex/age filters would clutter the header for little additional value.
+**Selection within each slice:** the best side-profile photo by the §14 scoring formula, evaluated at the time of the slice. Non-winners do not appear in the carousel but remain in the per-animal gallery (§6).
 
-### 5.4 Page headers
+**Autoplay behavior:**
 
-Two headers always visible on the herd page:
+1. Expansion triggers autoplay
+2. First frame is the **most recent** photo (current throne-holder), held for 10 seconds — answers "what does the cow look like now" immediately
+3. Transitions to oldest chronological photo
+4. Cycles forward through each slice winner: Live Photo plays once (~2s motion), then still held ~3-5s, transitions to next
+5. When the cycle returns to the current-most-recent, extended 10-second hold
+6. Loops indefinitely until paused or collapsed
 
-**Site header** (shared across all pages):
-- Ranch logo/name (links to Home)
-- Hamburger menu with full site navigation
+**Visible controls during expansion:**
 
-**Herd-specific header** (only on `/herd`):
-- Mode toggle: Cards / Compact
-- Sort selector: Tag / Age (with age direction toggle)
-- Filter chips: All / For Sale
+- Play/pause button (top-left of expanded image, high contrast)
+- Left/right chevrons at edges for manual previous/next
+- Dot pager along bottom — one dot per displayed photo (not per bucket, not per life stage); tapping a dot jumps and pauses autoplay
+- Close/collapse affordance (top-right of expanded image, or tap outside the image area)
+- Date overlay on each frame, same treatment as §3.3
 
-Both headers remain visible during scroll. If layout testing shows this is too heavy on a phone viewport, we'll revisit; initial build assumes both always-visible.
+**Zero-photo slices are silently skipped.** No placeholder text, no gap indicator. The dot pager simply has one fewer dot. The absence should feel natural.
 
-### 5.5 Card interaction
+**Reduced motion:** autoplay defaults to paused. Manual advancement only. Live Photo motion replaced with still frames.
 
-**On mobile (Cards mode):**
-- Vertical swipe up/down: pages to next/previous animal
-- CSS scroll snap makes paging feel native (`scroll-snap-type: y mandatory` on container, `scroll-snap-align: start` on each card)
-- End-of-herd: rubber-band bounce at bottom with a warm message *("That's the whole herd. Check back for new calves.")*; silent bounce at top with no message
-- Pull-to-refresh disabled (`overscroll-behavior: contain`)
-- Horizontal swipe left (in the middle ~85% of card width): flip card to back
-- Horizontal swipe right on back: return to front
-- 20px dead zone at left and right screen edges reserved for OS back-gestures
-- Intent detection: first 10-15px of movement determines whether the gesture is horizontal (flip) or vertical (page) — predominantly horizontal movement triggers flip mechanics
+### 4.4 🟧 External links
 
-**On mobile (Compact mode):**
-- Vertical scroll through list rows (no snap)
-- Swipe right on a row flips to that animal's full-screen back
-- Pull-to-refresh still disabled
+Registration number on the back is a tappable external link to hereford.org's registration lookup, formatted as `AHA #[number] ↗`. Opens in new tab. No redirect, no intermediate "leaving site" message — the external link icon is sufficient indication.
 
-**On desktop:**
-- Scroll is vertical scroll (no snap in either mode)
-- Click on a card opens full-screen card view
-- Click on "Details ›" or on a compact row's swipe affordance flips to back
-- Click on × or back chevron from back returns to the herd view at preserved scroll position
+Internal links to sire/dam cards use standard in-app navigation (sliding to that animal's card in the same herd view).
 
-### 5.6 Flip animation details
+### 4.5 🟧 Back photo selection
 
-The flip is an **interactive transition** — the card tracks the user's finger in real time during a horizontal swipe.
-
-**Commit thresholds:**
-- Distance threshold: 50% of card width dragged triggers commit
-- Velocity threshold: release with horizontal velocity > 500 px/s triggers commit (a fast flick counts even at short distance)
-- Below both thresholds on release: spring back to original face
-
-**Animation timing:**
-- Spring-back (threshold not met): ~250-300ms damped-spring animation
-- Commit-through (threshold met): ~200-250ms damped-spring to 180°
-- Button-triggered flip (tap "Details ›"): same spring, plays through without tracking
-
-**Accessibility fallbacks:**
-- `prefers-reduced-motion`: instant swap or opacity crossfade instead of 3D rotation
-- Older hardware: coding agent may fall back to horizontal slide-in-from-right if 3D flip performance is poor
-
-**Implementation notes:**
-- CSS `transform: rotateY()` with `backface-visibility: hidden` on two stacked faces
-- The tracking during gesture requires custom JavaScript gesture handling; the animation on commit/cancel can use CSS transitions
-- Build non-animated swap first as a correctness baseline, then layer the 3D flip on top
+The thumbnail shows the current `cardFrontThrone` (side profile), regardless of the animal's availability status. Unlike the front, the back always shows the side profile because the back is the evaluation surface — the buyer who got here wants the information-dense shot.
 
 ---
 
-## 6. 🟦 Product: Admin mode differences
+## 5. 🟦 Per-animal gallery
 
-The admin panel uses the **same card component** as the public herd catalog, with a mode prop distinguishing public from admin. This means Marty sees his herd organized the way buyers see it. The consistency is deliberate: his edits happen in the same visual frame that the public experiences, so he always has an accurate preview of public presentation.
+URL: `/herd/[id]/gallery`
 
-### 6.1 What's different in admin mode
+The per-animal gallery is accessed from the card back via the `"[Name]'s gallery"` link. It shows all photos of the animal.
 
-**On the front of the card:**
-- Admin sees additional status indicators as small discreet chrome: `Needs Review` when nudges are open, `Pregnancy Overdue`, `Unbranded` as warranted
-- These use distinct visual treatment (not ribbons — they're admin-only context chrome)
+### 5.1 Layout
 
-**On the back of the card:**
-- All empty fields render as "teaching moment" prompts with placeholder text and information tooltips (see §6.2)
-- The Sale Details section appears when status is `sold` (private notes, buyer, method, date)
-- The Removal Details section appears when status is `culled` or `deceased`
-- The Acquisition section is always visible (not gated by `showSourcePublicly`)
-- Pregnancy internals (`pregnancySetDate`) are visible
-- Registration workflow state is visible (eligibility, in-progress, blocked, etc.)
-- Private notes are visible
-- The per-animal nudge list appears at the top of the back (see §9.1)
-- Each section header includes an "Edit" button
+- **Page header:** `"[Name]'s gallery"` for named animals; `"[Sex] #[tag]'s gallery"` otherwise (e.g., "Sweetheart's gallery", "Cow #842's gallery", "Calf #840's gallery", "Bull #901's gallery")
+- **Sort toggle:** Newest first (default) / Oldest first
+- **Chronological grid** of all photos for this animal
+- Tapping any photo opens a full-screen lightbox with left/right navigation and close affordance
 
-**Additional admin sections (not shown publicly):**
-- **Photos management** — Prefer/Hide controls per photo, reassign to different animal, force canonical-view overrides
-- **Calf reassignment / weaning retag** — workflow for transitioning a calf from dam's provisional tag to its own tag
+**No classification filters.** All shot types (side profile, head, three-quarter, action, scenic, with-dam, etc.) interleave chronologically. The user who reached this page is browsing, not searching — filters would add complexity for a narrow use case.
 
-### 6.2 Admin input flow philosophy
+**Shot type classifications still exist in the data layer** (from §14) but are not surfaced as filter UI.
 
-The admin's primary job is data entry, often in batch. Design principles:
+### 5.2 🟧 Naming function
 
-**Chained progression with zero cursor friction:**
-- Enter advances to the next logical field within the same section
-- Enter on the last field of a section dismisses the keyboard and deactivates focus — the user sees the full viewport including the pinned Save/Cancel header
-- No Enter-to-save (too easy to confuse with field advancement on mobile keyboards)
-- All fields that take numeric input trigger number keyboards on mobile
-- Tag fields auto-uppercase; auto-trim whitespace on save
-- Tag fields of known-length patterns may auto-advance when complete
+A single canonical server-side function constructs the animal's human-readable reference. Used in:
 
-**Placeholder text and information tooltips on every field:**
-- Every empty field shows grayed italic placeholder text suggesting what belongs in the field
-- Every field label has a small italic-i-in-a-bubble icon next to it
-- Tapping/hovering the icon shows a plain-language tooltip explaining:
-  - What the field means
-  - Why it matters to buyers
-  - Examples where useful
-- Tooltip content is warm and educational, following the "admin panel is a teacher" principle
+- Per-animal gallery page title
+- Shortcut picker identity labels (see §11)
+- Share composite titles
+- Compare page references
+- Audit log entries
 
-**Section-level edit mode:**
-- Tap Edit in a section's pinned header
-- That section's fields become editable inline
-- Edit button transforms into Save + Cancel, both in the same pinned header
-- Other sections visually mute slightly to indicate focus
-- Explicit save only — no auto-save
-- Cancel discards all section changes, returns to original values
-- Save commits section changes, returns section to read-only, shows brief inline "Saved" pulse on section header
+Rules:
 
-**Validation:**
-- Inline error rendering near the offending field
-- Save button disabled while errors exist
-- If user attempts save with errors, the form auto-scrolls to the first error and the Save button briefly pulses
+- `name` present → `<n>'s gallery` (e.g., "Sweetheart's gallery")
+- `name` null → `<Sex> #<tag>'s gallery` — sex is capitalized, `#` precedes tag
 
-**Collapse behavior during edit:**
-- Tapping Edit on a collapsed section expands *and* enters edit mode in one action
-- Sections cannot be collapsed while in edit mode (must save or cancel first)
-
-### 6.3 Nudge-triggered edit flow
-
-When Marty clicks a nudge:
-- The animal's card opens, back-of-card state
-- Auto-scrolls to the targeted section
-- Expands the section if collapsed
-- Highlights the targeted field with a brief gold pulse (2-3 seconds)
-- Highlights (gold-pulses) the section's Edit button
-- **Does NOT auto-enter edit mode** — Marty taps Edit to confirm he's ready to change something
-
-This preserves the principle: *edit mode is always opened explicitly, never automatically.*
-
-### 6.4 Post-save chaining
-
-When Marty saves a section:
-- Brief inline "Saved" pulse on the section header (~1-2 seconds)
-- If there are more nudges on the same animal, a non-blocking toast appears at the bottom of the viewport: *"2 more items need attention on this animal — next: weaning weight."*
-- The toast has one action: "Go to it" (scrolls to the next nudge's section, highlights per §6.3)
-- Dismissing the toast with × or letting it time out (5s) just dismisses it — Marty stays where he is
-- If no more nudges exist on this animal, no toast appears
-- Nudges remain listed at the top of the back-of-card for reference regardless
-
-### 6.5 Admin sort: "Needs Attention"
-
-The admin-only third sort option flattens all sections into one list, ordered by nudge priority:
-- High priority nudges first (sale stale photos, pregnancy overdue, unbranded)
-- Medium priority next (missing basics, coverage gaps)
-- Low priority after (stale photos for non-sale, missing canonical views)
-- Animals with no open nudges at the bottom
-
-This sort exists because Marty's most common admin workflow is "what needs my attention right now." The default sort (Tag) and the secondary sort (Age) serve browsing; "Needs Attention" serves triage.
-
-### 6.6 Archive and sold animals in admin
-
-- **Sold animals** appear in a greyed section at the bottom of the admin herd view, after Reference
-- **Archived animals** (removed from herd) appear in a collapsible section below Sold
-- Marty can restore an archived animal to active herd
-- Sold animals cannot be "un-sold" by admin action — if an error, Marty must manually edit status and sale fields
+Sex labels: "Cow", "Bull", "Heifer", "Steer", "Calf" (generic calf when sex is not yet determined or not specified).
 
 ---
 
-## 7. 🟦 Product: Nudges — per-animal and coverage
+## 6. 🟦 Compare view
 
-Nudges are the system's mechanism for surfacing work that needs doing. There are two distinct nudge classes with different semantics.
+URL: `/compare?animals=<comma-separated-tags>`
 
-### 7.1 Per-animal nudges
+Compare is a **sharing tool**, not an evaluation tool. A buyer selects 2-3 animals and sends the URL to a co-decision-maker who views them side by side without browsing the site themselves.
 
-Tied to a specific animal's data state. React to missing or stale fields on a specific record.
+### 6.1 Phase 1 scope
 
-**Examples:**
-- "Animal #840 has no weaning weight"
-- "Animal #847's side profile photo is 200 days old and she's listed for sale"
-- "Animal #853 is branded: false and has been in the herd for 90+ days"
-- "Animal #861 has pregnancy overdue — expected calving was 2026-03-15"
+Phase 1 **locks the URL pattern** but ships a placeholder view. The placeholder page:
+- Reads `animals` query parameter, parses comma-separated tags
+- Displays each animal's name, tag, and current front photo in a simple vertical stack
+- Includes the message: *"Side-by-side comparison coming soon. In the meantime, here are the animals you're looking at."*
 
-**Where they appear:**
-- Aggregated in the admin dashboard nudge section
-- Listed at the top of the back-of-card (in admin mode) for that specific animal
-- Clicking a nudge deep-links per §6.3
+The compare-mode toggle in the herd page is hidden in Phase 1 (since the full compare UI isn't built).
 
-**Priority levels:**
-- **High:** Sale animal with stale photos (>60 days), sale animal with no photos, pregnancy overdue (>300 days from `pregnancySetDate` or >14 days past `expectedCalving`)
-- **Medium:** Missing basics, multiple calves same dam (retagging needed), registration eligibility aging >60 days
-- **Low:** Stale photos for non-sale animals (life-stage thresholds, see §15), missing canonical view classifications
+### 6.2 Phase 2 full build
 
-**Persistent nudges:**
-- Unbranded active herd animals do not count calves still nursing
-- Dismissal is 24-hour localStorage-based; nudge returns after 24 hours if not addressed
-- Persistent nudges reappear regardless of dismissal
+- Compare-mode toggle appears in the herd controls row (sort / filter / view toggle)
+- Toggle is hidden when the current filter matches fewer than 2 animals (nothing to compare)
+- When compare mode is on: taps on cards add/remove from selection; selected cards show indicator
+- Bottom-fixed compare tray shows selected animal thumbnails + "Compare" button
+- Max 3 animals
+- Compare surface: horizontal grid on desktop, horizontal scroll on mobile with sticky attribute column
+- Attribute groups mirror the card-back vocabulary
+- Absent values render as muted "not disclosed" (in compare, absence is meaningful — different from card-level hiding)
+- Photos: single primary photo per animal (side-profile throne-holder), no carousel, no motion
+- "Ask about these animals" CTA opens inquiry form with all selected animals pre-referenced
+- OpenGraph composite image shows all selected animals for shareable URL previews
 
-### 7.2 Coverage nudges
+### 6.3 Compare is public, not admin
 
-A new class of nudge, distinct from per-animal nudges. Fire predictively when a system need cannot be fulfilled.
-
-**Characteristics:**
-- Not tied to a specific animal
-- Fire before the gap is publicly visible (predictive, not reactive)
-- Address by *adding new content* rather than editing existing records
-- Deep-link where possible — a "gallery missing summer landscape" nudge might deep-link to the admin upload pane with the correct category pre-selected
-
-**Examples:**
-- "Hero slot rotates in 47 days. Eligible summer hero candidates: 0"
-- "Wall secondary slot rotating next month. Eligible 'Theodore' photos: fewer than 3"
-- "Animal #840 is newly for sale and is missing a three-quarter shot for complete public presentation"
-- "3 animals are registration-eligible and have been eligible for 60+ days. Consider submitting"
-
-**Where they appear:**
-- Same admin dashboard nudge section, mixed with per-animal nudges, sorted by priority
-- Visually distinguished (slightly different icon indicating "system" vs. "animal")
-- Matt can see them too — they reflect his work as well as Marty's
-
-**Priority scaling:**
-- Based on urgency/time-to-impact
-- A Wall slot rotation 60+ days out: low priority
-- 30-60 days out: medium priority
-- <30 days out: high priority
-- Overdue (should have rotated already, couldn't): high priority and persistent
-
-### 7.3 Dismissal behavior
-
-- Both nudge classes support 24-hour localStorage-based dismiss
-- Dismissed nudges return after 24 hours regardless
-- Persistent nudges (unbranded, overdue pregnancy, can't-rotate-slot) reappear even after dismiss
+Compare exists only on the public side. Admins use the herd list with multi-sort for breeding pairings, culling decisions, and their own operational comparisons — no separate admin compare surface.
 
 ---
 
-## 8. 🟦 Product: The Gallery — "The Wall"
+## 7. 🟦 Herd page
 
-The Gallery page is **not** a masonry grid of photos. It is a curated editorial composition — conceptually, a gallery wall in a home, themed around ranch, family, and place.
+URL: `/herd`
 
-### 8.1 Concept
+The herd page is the primary browse surface. Shows all animals. Filterable and sortable.
 
-Every image on the wall earns its position. The Wall displays 9-13 photos at a time arranged in an intentional composition. Some images are larger (the hero), some medium, some small — an editorial page design rather than an auto-flow grid. The composition is stable; what fills the composition rotates.
+### 7.1 Layout
 
-### 8.2 Slot roles
+**Top controls row** (sticky):
+- View toggle: Cards (default) / Compact
+- Sort: By tag / By age (ascending or descending) / By name
+- Filter: All (default) / Available / Named / etc.
+- Compare-mode toggle (Phase 2; hidden when <2 match current filter)
+- Admin-only: NeedsAttention sort option (surfaces animals with active nudges first)
 
-The Wall has named slots, each with a defined role:
-- **1 Hero slot** — largest. Landscape or emotionally anchoring image. Rotates seasonally (4 changes per year)
-- **2-3 Secondary slots** — medium-sized. Content mix of cattle, people, ranch work. Rotate monthly, staggered
-- **4-8 Supporting slots** — smaller, varied. Rotate monthly, staggered differently from secondaries so the whole Wall doesn't swap at once
+**Card grid:**
+- **Cards view** — one card per row on mobile, 3 per row on desktop
+- **Compact view** — denser grid, more per row, still frames only, front photo + tag + name + status
 
-### 8.3 Content categories
+**Binder order** (section groupings within the single scrollable list):
+1. Bulls
+2. Cows
+3. Heifers
+4. Calves
+5. Reference animals (sold, deceased, no longer owned)
 
-The AI classifier (Phase 2) tags each piece of media with a `galleryCategory`:
-- `landscape` — ranch scenery, wide shots
-- `theodore` — the Junior Ranch Hand
-- `marty` — Marty at work or in a portrait
-- `roianne` — Roianne at work or in a portrait
-- `family` — family moments, group shots
-- `ranch-work` — people working on the ranch
-- `cattle-life` — cattle in context, not for-sale evaluation
-- `seasonal` — photos with strong seasonal association
-- `hunting` — hunting-themed content (Marty's hobby; no dedicated section, flows in when seasonally apt)
+Sorts apply within each section. The binder grouping itself never changes.
 
-Each piece of media can also have `seasonalAffinity`: `spring` | `summer` | `fall` | `winter` | `year-round` | `null`
+### 7.2 End-of-list behavior
 
-And `isWallCandidate`: admin override (default true for gallery-classified photos passing quality thresholds).
+- **Bottom:** warm rubber-band message. Something like *"That's the whole herd."* No attempt to load more; there is no more.
+- **Top:** silent. Standard pull-to-refresh if supported, no explicit message.
 
-### 8.4 Automated curation
+### 7.3 Motion rules
 
-The curation engine handles slot-filling based on:
-- Category matches (hero slot prefers `landscape` or `cattle-life` seasonal shots)
-- Seasonal affinity matches current season
-- Freshness preferences (more recent photos weighted higher)
-- No-repeat-too-soon rules (photo shouldn't cycle back into same slot for N months)
-- Quality classification (only "excellent" or "good" photos are candidates)
+**Herd cards are static forever — no motion on the evaluation surface.** When browsing the herd list, all cards show still frames. Motion only happens when the user swipes onto a card's front (per §3.2) — that is, when they're committed to looking at that specific animal.
 
-**Rotation is fully automatic.** No "refresh the Wall?" prompt. Rotations happen on predefined schedules (hero seasonal, secondary/supporting monthly) and swap silently.
+This is a deliberate restraint. Motion at list density is noise, not signal. A quietly still herd grid is easier to scan than one where a dozen cattle are subtly moving in a visual field.
 
-**Admin override:** Matt (rarely Marty) can pin a specific photo to a specific slot. Pins are time-bounded by the same life-stage staleness clock; they auto-expire rather than persist forever.
+### 7.4 Herd landing (admin variant)
 
-### 8.5 Coverage nudges for the Wall
+When an admin is logged in, the `/herd` page serves as their landing/dashboard. Additional affordances appear:
 
-When the curation engine cannot fill a slot — no eligible photos exist for the category + season + quality combination — a coverage nudge fires (see §7.2).
+- **Status strip** above the list: 4 counts — inquiries awaiting response, animals to review (Contributor uploads), animals needing attention (active nudges), total animals. Counts are greyed out when zero. Sticky with the controls row.
+- **FAB** (floating action button): "+ Add animal" — visible to Owner, Admin, Editor only
+- **NeedsAttention sort** option available
 
-Examples:
-- "Hero slot rotates in 47 days. No eligible summer hero candidates."
-- "Secondary slot needs cattle-life winter photos. Fewer than 3 available."
-
-The nudge deep-links to the admin media upload view with the needed category pre-selected.
-
-### 8.6 Lightbox behavior
-
-Clicking any Wall photo opens a lightbox showing that photo at full size. Lightbox navigation (swipe left/right on mobile, arrow keys on desktop) cycles through **all Wall images in their layout sequence** — not by category, not by random. The Wall *is* the curation; the lightbox respects that sequence.
-
-### 8.7 Captions
-
-Minimal. No internal links to the Herd (gallery photos are historical artifacts; linking them to current cow cards creates awkwardness when animals change or leave).
-
-Format: `[Name], Month Year` when a subject is identified, or just `Month Year` otherwise. Pure landscape shots may have no caption at all.
-
-### 8.8 Mobile adaptation
-
-On mobile, the Wall becomes a **vertical stacked composition** that preserves the slot hierarchy: hero at top, secondaries below, supporting images further down. Same curation, same rotation, adapted layout.
-
-### 8.9 Phase 1 deliverable for the Wall
-
-Phase 1 ships a **static placeholder Wall** with 9-13 hand-arranged placeholder images. The slot structure is present and visible. The curation engine, seasonal rotation, AI classification, and coverage nudges are all Phase 2+.
-
-Phase 1's job for the Wall: establish the visual pattern and the data model fields that support future automation. Matt arranges the placeholder Wall manually for launch.
+See §8 for admin-specific surfaces and interactions.
 
 ---
 
-## 9. 🟦 Product: Home page
+## 8. 🟦 Home page
 
-The Home page is the front porch of the ranch. Quiet, welcoming, not information-dense.
+URL: `/`
 
-### 9.1 Structure
+A single-scroll home page that serves as both entrance and navigation. Non-technical users can scroll from top to bottom and discover the site without needing to hunt for a hamburger menu.
 
-**Above the fold:**
-- Full-viewport hero image (atmospheric landscape, rotates seasonally via the same curation engine as the Wall's hero slot)
-- Overlay: **"Summers Ranch"** in the display font, subtitle with breed + location ("Registered Herefords — Sutter Creek, California")
-- "Established [year]" (requires Matt to confirm the correct year with Marty)
-- Subtle scroll-down indicator
+### 8.1 Sections (top to bottom)
 
-**Below the fold:**
-- Short welcoming paragraph (2-3 sentences) — the ranch's essence in brief
-- Single prominent call-to-action: **"See the Herd"** → `/herd`
-- Theodore moment — photo + one line of copy ("Junior Ranch Hand")
-- Footer
+1. **Hero** — ranch name, tagline, "Sutter Creek, California" location, background image of cattle
+2. **Meet the herd** — kicker + title + short prose + "See the Herd" CTA; below: teaser row with 3 featured animals (photos + names/labels) linking to their cards
+3. **About the ranch** — kicker + title + short prose + "Our story" CTA linking to /about
+4. **Looking to buy** — shown only when 1+ animals are available — kicker + title + short prose + "See what's available" CTA linking to herd filtered to Available
+5. **Get in touch** — phone, email, location, hours — inline, no form on home
 
-**What's not on the Home page:**
-- No featured cattle section
-- No blog
-- No recent news
-- No recent sales
-- No featured animal cards
+All sections use the same structural vocabulary: small uppercase kicker (tracked), Playfair Display title with italic emphasis on key words, Work Sans body, tracked-uppercase CTA button.
 
-The cards on the Herd page do the "featuring" work themselves through their design. Home is quiet on purpose. Peer sites cluttered with feature carousels are exactly what we're distinguishing from.
+### 8.2 Home page when no animals available
 
-### 9.2 Family narrative belongs on About
+The "Looking to buy" section is hidden entirely (not shown with "no animals available" copy). Better empty than wrong.
 
-The energy of "these animals are special" — the Draft A impulse — lives on the **About page** as family story. About describes the ranch, the people, the animals they've bred over decades. That surface doesn't go stale and it's the right register for warmth.
+### 8.3 Home page hero
+
+Hero uses the ranch's best landscape photograph of cattle. Overlay scrim: pure black gradient concentrated in the bottom third only — does not tint the full photograph. Protects hero text legibility without discoloring the cattle.
+
+Text: small uppercase kicker ("Registered Herefords · Est. 1998"), large Playfair display title ("Summers *Ranch*" with italic emphasis on "Ranch"), italic tagline, small uppercase "Sutter Creek, California" below.
 
 ---
 
-## 10. 🟦 Product: About, Contact, Gallery pages
+## 9. 🟦 About, Contact, Gallery pages
 
-### 10.1 About
+### 9.1 /about
 
-Family story. Photos of the family and ranch. Marty, Roianne, Theodore. Property history. How Marty and Roianne came to the ranch.
+Simple long-form prose page. Ranch history, operating philosophy, family background. No form, no interactive elements. A single banner photo or small gallery can anchor the top.
 
-Content guidance:
-- Warm, not corporate
-- Personal voice — Marty or Matt writing, not marketing
-- Mentions some notable animals (Sweetheart, the longtime matriarch; notable sires) as part of the ranch's story, with restraint
-- Hunting as Marty's hobby is mentioned here (if at all) as part of his character, not as a service offering
+### 9.2 /contact
 
-Content is placeholder in Phase 1. Matt will review with Marty and Roianne during pre-launch content review.
+Phone, email, physical location (optional — privacy consideration, admin controls whether it's surfaced in Site settings), visiting hours policy. Includes a simple inquiry form that posts to the inquiries inbox (see §10).
 
-### 10.2 Contact
+### 9.3 /gallery — "The Wall"
 
-Formspree form (existing ID: `mzdybyjl`). Simple fields: name, email, phone, subject, message. No surprise requirements.
+A curated atmospheric gallery surface. The Wall is where ranch life photography lives — landscape shots, working scenes, cattle in the field, seasonal moments. This is the one place on the site where motion can play without triggering an evaluative mindset.
 
-Other content:
-- Email: info@mrsummersranch.com
-- Phone number (Google Voice planned, not yet live)
-- Physical location: Sutter Creek, CA (town/county only, no address for security)
+**Structure:**
+- **The Herd** — photos featuring identifiable animals in natural settings
+- **The Ranch** — atmospheric photos of the operation (landscape, buildings, equipment, daylight moments)
+- **The Work** (optional) — photos of ranch work in progress (tagging, feeding, moving cattle)
 
-### 10.3 Gallery
+**Behavior:**
+- Grid layout, photos sized by aspect ratio
+- Tapping a photo opens lightbox with title, optional caption, and (if featuring a specific animal) a link to that animal's card
+- Phase 2+: atmospheric surfaces are motion-eligible with deliberate per-photo enablement — a curated handful of photos play short Live Photo loops when visible
 
-See §8 (The Wall). Gallery is called "The Wall" internally and in spec documents; the nav label is "Gallery" for external familiarity.
+The selection rubrics for The Herd and The Ranch galleries are deferred to Phase 2. Phase 1 populates with admin-selected photos marked `galleryHerdCandidate` or `galleryRanchCandidate` (see §14).
 
 ---
 
-## 11. 🟦 Product: Navigation and hamburger
+## 10. 🟦 Navigation
 
-### 11.1 Site header
+**Persistent top nav** (public surface): home / herd / gallery / about / contact. Small, unobtrusive, Playfair Display for a touch of character. No hamburger on desktop; the home page's scroll narrative also serves as navigation.
 
-The site header appears on every page and contains:
-- **Ranch logo/name on the left** — always links to Home
-- **Hamburger menu on the right** — opens the navigation menu
+**Mobile:** collapses to a hamburger with the same items. The home page remains the primary wayfinding mechanism for non-technical users.
 
-### 11.2 Hamburger menu contents
+**Footer:** ranch name, contact brief, privacy link, copyright line.
 
-**Public user (no admin cookie):**
-- Home
-- About
+---
+
+## 11. 🟦 Privacy — what's never public
+
+The following data is **never** exposed on public surfaces, regardless of settings:
+
+- Sale details for sold animals (the price and terms an animal sold for)
+- Removal details for animals no longer owned (the reason, the buyer, the terms)
+- Personal contact details beyond what's explicitly in the About/Contact pages
+- GPS coordinates from photo EXIF (stripped at upload per §12)
+- Private acquisition details (what Marty paid for an animal)
+- Admin-set private notes on any animal record
+- Contributor identity in public-facing photos (Contributors are admin-only identity)
+- Financial data of any kind
+
+Performance data and pedigree are **industry-standard public information** and may be surfaced when the admin chooses.
+
+**Architectural commitment:** the public surface does not authenticate users, ever. There's no "log in to see sale details" — sale details for sold animals simply don't exist in the public data model. Privacy is by absence, not by permission.
+
+---
+
+## 12. 🟦 Admin architecture
+
+Admin surfaces live at `/admin/*`. Admin is its own URL space — public surfaces never change based on login state. A buyer browsing `/herd` sees the same herd page whether an admin is logged in somewhere else or not. Login/logout has no public effect.
+
+### 12.1 Admin URL structure
+
+- `/admin/login` — passkey login (see §12.2)
+- `/admin/` → redirects to `/admin/herd`
+- `/admin/herd` — herd landing (herd list with admin affordances per §7.4)
+- `/admin/herd/[id]` — animal detail with inline-edit
+- `/admin/inquiries/` — inquiries inbox (§13)
+- `/admin/review/` — Contributor upload review queue (§14)
+- `/admin/pending-tags/` — pending tag resolution queue (§15)
+- `/admin/upload-issues/` — upload errors and anomalies (§15)
+- `/admin/documents/` — authored documentation (§16)
+- `/admin/settings/` — Profile sub-page (§17)
+- `/admin/settings/notifications/` — Notifications (§17)
+- `/admin/settings/devices/` — Devices (§17)
+- `/admin/settings/team/` — Team management (§17)
+- `/admin/settings/site/` — Site config (§17)
+- `/admin/upload/` — web upload fallback (§15.3)
+
+### 12.2 🟧 Authentication — passkeys (WebAuthn)
+
+**Passwordless.** No passwords, ever. Authentication is exclusively via WebAuthn passkeys (biometric: Face ID, Touch ID, Windows Hello, or hardware key).
+
+**Why passkeys:**
+- Marty and Roianne don't need to remember or type anything
+- No password reset flows, no phishing surface
+- Face ID / Touch ID is faster than typing even short passwords
+- Matt's secret reveal: Marty doesn't know passkeys exist yet — the first time he taps `/admin/login` and his phone Face IDs him in, the reaction will be astonishment
+
+**Flow:**
+- User visits `/admin/login`
+- System checks for a registered passkey on this device
+- If present: biometric prompt, login completes
+- If absent: registration flow (available only with a valid invite link from Owner/Admin, per §17.5)
+
+**Device management:** each user can register multiple passkeys (phone, laptop, tablet) — see §17.3.
+
+**Recovery:** different mechanics by role — see §17.6.
+
+### 12.3 🟧 Initial provisioning
+
+The first time the site deploys, an `admin-users.json` baseline seeds the Owner account. Matt's Owner record is created with his email and phone; on first visit to `/admin/login`, he registers his initial passkey.
+
+Subsequent users (Marty, Roianne, kids) are added via the Team page (§17.5) — email invite links trigger their passkey registration flow.
+
+### 12.4 🟧 RBAC — four-tier model
+
+Four roles, with capabilities that nest:
+
+| Role | Purpose |
+|---|---|
+| **Owner** | Full access. Only one Owner per site. Transferable via two-step process (§17.7). |
+| **Admin** | Full operational access. Can add users below Admin. Cannot manage Owner, cannot transfer ownership. |
+| **Editor** | Full herd operational access — record edits, Contributor review, pending tag resolution, upload issues, documents. **No** financial data, **no** inquiry inbox, **no** user management, **no** site config. |
+| **Contributor** | Upload-only via Shortcut or web fallback. No admin web UI access beyond their own Profile and Notifications pages. |
+
+Capability matrix:
+
+| Action | Owner | Admin | Editor | Contributor |
+|---|---|---|---|---|
+| Edit animal records | ✓ | ✓ | ✓ | — |
+| View/respond to inquiries | ✓ | ✓ | — | — |
+| Review Contributor uploads | ✓ | ✓ | ✓ | — |
+| Resolve pending tags | ✓ | ✓ | ✓ | — |
+| View/edit documents | ✓ | ✓ | ✓ | — |
+| Upload photos | ✓ | ✓ | ✓ | ✓ |
+| View audit log | ✓ | — | — | — |
+| Add/remove team members | ✓ | Contributor only | — | — |
+| Change user roles | ✓ | — | — | — |
+| Site config (style, metadata) | ✓ | — | — | — |
+| Ownership transfer | ✓ | — | — | — |
+| View financial data | ✓ | ✓ | — | — |
+
+**Default launch users:**
+
+- Matt — Owner
+- Marty — Admin
+- Roianne — Admin
+- Son — Editor
+- Daughter — Editor
+- No Contributors at launch; added as needed via §17.5
+
+### 12.5 🟧 Contributor trust states
+
+Each Contributor has a trust state:
+
+- **default** — uploads auto-publish immediately, compete in throne algorithm like any other upload. Initial state for every new Contributor.
+- **review-required** — uploads land in `/admin/review/` queue, not visible publicly until approved. Contributor's phone UX unchanged — they don't know their uploads are gated. Set by Owner or Admin when quality degrades.
+- **revoked** — uploads are silently rejected at the server. Contributor sees success messages on their phone but nothing persists. Set when a Contributor should no longer contribute but admin doesn't want an explicit confrontation.
+
+Trust state is toggled from the user's row in `/admin/settings/team/`.
+
+### 12.6 Admin navigation
+
+**Mobile bottom nav** (4 items):
+- Herd (landing)
+- Inbox (inquiries)
+- Review (Contributor uploads; hidden when there are none and user has no review capability)
+- More (opens a list: Pending tags, Upload issues, Documents, Settings, Log out)
+
+**Desktop left rail** (240px sidebar):
 - Herd
-- Gallery
-- Contact
+- Inquiries
+- Review
+- Pending tags
+- Upload issues
+- Documents
+- Settings
+- Log out (bottom)
 
-**Admin-authenticated user (admin cookie present in browser):**
-- Home
-- About
-- Herd
-- Gallery
-- Contact
-- — divider —
-- Admin
-- Log Out
+Editor role hides Inquiries in both nav variants. Contributor role shows only a minimal nav (Profile, Notifications, Log out).
 
-The admin link does not appear to public users. It lives in the footer as plain text for first-time admin access (see §11.3).
+### 12.7 🟦 Inline editing
 
-### 11.3 Footer
+All editable fields on `/admin/herd/[id]` use inline edit:
 
-Every page's footer contains:
-- Copyright line with auto-updating year
-- Privacy (link to /privacy)
-- Terms (link to /terms, if created)
-- Admin (plain text link, small, alongside other utility links — not prominent but not hidden)
+- Field displays read-only by default
+- Tap/click the field's value or an edit affordance to begin editing
+- Input field appears in place; user types
+- **Auto-save on blur.** No "Save" button.
+- Server-side validation; errors inline beneath the field
+- Per-field audit trail captured automatically (timestamp, user, old value, new value)
 
-The Admin link in the footer is the entry point for Marty's first login on a new device. Once he logs in, the hamburger menu picks up the admin shortcut automatically.
+**Chained input progression:** when editing multiple fields in sequence (e.g., filling in a new calf's initial data), the next-logical field auto-focuses when the current field commits. Zero cursor friction.
 
-### 11.4 Login page
+### 12.8 🟦 Progressive disclosure
 
-When Marty taps Admin in the footer, he lands on a simple login page:
-- Password field (no username — single-user system for now)
-- "Remember me" checkbox, **unchecked by default**
-  - If unchecked: session expires when browser closes
-  - If checked: HTTP-only cookie persists for 30 days on this device
-- Submit button
-- No "forgot password" flow yet (Marty knows his password; if ever forgotten, Matt handles recovery manually)
+Animal records contain many optional fields. Progressive disclosure patterns:
 
----
+- **Plain-language section labels.** Translation map from industry terms to everyday language. "American Hereford papers" instead of "Registration." "Calves from this cow" instead of "Progeny." "Sire and dam" instead of "Parentage." Admin and public see the same plain labels.
+- **Muted ghost-lines for empty-but-relevant sections** (admin only) — sections that could have content but don't. Gives admin a sense of what's available to fill without cluttering the public view.
+- **Sections materialize only when relevant** — some sections are hidden entirely until the animal enters a state where they apply. Sale sections don't exist for animals never listed. Progeny sections don't exist for animals that haven't had calves.
 
-## 12. 🟦 Product: Privacy — what's never public
+**Nudges fire on completion.** When a field is filled in such that an animal's required data is complete plus no more than 2 optional fields are missing, system fires a completion nudge celebrating the milestone. Nudges never fire on empty animals (no "please fill this in" pressure).
 
-Certain data is always private, regardless of admin toggle state:
-- Sale details: who bought, for how much, sale notes
-- Removal details: date, reason, circumstances
-- GPS coordinates from photos (stripped on ingest)
-- Device info from photos
-- Pregnancy tracking internals (`pregnancySetDate`)
-- Registration workflow state before "registered"
-- Private admin notes
+### 12.9 🟦 Tooltips
 
-Certain data is private by default but user-controllable:
-- Acquisition source ranch (admin opts in via `showSourcePublicly`)
-- Acquisition method
+Every field has a "?" affordance (small, muted) that reveals a plain-language explanation in a tooltip. Voice is rancher-to-rancher, warm, 1-3 sentences. Content pass planned as a separate writing task (~20-30 field tooltips) involving Matt, Claude, and Roianne for voice validation.
 
-Everything else on the data model is public when populated. Absence is invisible — empty fields simply don't render.
-
-**No cookie banner.** The site uses localStorage only for UI preferences (mode toggle, nudge dismissals), which qualifies as functional/strictly-necessary storage under GDPR and CCPA frameworks. No analytics, no trackers, no third-party cookies. Privacy policy in the footer discloses what's stored and why. If analytics or tracking are ever added later, this policy gets revisited.
+**Infrastructure is Phase 1.** Content pass may land post-launch; tooltip affordance is built and can be populated incrementally.
 
 ---
 
-## 13. 🟨 Photo pipeline — staleness thresholds
+## 13. 🟦 Inquiries inbox
 
-Life-stage-anchored photo staleness drives the nudge system and the Prefer-flag expiry.
+URL: `/admin/inquiries/`
 
-| Life stage | Definition | Staleness threshold |
+All inquiries submitted via the public site (from card-back "Ask about this animal" CTAs, contact page form, or compare page "Ask about these animals") land here.
+
+### 13.1 Built-in, not Formspree
+
+Formspree was scrapped. The inbox is part of the site itself — a Cloudflare Worker endpoint receives form submissions, writes to R2 or the database, and dispatches notifications per user preferences.
+
+### 13.2 Inbox UI
+
+- List view: sender name, timestamp, subject (auto-generated from referenced animals or "General inquiry"), preview of message, unread indicator
+- Detail view: full message, sender contact info, referenced animals (linked to their cards), reply composition field
+- Actions: mark as read, archive, reply via default mail client
+- Replies sent through the user's own email — the site doesn't send email on the user's behalf; it opens a pre-composed draft in the default mail app
+
+### 13.3 Notifications
+
+When a new inquiry arrives:
+- Email to each user whose "New inquiry received" notification pref is enabled
+- SMS via Twilio to each user whose SMS pref is enabled (if phone number set)
+- Desktop push notification (Phase 2+)
+
+Notification prefs per user — see §17.2.
+
+---
+
+## 14. 🟦 Photo system — upload, classification, throne mechanics
+
+The photo system has three layers: upload (how photos enter the system), classification (what kind of photo this is), and throne mechanics (which photo wins which slot).
+
+### 14.1 🟦 Upload — Shortcut pipeline (iOS)
+
+**Phase 1: iOS only.** Android users route through an iOS admin (§14.4).
+
+Users (admins and Contributors) install a personalized iOS Shortcut on their phone. The Shortcut accepts photos from the iOS share sheet and uploads them to the site.
+
+**Shortcut distribution flow:**
+1. Admin (Owner or Admin) creates a new Contributor (or adds a device to an existing user) via `/admin/settings/team/`
+2. System generates a one-time install link
+3. Admin sends the link via iMessage, email, or copy-paste
+4. Recipient taps the link on their iPhone
+5. Link hits `GET /install/shortcut?install_id=<uuid>` — a Cloudflare Worker endpoint
+6. Worker validates the one-time install_id (24-hour expiry, single-use), retrieves the associated upload token, reads the base `.shortcut` file from the repo, programmatically substitutes the token into the right bytes, returns the personalized file with `Content-Type: application/x-apple-shortcut`
+7. iOS downloads the `.shortcut` file and offers to install it
+8. Shortcut imports with the upload token already embedded — **no prompt, no typing, single tap**
+9. First successful upload flips the user's `activationStatus` from `not-yet-activated` to `active`
+
+**Why byte-substitution, not iCloud links:** iCloud Share Links don't natively accept URL parameters to pre-fill Import Questions. The Worker-generated personalized file is how apps like Data Jar handle this. No Apple Developer account needed.
+
+### 14.2 🟦 Shortcut mechanics (runtime)
+
+Matt builds the master Shortcut once in the iOS Shortcuts app. Its actions:
+
+1. Receive images from share sheet (accepts photos, Live Photos including MOV component)
+2. "Ask When Import" variable `upload_token` — pre-filled during install via byte substitution
+3. **Always-confirm picker** prompts for numeric tag input (a single numpad session, no alphabetic keyboard)
+4. API call: `GET /api/resolve-tag?tag=<input>` with `Authorization: Bearer <upload_token>` — returns `{ matches: [{ animalId, label }, ...] }`
+5. Picker shown **always** (never auto-proceeds, even with a single match), header `"Matches for <n>:"`, items are identity-labeled strings (e.g., "Sweetheart (Cow, 9yr)"), plus a final "Add new tag" entry
+6. If user chooses "Add new tag": `"Use tag <n>?"` Yes/No prompt. Yes → commits as new animal placeholder with the typed tag. No → opens text input for letter tags (escape hatch for "109A" style tags).
+7. For each image: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>`, `X-Animal-Id: <resolved>`, `X-Batch-Id: <session-generated-uuid>` headers
+8. On all-202 success: brief visual "✓ Sent!" toast. **No audio confirmation** (cow moo scrapped).
+
+**Full-file preservation to R2.** No client compression. HEIC, Live Photo MOV pairs, ProRAW all preserved intact. Post-processing (HEIC → WebP/AVIF, EXIF strip, GPS removal) happens server-side in Phase 2.
+
+### 14.3 🟦 Incoming share sheet
+
+The Shortcut is the incoming share sheet mechanism. Users hitting "Share" on photos in their Camera Roll see the Shortcut as a destination (named e.g. "Send to Summers Ranch"). Tap it, go through the numpad + picker flow, and photos upload in the background. Fast-ack confirms once R2 persistence completes.
+
+### 14.4 🟦 Web upload fallback
+
+URL: `/admin/upload/`
+
+For admins who don't have the Shortcut installed, or who want to upload from a laptop:
+
+- Available: Owner, Admin, Editor. Contributors cannot use this surface (requires admin web auth).
+- File picker or drag-and-drop zone
+- Tag prompt using the same server resolution as the Shortcut (same picker)
+- Per-file progress indicator during upload
+- Posts to the same `/api/upload` Worker endpoint with session-cookie auth substituted for token auth
+- Batch ID generated once per web session
+
+Useful for: Android-using admins, laptop batch uploads, Shortcut-broken fallback, brand-new users before they've installed the Shortcut.
+
+### 14.5 🟦 Pending tags queue
+
+URL: `/admin/pending-tags/`
+
+When the Shortcut creates a new animal placeholder (via the "Add new tag" path), the animal exists but has only a tag number and probably one photo. It needs to be fleshed out.
+
+Pending tags queue shows these stubs with:
+- Tag number
+- Recent photos
+- Quick-action to set name, sex, and DOB (minimum required fields to graduate from pending)
+- Link to full edit page
+
+Once required fields are set, the animal exits the pending queue and lives normally in the herd.
+
+### 14.6 🟦 Upload issues queue
+
+URL: `/admin/upload-issues/`
+
+System anomalies surface here:
+- Photos uploaded against deleted or invalid tags
+- Server-side validation failures (corrupted files, unsupported types)
+- Photos flagged by classifier as likely-not-cattle
+- Duplicate uploads
+
+Each issue has a suggested resolution and a manual override. Non-blocking — upload pipeline keeps running while issues accumulate.
+
+### 14.7 🟧 Photo classification
+
+Every uploaded photo is classified. Classification produces:
+
+- **`detectedShotType`** enum: `side-profile`, `head`, `three-quarter`, `action`, `scenic`, `with-dam`, `detail`, `landscape`, `other`
+- **Eligibility flags** (boolean): `cardFrontEligible`, `timelineEligible`, `galleryHerdCandidate`, `galleryRanchCandidate`, `editorialCandidate`
+- **Scores** (0-100, nullable):
+  - `prescriptionScore` + subscores: angle, legs, full-body, height, head, cleanliness, background, lighting
+  - `aestheticScore` + subscores: technical, composition, lighting character, color/tonal
+  - `timelineScore`, `galleryScore`, `editorialScore` — null in Phase 1 (rubrics deferred)
+- **Orientation** — `portrait` / `landscape` / `square`
+- **Aspect ratio** — exact decimal
+
+Classification infrastructure ships Phase 1. The classifier itself (Phase 1) uses a small set of heuristics + admin manual overrides. ML-based classification is Phase 2+.
+
+### 14.8 🟧 Throne mechanics — card front (side profile)
+
+The current `cardFrontThrone` for each animal is the highest-scoring eligible side-profile photo, where score is a **blended weighted sum** of prescription and aesthetic components.
+
+**Prescription weighting** (what a buyer wants to evaluate):
+
+| Dimension | Weight |
+|---|---|
+| Angle (straight-on side) | 25 |
+| Legs visible | 20 |
+| Full body in frame | 15 |
+| Camera height appropriate | 12 |
+| Head visible and clear | 8 |
+| Cleanliness | 8 |
+| Background quality | 6 |
+| Lighting adequacy | 6 |
+
+Sum: 100. Each subscore is 0-1; prescription score = sum of (weight × subscore) = 0-100.
+
+**Aesthetic weighting** (craft-only, no emotional or creative judgment):
+
+| Dimension | Weight |
+|---|---|
+| Technical quality (focus, exposure) | 35 |
+| Composition | 30 |
+| Lighting character | 20 |
+| Color/tonal | 15 |
+
+Sum: 100.
+
+**Blend formula by availability state:**
+
+- **Available animal:** score = 0.9 × prescription + 0.1 × aesthetic, transitioning to 0.8 × prescription + 0.2 × aesthetic when multiple candidates score closely
+- **Not-available animal:** score = 0.7 × prescription + 0.3 × aesthetic, transitioning to 0.5 × prescription + 0.5 × aesthetic when multiple candidates score closely
+
+The higher weighting on prescription for available animals reflects that buyers need evaluation-usable shots. Not-available animals can lean more aesthetic.
+
+### 14.9 🟧 Throne mechanics — card front (beauty/action)
+
+Separate throne slot: `cardFrontBeautyThrone`. Used when the animal is not-available.
+
+**Phase 1 fallback:** most-recent photo classified as `action`, `scenic`, `three-quarter`, `head`, `with-dam`, or `other` by aesthetic score alone. No dedicated rubric.
+
+**Phase 2:** dedicated beauty/action rubric with its own subscores — deferred.
+
+### 14.10 🟧 Life stages
+
+Life stages drive staleness thresholds and bucketing density:
+
+| Life stage | Age range |
+|---|---|
+| Newborn | 0-60 days |
+| Young calf | 60-205 days |
+| Weanling | 205-365 days |
+| Yearling | 1-2 years |
+| Mature | 2+ years |
+
+### 14.11 🟧 Staleness thresholds
+
+"This throne-holder is too old" triggers a coverage nudge. Threshold depends on life stage and availability:
+
+| State | Threshold |
+|---|---|
+| Newborn, any availability | 30 days |
+| Young calf, any availability | 60 days |
+| Weanling, any availability | 90 days |
+| Yearling, any availability | 180 days |
+| Mature, not available | 365 days |
+| Mature, available | 60 days (override) |
+| Reference animal | Never stale |
+
+Threshold is measured from the throne-holder's capture date.
+
+### 14.12 🟧 Prefer / Hide admin overrides
+
+Admin can flag individual photos:
+
+- **`forceInclude`** — this photo overrides normal scoring for its slot. Time-bounded by the animal's current life-stage staleness threshold (photo expires from forceInclude when life stage would retire a same-age shot). Single unified clock.
+- **`forceExclude`** — this photo is permanently removed from candidacy. No time bound.
+
+Admin picker is simple — a Prefer/Hide per-photo toggle. Not a complex preference system.
+
+---
+
+## 15. 🟦 Nudges — per-animal and coverage
+
+Nudges are gentle prompts that surface when admin attention would improve the site. Two categories.
+
+### 15.1 Per-animal nudges
+
+Fire on completion milestones or individual data gaps:
+
+- An animal's throne-holder photo is past its staleness threshold
+- An animal's required fields are all filled but 1-2 optional fields are missing — "completion celebration" nudge
+- An animal has changed status (new calf, new availability, distinction awarded) and relevant sections need review
+- An animal has no photos and exists (missing initial uploads)
+
+Nudges display in the admin's herd list with a small indicator on the card, and surface in the status strip's "Animals needing attention" count. Tapping the indicator navigates to the relevant field with a gold-pulse highlight.
+
+**30-day snooze default** per nudge. After 30 days of inaction, the nudge reappears. Admin can manually dismiss to push out further.
+
+### 15.2 Coverage nudges
+
+Fire when a required slot in an automated system can't be filled — **the gap hasn't manifested publicly yet, but is about to**:
+
+- No summer hero shot available for the Wall's seasonal rotation
+- No side-profile photos for any currently-available animal
+- Missing landscape photos for a specific Gallery bucket
+- No recent photos of the herd group (for home page teaser rotation)
+
+Coverage nudges are **predictive** — they fire before the gap is visible, so admin can fix it before users notice. They go to all admins (Owner, Admin, Editor) via the admin dashboard.
+
+### 15.3 Nudge notifications
+
+Per-user pref (see §17.2) governs whether nudges generate email or SMS notifications. Default: off for nudges. Nudges are meant to be noticed while actively using the admin, not push-notified.
+
+---
+
+## 16. 🟦 Documents section
+
+URL: `/admin/documents/`
+
+Admin-authored documentation and file storage. **Admin-only Phase 1** — no public surface.
+
+### 16.1 Structure
+
+Categories:
+- **Photo Guidelines** — how to take good cattle photos, what the system needs, shot examples
+- **Upload Instructions** — how to install the Shortcut, how the tag picker works, troubleshooting
+- **Registration Forms** — AHA registration paperwork references, templates
+- **Industry Reference** — EPD explanations, Hereford association info, breed standards
+- **Site Operations** — admin how-tos, nudge explanations, team member roles
+
+### 16.2 Content types
+
+Each category holds:
+- **Authored markdown** — pages written directly in the admin by Owner/Admin/Editor
+- **Uploaded files** — PDFs, images, PPTs, anything
+
+Markdown pages render with the same typography as the public site (Playfair headers, Work Sans body). Authoring interface is a simple markdown textarea with live preview.
+
+### 16.3 Permissions
+
+Owner, Admin, Editor — read and write.
+Contributor — no access.
+
+### 16.4 Phase 1 content
+
+The Documents section ships with empty categories. **Content pass** (tooltip-voice writing of the guideline pages) is a separate task, planned post-launch or late Phase 1 with Matt + Roianne + Claude.
+
+---
+
+## 17. 🟦 Settings
+
+URL: `/admin/settings/*` — five sub-pages, role-gated.
+
+### 17.1 Profile (`/admin/settings/`)
+
+Landing sub-page. Every user manages their own.
+
+Fields:
+- Display name
+- Email
+- Phone (optional; required to enable SMS notifications)
+- Time zone (IANA zone; drives timestamp display and nudge scheduling)
+- **Admin accent color** — see §17.1.1
+
+All inline-edited, auto-save on blur (per §12.7).
+
+#### 17.1.1 Per-user admin accent color
+
+Each user has an `adminAccentColor` field. When set, it overrides `--color-accent` on admin surfaces **only for that user**. Public surfaces always use the ranch-level accent from §18.
+
+UI: 8-12 preset colors (curated to avoid clashing with ribbons or nudges), plus "default" option using the ranch accent. Live preview in the picker.
+
+This is personality, not identity. Marty gets his red, Roianne gets her purple, without affecting anything buyers see.
+
+### 17.2 Notifications (`/admin/settings/notifications/`)
+
+Per-user notification preferences. Toggles:
+
+| Event | Email default | SMS default |
 |---|---|---|
-| Newborn | 0–60 days | 30 days |
-| Young calf | 60–205 days (pre-weaning) | 60 days |
-| Weanling | 205–365 days | 90 days |
-| Yearling | 1–2 years | 180 days |
-| Mature (not for sale) | 2+ years | 365 days |
-| Mature (for sale) | 2+ years, status `sale` | 60 days |
-| Reference | any | never nudges |
+| New inquiry received | On | On (if phone set) |
+| Contributor uploaded | Off | Off |
+| Pending tag requires resolution | On | Off |
+| Upload issue detected | Owner: on, others: off | Off |
+| Nudge surfaced on animal I've edited recently | Off | Off (Phase 2) |
 
-**Prefer-flag (`forceInclude`) expiry matches the staleness threshold for the animal's life stage.** A Prefer flag set on a newborn photo expires after 30 days. A Prefer flag set on a mature adult's photo expires after 365 days. Single unified clock. After expiry, the automatic photo-selection logic resumes.
+SMS toggles are disabled with an inline hint linking to Profile when no phone is set.
 
-**Hide flag (`forceExclude`) does not expire.** Hide is a permanent judgment about a specific photo being wrong-to-show.
+SMS uses Twilio (~$15-25/year for a small team's volume). Email uses the user's own `email` field.
 
-### 13.1 Prefer flag refresh nudges
+### 17.3 Devices (`/admin/settings/devices/`)
 
-A medium-priority nudge fires when:
-- A Prefer flag is set on a photo
-- The photo's shot type has a newer alternative (>90 days newer)
+Two stacked sections per user:
 
-Message: *"Preferred side-profile photo of #840 is from March 2024. A newer photo from October 2025 is available."*
+**Passkey devices:**
+- List of registered passkeys: nickname (editable), device type (auto-inferred from user-agent at registration), date added, last-used timestamp
+- "+ Add a new device" — initiates WebAuthn registration flow
+- Per-device "Remove" action with confirmation
+- Warning line when only one device remains: *"This is your only registered device. If you lose access to it, you'll need recovery — see below."*
 
-Tapping the nudge deep-links to the Media tab's view for that animal, with the old and new photos side-by-side.
+**Upload token:**
+- Current token status: "Active" with masked preview (`••••••••••••7Abc`) or "Not yet installed"
+- "Reinstall on phone" button — generates a one-time install link and presents share options (iMessage, email, copy)
+- "Rotate token" with confirmation — invalidates previous token immediately, requires reinstalling the Shortcut
+- Last-used timestamp
+
+**Recovery section (bottom):**
+- Owner: view recovery codes (generated once at setup; 10 single-use codes; regenerate invalidates all prior codes)
+- Non-Owner users: *"If you lose access to your devices, contact [Owner name] for help restoring access."*
+
+### 17.4 Team (`/admin/settings/team/`)
+
+Visible to Owner and Admin. Add/remove/role-change capabilities **gated further to Owner only** per §12.4.
+
+**Main view — team list:**
+- Rows: display name, role badge, status (Active / Not yet activated / Review-required), last-active timestamp, actions menu
+- Filters: All / Active / Contributors only / Activity in last 7 days
+
+**"+ Add team member" flow:**
+- Fields: display name, phone (optional), email (required for Owner/Admin/Editor, optional for Contributor), role selector (restricted by inviter's role), trust state toggle for Contributors
+- For Owner/Admin/Editor: sends email invite with passkey-registration link (48-hour expiry)
+- For Contributor: generates upload token, presents Shortcut install flow with "Send to phone" options (iMessage, email, copy)
+
+**Per-user actions menu:**
+
+| Action | Owner | Admin |
+|---|---|---|
+| Edit display name/email/phone | ✓ | — (own profile only) |
+| Change role | ✓ | — |
+| Rotate upload token | ✓ | — |
+| Toggle Contributor trust state | ✓ | ✓ |
+| Revoke Contributor token | ✓ | ✓ |
+| Reset passkey registration (Owner-assisted recovery) | ✓ | — |
+| Remove user | ✓ | — |
+
+**Audit log (Owner-only, bottom of Team page):**
+
+Chronological sensitive events: user additions/removals, role changes, trust state changes, ownership transfers, upload token rotations, passkey device changes (including owner-initiated resets), site config changes, Contributor batch rejections.
+
+Per entry: timestamp, actor, action, target, brief context. Retention: 1 year default. "Export to CSV" action.
+
+Not logged: animal record edits (per-field audit trail per §12.7), successful logins, failed login attempts (Phase 2).
+
+### 17.5 🟧 Self-service Contributor creation
+
+Marty and Roianne can add their own Contributors without needing Matt. This is a Phase 1 feature — the difference between a team that grows organically and one that needs ongoing admin intervention.
+
+**Flow:**
+1. Owner/Admin opens `/admin/settings/team/`, taps "+ Add team member", role = Contributor
+2. Fills display name, phone (optional)
+3. Taps Create
+4. System generates unique upload token
+5. Screen shows "Send to [name]'s phone" with three actions: iMessage, email, copy link
+6. Owner/Admin sends link via chosen channel
+7. Contributor taps link on iPhone → `GET /install/shortcut?install_id=<uuid>` → personalized .shortcut downloads with token pre-embedded
+8. First successful upload activates the account
+
+No Apple Developer account required. No Matt intervention.
+
+### 17.6 🟧 Recovery model
+
+- **Owner:** 10 single-use recovery codes, generated at Owner setup. Losing all devices → use a recovery code to authenticate and re-register a new passkey. Regenerable (invalidates all prior codes).
+- **Admin / Editor / Contributor:** no self-recovery. Contact Owner, who taps "Reset passkey registration" in the user's Team row. System clears all registered passkeys and sends a one-time registration link via email.
+
+Owner-assisted recovery is logged in the audit log as a sensitive action.
+
+### 17.7 🟧 Ownership transfer (two-step)
+
+Rare but consequential. Two-step mutual acknowledgment:
+
+**Step 1 — Owner initiates** (from `/admin/settings/site/`):
+- Selects an Admin from a dropdown (only Admins are eligible)
+- Types the target's display name as a safety check
+- Taps "Propose transfer"
+- System creates `PendingOwnershipTransfer` record, notifies target via email + SMS (if set) + in-app banner on next login
+
+**Step 2 — Target accepts or declines:**
+- Banner appears on next login: *"[Current Owner] has proposed transferring ownership of Summers Ranch to you. [Accept] [Decline]"*
+- Accept → roles swap, previous Owner becomes Admin, audit log entry, both parties notified
+- Decline → transfer cancels, previous Owner notified, no change
+- Auto-expiry: 7 days with no action → cancelled
+
+Current Owner can cancel a pending transfer at any time.
+
+### 17.8 Site (`/admin/settings/site/`)
+
+Owner-only.
+
+**Sections:**
+
+**Style** — populated design-token values from §18. Admin sees current palette/typography with "Regenerate tokens" affordance. Manual token overrides discouraged.
+
+**Ranch metadata** — public-facing:
+- Ranch name (display)
+- Tagline
+- Contact phone (public)
+- Contact email (public)
+- Physical address (public, optional)
+
+**Public surface toggles** (Phase 2+) — infrastructure stub for future use.
+
+**Default notification settings for new users** — the defaults a newly-created user inherits.
+
+**Ownership transfer** — see §17.7.
 
 ---
 
-## 14. 🟨 Data model additions and changes
+## 18. 🟦 Design tokens and visual system
 
-### 14.1 Animal schema additions
+**Locked direction** (v4 style preview): cream + burgundy + near-black ink, Playfair Display headlines, Work Sans body. Light mode default, dark mode Phase 2.
 
-Add to the existing `Animal` interface:
+### 18.1 🟧 Token structure
 
-```typescript
-interface Animal {
-  // ... existing fields
-  
-  // Distinction designations (AHA DOD/SOD, show championships, etc.)
-  distinctionBadges: DistinctionBadge[]
-  
-  // Health test fields
-  bvdPiTestStatus: 'negative' | 'positive' | null
-  semenTestStatus: {
-    status: 'passed' | 'failed'
-    lastTestDate: string
-  } | null  // Bulls only
-  geneticDefectTests: GeneticDefectTest[]
-  johnesDiseaseStatus: 'negative' | 'positive' | 'untested' | null
-  
-  // Horn status — already covered by breed detail in practice, but worth making explicit
-  hornStatus: 'horned' | 'polled' | 'dehorned' | null
-  
-  // Co-ownership
-  coOwnership: string | null  // Free-text field: "Co-Owned With: Clif & Sheri Overmier"
-  
-  // Narrative
-  aboutThisAnimal: string | null  // Marty's personal description
-}
+Single `src/styles/tokens.css`. Tokens are CSS custom properties under `:root`, with a `body[data-mode="dark"]` override block for dark-mode values.
 
-interface DistinctionBadge {
-  type: 'DOD' | 'SOD' | 'champion' | 'other'
-  year: number
-  organization: 'AHA' | 'other'
-  reference: string | null  // e.g., URL to specific recognition listing
-  notes: string | null
-}
+**Color tokens (light mode):**
+```css
+--color-bg: #f7f0e3;         /* warm cream */
+--color-paper: #ffffff;      /* card / lifted surface */
+--color-ink: #14100e;        /* near-black body text */
+--color-muted: #5a5046;      /* secondary text */
+--color-accent: #8b1e3a;     /* burgundy */
+--color-accent-deep: #5c0f24;
+--color-accent-soft: #d08a9a;
+--color-cream-deep: #e8d9bd; /* subtle divider line */
+```
 
-interface GeneticDefectTest {
-  testName: string  // e.g., "Dwarfism", "Idiopathic Epilepsy"
-  result: 'free' | 'carrier' | 'affected' | 'tested-negative'
-  testedDate: string
+**Color tokens (dark mode):**
+```css
+--color-bg: #0a0506;         /* near-black */
+--color-paper: #14090b;
+--color-ink: #f7f0e3;        /* cream text */
+--color-muted: #a89d8c;
+--color-accent: #c8425e;     /* brighter burgundy for dark contrast */
+--color-accent-deep: #8b1e3a;
+--color-accent-soft: #e5a4b5;
+--color-cream-deep: #2f1d21;
+```
+
+**Typography tokens:**
+```css
+--font-display: "Playfair Display", Georgia, serif;
+--font-body: "Work Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+--font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+--font-size-xs: 0.72rem;
+--font-size-sm: 0.85rem;
+--font-size-base: 1rem;
+--font-size-md: 1.15rem;
+--font-size-lg: 1.4rem;
+--font-size-xl: 1.85rem;
+--font-size-2xl: 2.4rem;
+--font-size-3xl: 3rem;
+--font-size-4xl: 4rem;
+
+--font-weight-normal: 400;
+--font-weight-medium: 500;
+--font-weight-semibold: 600;
+--font-weight-bold: 700;
+
+--line-height-tight: 1.15;
+--line-height-normal: 1.5;
+--line-height-relaxed: 1.75;
+
+--letter-spacing-tight: -0.01em;
+--letter-spacing-normal: 0;
+--letter-spacing-wide: 0.05em;
+--letter-spacing-kicker: 0.25em;
+```
+
+**Spacing tokens** (0-20 scale, base 4px):
+```css
+--space-0: 0;
+--space-1: 0.25rem;
+--space-2: 0.5rem;
+--space-3: 0.75rem;
+--space-4: 1rem;
+--space-5: 1.25rem;
+--space-6: 1.5rem;
+--space-8: 2rem;
+--space-10: 2.5rem;
+--space-12: 3rem;
+--space-16: 4rem;
+--space-20: 5rem;
+```
+
+**Radius, shadow, motion, z-index:** populated per A39 spec. See `tokens.css` in the repo.
+
+### 18.2 Per-user admin accent override
+
+Admin layout injects a per-user override:
+```css
+body[data-admin-user="<userId>"] {
+  --color-accent: <adminAccentColor>;
 }
 ```
 
-### 14.2 MediaAsset schema additions
+Public pages never inject this. Ranch-level accent (`#8b1e3a`) is used for all public-facing surfaces.
 
-Add to the existing `MediaAsset` interface:
+### 18.3 Typographic rules
 
-```typescript
-interface MediaAsset {
-  // ... existing fields
-  
-  // Gallery-specific classification (null for cattle-only photos)
-  galleryCategory: 'landscape' | 'theodore' | 'marty' | 'roianne' | 'family' | 'ranch-work' | 'cattle-life' | 'seasonal' | 'hunting' | null
-  seasonalAffinity: 'spring' | 'summer' | 'fall' | 'winter' | 'year-round' | null
-  isWallCandidate: boolean  // Admin override; default true if galleryCategory is set and quality is excellent/good
-}
+- **Headlines use Playfair Display** with italic emphasis on key words (e.g., "Every cow has a name. *Every name has a story.*"). Italic color is `--color-accent` on public surfaces.
+- **Body copy uses Work Sans** in `--font-weight-normal` (400). Muted body uses `--color-muted`.
+- **Kickers** (small uppercase labels above section titles) use Work Sans `--font-weight-semibold`, `--font-size-xs`, `--letter-spacing-kicker`, color `--color-accent`.
+- **CTAs** use Work Sans `--font-weight-semibold`, `--letter-spacing-wide`, all-caps, radius 1px (square). Primary CTAs: `--color-accent` background. Secondary CTAs: transparent background, `--color-accent` text, 1px border in `--color-accent`.
+
+### 18.4 Hero scrim treatment
+
+All hero images use a **neutral black gradient scrim** concentrated in the bottom third only — preserves the photograph's natural color throughout the upper portion:
+
+```css
+background: linear-gradient(
+  180deg,
+  rgba(0,0,0,0) 0%,
+  rgba(0,0,0,0) 45%,
+  rgba(0,0,0,0.55) 75%,
+  rgba(0,0,0,0.82) 100%
+);
 ```
 
-### 14.3 CattleMediaLink schema additions
+No tinted scrims (those discolored the cattle in preview testing). Hero text gets layered drop shadows for legibility over the scrim.
 
-```typescript
-interface CattleMediaLink {
-  // ... existing fields
-  
-  // forceInclude is now time-bounded
-  forceIncludeExpiresAt: string | null  // ISO date; computed from life-stage threshold when flag is set
-}
+---
+
+## 19. 🟦 Ribbon system
+
+Ribbons are ceremonial and visually consistent across all surfaces. Do not theme by palette.
+
+### 19.1 Ribbon types
+
+**Corner ribbon (Available):**
+- Diagonal across top-right of the photo
+- Gold gradient fill: `#fff2c4` → `#f0d874` → `#c9a227` → `#9a7a0f`
+- Text: "AVAILABLE" (industry-correct — not "For Sale")
+- Font: Lato 10px black (900), 0.2em tracking, uppercase, text color `#2c2416`
+- Units: px throughout (iOS text scaling durability — user zooming with rem-based values breaks the fixed-size graphic)
+
+**Hanging ribbons (Distinction DOD/SOD, Birthday):**
+- Vertical hanging with chevron swallowtail bottom
+- 34px × 90px
+- Position 1: `left: 12px`, Position 2: `left: 54px`
+- Fabric-depth treatment: two-layer gradient (horizontal edge shading + vertical fabric weight)
+
+**DOD (Dam of Distinction):**
+- Background gradient: `#5a8bc4` → `#3b6ba5` → `#1e4a7e` → `#0f2d52`
+- Emblem: ★ in gold at top
+- Text: "DOD" vertically stacked, Cinzel 12px bold (800), gold color
+
+**SOD (Sire of Distinction):**
+- Background gradient: `#c94848` → `#b03030` → `#8b1e1e` → `#4a0f0f`
+- Emblem: ★ in gold
+- Text: "SOD" same treatment as DOD
+
+**Birthday (girl — cows, heifers, heifer calves):**
+- Background gradient: `#f5dae3` → `#eabecb` → `#c48799`
+- Two-column text: "HAPPY" | "BIRTHDAY" — each letter in its own vertical span, columns 8px gap, centered in ribbon
+- Cinzel 7px bold (700), deep-gold text on pink background
+- No emblem (text fills the ribbon)
+
+**Birthday (boy — bulls, bull calves, steers):**
+- Background gradient: `#c8dff0` → `#9ec5e8` → `#6a9dc4`
+- Same two-column HAPPY | BIRTHDAY treatment
+- Cinzel 7px bold, deep-blue text on baby-blue background
+
+### 19.2 Ribbon rules
+
+- Corner ribbon (Available) and hanging ribbons (DOD/SOD, Birthday) never conflict — corner is top-right, hanging is top-left-side
+- Two hanging ribbons can coexist: DOD+Birthday, SOD+Birthday (distinction in position 1, birthday in position 2)
+- Birthday ribbons fire only on the animal's birthday and disappear the next day
+- All ribbon text uses px units (not rem) — the ribbon is a fixed-size graphic that must not break under iOS text scaling
+
+### 19.3 Ribbon copy
+
+- "AVAILABLE" — not "FOR SALE"
+- "HAPPY BIRTHDAY" — not the age number
+- "DOD" / "SOD" — not "Dam of Distinction" spelled out (too long, industry uses abbreviation)
+
+---
+
+## 20. 🟦 Share sheet — outgoing
+
+When users share a public URL from the site, social platforms (iMessage preview, Twitter, Facebook, LinkedIn, WhatsApp) fetch OpenGraph metadata and render a preview card.
+
+### 20.1 OpenGraph implementation
+
+Every public page outputs:
+```html
+<meta property="og:title" content="...">
+<meta property="og:description" content="...">
+<meta property="og:image" content="...">
+<meta property="og:url" content="...">
+<meta property="og:type" content="website">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="...">
+<meta name="twitter:description" content="...">
+<meta name="twitter:image" content="...">
 ```
 
-### 14.4 New schemas
+**No Twitter handle.** The ranch has no social media presence — leaving `twitter:site` unset is the right choice, not filled with a placeholder.
+
+### 20.2 Per-animal composites (Phase 1)
+
+For each animal, a **1200×630 card-front composite** is generated at build time:
+- The animal's current front photo (per §3.5) as the base
+- Ranch logo subtle in corner
+- Animal's name and tag overlaid with the same drop-shadow text treatment as photo dates
+- Availability ribbon rendered if applicable
+
+Composite images live at `/og/animal/[id].jpg`. Each animal's detail page (`/herd/[id]/details`) references its own composite via `og:image`. The animal's card-front URL (`/herd/[id]`) rewrites `og:url` to the front so shared links deep-link properly.
+
+**No compact-view card sharing** — shared URLs always go to a specific animal's front, not to the filtered herd view.
+
+### 20.3 Generic ranch hero (Phase 1)
+
+List pages (`/herd`, `/gallery`), home (`/`), about (`/about`), contact (`/contact`) use a generic ranch hero composite — the ranch's best landscape photograph with name overlay. Single image, not filter-aware.
+
+**Filter-aware composites** (per-filter /herd images, per-section /gallery images) are Phase 2.
+
+### 20.4 Cache invalidation
+
+Composite URLs include a version token (e.g., `/og/animal/840.jpg?v=2026-04-19-14-23`) that updates when the underlying photo or animal data changes. Browsers and social platforms refetch when the token changes.
+
+---
+
+## 21. 🟦 Share sheet — incoming
+
+The Shortcut pipeline is the incoming share mechanism — see §14.1-14.3 for mechanics.
+
+### 21.1 What the Shortcut preserves
+
+- Original HEIC files (no client compression)
+- Live Photo MOV components (preserved as second file with `livePhotoPair` linking on the MediaAsset)
+- ProRAW when present
+- Original filename for admin reference
+- Capture timestamp from EXIF
+
+### 21.2 What the pipeline strips server-side (Phase 2)
+
+- GPS coordinates (privacy)
+- Camera serial numbers (privacy)
+- Proprietary maker notes unless opted-in
+
+### 21.3 iOS only through Phase 2+
+
+Android users route through iOS admins via text/email/Google Photos share, then the iOS admin uploads via their own Shortcut (or via `/admin/upload/` web fallback).
+
+Phase 3+ Android via Tasker parallel is possible but deferred until actual demand.
+
+---
+
+## 22. 🟧 Data model
+
+### 22.1 Core entities
 
 ```typescript
-interface Nudge {
-  nudgeId: string
-  class: 'per-animal' | 'coverage'
-  priority: 'high' | 'medium' | 'low'
-  type: string  // See nudge type list below
-  label: string  // Human-readable short description
-  description: string  // Longer explanation
-  
-  // For per-animal nudges
-  animalId: string | null
-  targetField: string | null  // Specific field to deep-link to
-  targetMediaId: string | null  // For photo-related nudges
-  
-  // For coverage nudges
-  coverageArea: 'gallery-wall' | 'canonical-views' | 'registration-batch' | 'seasonal-pool' | null
-  deepLinkHint: string | null  // Pre-filled upload category, etc.
-  
+interface AnimalRecord {
+  id: string                    // stable internal ID, not the tag
+  tag: string                   // primary human identifier, e.g. "840", "109A"
+  name: string | null
+  sex: 'cow' | 'bull' | 'heifer' | 'steer' | 'calf'
+  breed: string                 // 'Hereford' for now; future-proof for crosses
+  dateOfBirth: string | null    // ISO date
+  registrationNumber: string | null  // AHA number
+  distinction: 'DOD' | 'SOD' | null
+  distinctionYear: number | null
+  currentStatus: AnimalStatus
+  sireId: string | null         // links to another AnimalRecord or external reference
+  damId: string | null
+  isReference: boolean          // deceased or sold-and-untracked
+  performanceData: PerformanceData | null
+  privateNotes: string          // admin-only, never public
   createdAt: string
-  persistUntil: string | null  // null for non-persistent; ISO date for scheduled reappearance
-  isPersistent: boolean  // Cannot be permanently dismissed
+  updatedAt: string
 }
 
-interface WallSlot {
-  slotId: string
-  role: 'hero' | 'secondary' | 'supporting'
-  preferredCategory: string | null
-  preferredSeasonalAffinity: string | null
-  rotationCadence: 'seasonal' | 'monthly'
-  currentMediaId: string | null
-  lastRotatedAt: string | null
-  nextRotationAt: string | null
+type AnimalStatus = 
+  | 'available'        // for sale
+  | 'breeding'         // active in herd, not for sale
+  | 'growing'          // calf/yearling, not yet breeding, not for sale
+  | 'sold'             // sold to another operation
+  | 'deceased'
+  | 'retired'          // kept as reference/companion, not active
+
+interface PerformanceData {
+  // admin-controlled disclosure; any field can be null to hide
+  weaningWeight: number | null
+  yearlingWeight: number | null
+  epd: Record<string, number> | null
+  // ... additional fields as needed
+}
+
+interface MediaAsset {
+  id: string
+  uri: string                   // R2 key or external URL
+  orientation: 'portrait' | 'landscape' | 'square'
+  aspectRatio: number           // exact decimal
+  capturedAt: string            // ISO datetime from EXIF
+  uploadedAt: string
+  uploadedByUserId: string
+  batchId: string               // session-generated UUID
+  detectedShotType: ShotType
+  livePhotoPair: string | null  // ID of the MOV component if this is a Live Photo
+  originalFilename: string
+  // classification outputs (nullable — not all photos classified yet)
+  cardFrontEligible: boolean
+  timelineEligible: boolean
+  galleryHerdCandidate: boolean
+  galleryRanchCandidate: boolean
+  editorialCandidate: boolean
+  prescriptionScore: number | null
+  prescriptionSubscores: PrescriptionSubscores | null
+  aestheticScore: number | null
+  aestheticSubscores: AestheticSubscores | null
+  timelineScore: number | null    // null in Phase 1
+  galleryScore: number | null     // null in Phase 1
+  editorialScore: number | null   // null in Phase 1
+}
+
+type ShotType = 
+  | 'side-profile' | 'head' | 'three-quarter' 
+  | 'action' | 'scenic' | 'with-dam' | 'detail' | 'landscape' | 'other'
+
+interface PrescriptionSubscores {
+  angle: number        // 0-1
+  legs: number
+  fullBody: number
+  height: number
+  head: number
+  cleanliness: number
+  background: number
+  lighting: number
+}
+
+interface AestheticSubscores {
+  technical: number    // 0-1
+  composition: number
+  lightingCharacter: number
+  colorTonal: number
+}
+
+interface CattleMediaLink {
+  // join table between AnimalRecord and MediaAsset
+  animalId: string
+  mediaAssetId: string
+  // throne flags (independent)
+  cardFrontThrone: boolean              // side-profile throne
+  cardFrontThroneSince: string | null
+  cardFrontThroneLostAt: string | null
+  cardFrontBeautyThrone: boolean        // beauty/action throne
+  cardFrontBeautyThroneSince: string | null
+  cardFrontBeautyThroneLostAt: string | null
+  // admin overrides
+  forceInclude: boolean
+  forceIncludeExpiresAt: string | null  // bounded by life-stage staleness
+  forceExclude: boolean
+  // attribution
+  linkedAt: string
+  linkedByUserId: string
+}
+
+interface AdminUser {
+  id: string
+  role: 'owner' | 'admin' | 'editor' | 'contributor'
+  displayName: string
+  email: string
+  phone: string | null
+  timeZone: string
+  adminAccentColor: string | null
+  passkeyDevices: Array<{
+    credentialId: string
+    nickname: string
+    deviceType: string
+    addedAt: string
+    lastUsedAt: string | null
+  }>
+  recoveryCodes: Array<{         // Owner only
+    codeHash: string
+    used: boolean
+    usedAt: string | null
+  }> | null
+  activationStatus: 'not-yet-activated' | 'active'
+  uploadToken: string            // hashed in storage
+  trustState: 'default' | 'review-required' | 'revoked'  // applies to Contributors
+  notificationPrefs: Record<string, { email: boolean; sms: boolean }>
+  createdAt: string
+  createdByUserId: string
+}
+
+interface Inquiry {
+  id: string
+  receivedAt: string
+  senderName: string
+  senderEmail: string
+  senderPhone: string | null
+  subject: string                // auto-generated or user-provided
+  message: string
+  referencedAnimalIds: string[]  // from card CTAs and compare page
+  status: 'unread' | 'read' | 'replied' | 'archived'
+  readAt: string | null
+  readByUserId: string | null
+}
+
+interface AuditLogEntry {
+  id: string
+  timestamp: string
+  actorUserId: string
+  action: string                 // enum of sensitive actions
+  targetUserId: string | null
+  context: Record<string, unknown>
+}
+
+interface PendingOwnershipTransfer {
+  id: string
+  fromUserId: string
+  toUserId: string
+  proposedAt: string
+  expiresAt: string              // proposedAt + 7 days
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired'
+  resolvedAt: string | null
+}
+
+interface SiteConfig {
+  ranchName: string
+  tagline: string
+  contactPhone: string | null
+  contactEmail: string | null
+  contactAddress: string | null  // optional
+  publicSurfaceToggles: Record<string, boolean>  // Phase 2
+  newUserNotificationDefaults: Record<string, { email: boolean; sms: boolean }>
+  styleDirectionId: string       // references locked v4 direction
+}
+
+interface InstallToken {
+  id: string                     // UUID used in /install/shortcut?install_id=...
+  forUserId: string
+  createdAt: string
+  expiresAt: string              // createdAt + 24 hours
+  consumedAt: string | null
+}
+
+interface Nudge {
+  id: string
+  type: 'per-animal' | 'coverage'
+  subtype: string                // e.g. 'stale-throne', 'completion-celebration', 'no-summer-hero'
+  animalId: string | null        // null for coverage nudges
+  targetFieldPath: string | null // deep-link to specific field on animal
+  createdAt: string
+  snoozedUntil: string | null
+  dismissedAt: string | null
+  resolvedAt: string | null
 }
 ```
 
-### 14.5 URL routing
+### 22.2 Phase 1 storage
 
-- `/herd` — herd page, binder layout
-- `/herd/[animalId]` — front of card (full-screen)
-- `/herd/[animalId]/details` — back of card (full-screen)
-- `/herd/tag/[tag]` — redirect: looks up animalId by current displayTag OR any entry in tagHistory, 301 to canonical URL
-- `/gallery` — The Wall
-- `/admin` — admin herd dashboard (auth required)
-- `/admin/herd/[animalId]` — admin view of animal (front of card with admin chrome)
-- `/admin/herd/[animalId]/details` — admin view of back of card (with edit affordances)
-- `/admin/media` — media tab (Phase 2+)
-- `/admin/calendar` — calendar tab (Phase 2+)
-- `/privacy` — privacy policy page
-- `/terms` — terms page
+- **AnimalRecord, MediaAsset, CattleMediaLink, Inquiry, AdminUser:** flat JSON files in `/data/` (committed to repo; served as static)
+- **Photos:** R2 bucket, organized as `{animalId}/{mediaAssetId}.{ext}` from Phase 2; Phase 1 uses `{tag}-{slug}/` naming during transition
+- **Install tokens, audit log, pending transfers, nudges:** Cloudflare KV (ephemeral/operational data, not in repo)
 
-The herd detail page route from the original architecture (`/herd/[animalId]` rendering a separate long-form detail page) is eliminated. The back of the card replaces it entirely.
+Phase 2 migrates canonical data to a proper database (D1 or Postgres) when scale demands it.
+
+### 22.3 URL identity stability
+
+**`animalId` is the stable internal identity.** Tags can change (e.g., an animal re-tagged due to a damaged ear tag), names can change, registration numbers can be assigned late. The `animalId` never changes. All internal URL paths use `animalId`.
+
+Tag-based lookups (`/api/resolve-tag?tag=840`) resolve to `animalId`, which is then used for all subsequent operations.
 
 ---
 
-## 15. 🟦 Product: Reference animals and placeholders
+## 23. 🟧 Repository layout
 
-Reference animals are outside genetics tracked for pedigree only — often a bull whose semen was purchased, or a dam whose offspring was acquired. They have no active herd presence and often no photos.
+### 23.1 Top-level structure
 
-**Visual treatment:**
-- Reference animals appear in the Reference section at the bottom of the herd page
-- They have their own card with the same structure as active animals
-- When no photo exists, the card displays a **stylized Hereford silhouette placeholder** — a custom SVG rendered in the site's palette
-  - Not the ranch's brand (which represents this ranch's animals specifically)
-  - Not a real-photo placeholder (which would imply they have a photo)
-  - Clearly recognizable as "no photo, reference entry" without needing a caption
-- The silhouette design is a future small deliverable; coding agent can use a temporary placeholder SVG in Phase 1
+```
+/
+├── src/                        # Astro source
+│   ├── pages/                  # route files
+│   ├── components/             # reusable components
+│   ├── layouts/                # page layouts
+│   ├── styles/
+│   │   └── tokens.css          # design tokens (single file)
+│   ├── lib/                    # shared logic
+│   ├── shortcuts/
+│   │   └── summers-ranch-upload-base.shortcut  # master Shortcut
+│   └── og/                     # composite generation templates
+├── public/                     # static assets served at root
+│   ├── images/                 # hero, cattle, ranch photos
+│   └── shortcut/               # hosted Shortcut installs (if not R2)
+├── data/                       # canonical animal/media/user data (JSON)
+│   ├── animals.json
+│   ├── media.json
+│   ├── links.json              # CattleMediaLink join records
+│   └── admin-users.json        # baseline seed
+├── docs/                       # authoritative docs (limited to 3 files)
+│   ├── README.md
+│   ├── CLAUDE.md               # ~150 line agent orientation
+│   └── CONTRIBUTING.md
+├── functions/                  # Cloudflare Workers (Pages Functions)
+│   ├── api/
+│   │   ├── upload.ts
+│   │   ├── resolve-tag.ts
+│   │   ├── inquiry.ts
+│   │   └── ...
+│   ├── install/
+│   │   └── shortcut.ts         # install link → personalized .shortcut
+│   └── admin/                  # admin-only endpoints
+├── LICENSE.md
+├── COPYRIGHT.md
+├── README.md
+└── package.json
+```
 
-**Never for reference animals:**
-- No staleness nudges (no expectation of refresh)
-- Not included in the home page herd teaser (if one were to exist)
-- Not counted in public herd counts for "active operation" signaling
+### 23.2 🟧 Copy organization
 
----
+Hybrid approach:
+- **Short pages** (about, contact) → single-file markdown in `src/content/`
+- **Long multi-section pages** (home, about with multiple sections) → folder per page with section files: `src/content/home/hero.md`, `src/content/home/meet-the-herd.md`, etc.
 
-## 16. 🟦 Product: Content that doesn't go public when stale
+This lets admins edit section-by-section via the documents system eventually, without rewriting whole pages.
 
-A design principle that governs multiple features: **stale content is worse than no content.**
+### 23.3 🟧 `docs/` discipline
 
-Features that surface time-sensitive material must either auto-expire or be admin-nudged when stale. Examples:
+Only three files allowed in `docs/`:
+- **README.md** — project overview for any visitor
+- **CLAUDE.md** — ~150 line agent orientation (what this project is, conventions, key decisions summary)
+- **CONTRIBUTING.md** — how Matt and future coding agents should modify things
 
-- **Seasonal banners** on the home page or herd page (future calendar work) must not persist past their season
-- **"Recent sales"** sections (future) must hide entries older than N months
-- **Auction announcements** must disappear after the auction
-- **For-sale animals** with photos older than 60 days trigger high-priority nudges
-- **The Wall** rotation is automatic; nothing stale because the engine swaps before content ages
+All other documentation lives in the admin-only Documents section (§16), not in the repo.
 
-Where automation can't prevent staleness, **coverage nudges** (§7.2) fire predictively to prevent the problem from appearing publicly.
+### 23.4 🟧 `data/` organization
 
-A 2-year-old "catch us at the fair" banner actively damages trust. Hiding it is better than showing it.
+- **Phase 1:** flat JSON files. Single source of truth. Read at build time by Astro.
+- **Phase 2+:** when the herd or photo count grows unwieldy, migrate to:
+  - `data/seed/` — canonical seed data committed to repo
+  - `data/production/` — runtime-mutable data in Cloudflare KV or D1
+  - Admin edits write to production; seed is for fresh deploys
 
----
+### 23.5 CLAUDE.md content outline
 
-## 17. 🟨 Typography, palette, and visual system
+The repo-root CLAUDE.md should cover:
 
-### 17.1 Current provisional choices
+1. Project overview (what Summers Ranch is, two sentences)
+2. Stack summary (Astro + TS strict + Zod + Cloudflare Pages/R2/KV)
+3. Key design principles (the six from §1)
+4. Where to find the spec (this file)
+5. Data flow (data/ → Astro build → static site; admin writes via Workers)
+6. Conventions (prose over bullets in docs, inline-edit patterns in admin, etc.)
+7. Ribbon system (ribbons are ceremonial, not themed)
+8. What Phase 1 is vs Phase 2+
 
-The coding agent's initial build uses:
-- **Cormorant Garamond** (serif) for display text and headings
-- **Lato** (sans-serif) for body text
-- Palette tokens as defined in the Phase 1 Implementation doc (earth, saddle, gold, rust, sage, stone, cream, linen, warm-white)
+Length target: 150 lines, readable in 5 minutes.
 
-**These are provisional.** Matt has not committed to them; Marty and Roianne have never seen them. The spec designates a **pre-launch style review round** where 3-4 coherent typography + palette combinations will be presented to Marty and Roianne for selection.
+### 23.6 LICENSE.md and COPYRIGHT.md
 
-### 17.2 Rationale for the current provisional choices
+- **LICENSE.md** — code is all-rights-reserved with perpetual operation license for Marty and Roianne
+- **COPYRIGHT.md** — docs, design, content are CC BY-NC-SA (Creative Commons attribution-noncommercial-share-alike)
+- Both committed to repo during v2-rebuild kickoff
 
-Research on peer Hereford seedstock sites shows the industry baseline is:
-- All-caps sans-serif navigation
-- Neutral sans-serif body copy
-- Little elegant typography; most sites feel utilitarian
+### 23.7 Cutover — v1 → v2 deletion list
 
-The Cormorant Garamond + Lato combination punches above this baseline without being alien. Cormorant is a modern Garamond cut with warm, readable feel — not austere like Didot, not decorative like Playfair. It reads as quality-minded without being pretentious. Lato pairs well with it as a humanist sans that handles UI text cleanly.
+When the rebuild replaces v1 in production, the following gets wiped and rebuilt:
+- All herd-related components and pages (cards, herd list, animal detail)
+- All admin surfaces (none existed in v1)
+- All photo logic (throne, classification, carousel)
 
-**The choice is defensible but not locked.** It puts the ranch a step above peer presentation without reading as a different category of business entirely.
+The following is preserved from v1:
+- Astro scaffold and `astro.config.mjs`
+- TypeScript strict config (`tsconfig.json`)
+- Zod schemas (will be updated to match new data model)
+- Base layout (`src/layouts/BaseLayout.astro`)
+- Seed data loader (will read new data model)
+- Any tokens from the new `tokens.css` (populated from v4 style preview)
 
-### 17.3 Design tokens — structural requirement
-
-All color, typography, spacing, and radius values **must live in a single tokens file** (`src/styles/tokens.css`). Swapping typography or palette should be a tokens-file edit, not a components rewrite.
-
-This matters for the pre-launch style review round. Presenting alternative combinations to Marty and Roianne needs to be a matter of swapping token values, previewing the site, and discussing.
-
-### 17.4 Overlay chrome visual language
-
-All photo-layered UI chrome (pause indicator, photo date caption, registration number, position dots, Details chevron, tooltips) uses a unified treatment:
-- Defined edge (thin border)
-- Semi-transparent fill (readable against dark or light imagery underneath)
-- Sufficient contrast to never read as a flat white box
-
-Coding agent should establish a small set of reusable overlay primitives rather than styling each element independently.
-
-### 17.5 No emoji in UI copy
-
-Exceptions: the stylized Hereford silhouette placeholder (not an emoji, but a similar affordance) and nothing else. No birthday hat emoji (the banner replaces it). No decorative emoji in labels, headings, buttons, tooltips, or nudge copy. Icons used for UI affordances are SVG icons from a consistent set.
-
----
-
-## 18. 🟦 Product: How to change things later (without being a web developer)
-
-This section exists specifically for Matt. It's a plain-language map of where common things live in the codebase, so non-developers can make edits without reading source code.
-
-### 18.1 Page copy
-
-All user-facing text lives in a **content directory**, organized by page:
-- Home page copy: `src/content/home.md` (or similar Markdown/YAML structure)
-- About page copy: `src/content/about.md`
-- Contact page copy: `src/content/contact.md`
-- Footer copy: `src/content/footer.md`
-- Tooltip copy (for admin fields): `src/content/tooltips/` directory, one file per tooltip
-
-**To change page copy:** open the file, edit the text, save, commit. The change appears on the site.
-
-Coding agent must maintain this structure strictly. User-facing text should never be hardcoded in component files. If Matt sees text on the site that isn't in `src/content/`, that's a bug.
-
-### 18.2 Design tokens
-
-All colors, fonts, and spacing values live in `src/styles/tokens.css`. Changing the primary color, swapping a font, or adjusting spacing scale is a single-file edit.
-
-### 18.3 Cattle data
-
-Cattle records are stored as structured data files in `data/animals.json` (managed by the admin panel in production). Matt can inspect or manually edit these files, though the admin panel is the intended interface.
-
-### 18.4 Per-animal tooltips and field definitions
-
-The admin panel shows tooltips on every field explaining what the field means. This tooltip content lives in `src/content/tooltips/` — each field's tooltip is a small file that Matt can edit without touching component code.
-
-### 18.5 iOS Shortcut configuration
-
-The iOS Shortcut Marty uses to upload photos (Phase 2) will have its endpoint URL and any configuration parameters documented in a dedicated setup document: `docs/ios-shortcut-setup.md`. When the Phase 2 pipeline is built, coding agent produces this documentation.
-
-### 18.6 Nudge copy
-
-The text of each nudge ("Animal #840 has no weaning weight," etc.) is templated. Templates live in `src/content/nudge-templates.json`. Matt can rewrite any template without changing code.
-
-### 18.7 What Matt should NOT expect to edit without help
-
-These are genuinely code territory:
-- Component behavior (how the card flips, how swipes work, how sort algorithms run)
-- Data schema definitions (`src/schemas/*.ts`)
-- Build configuration
-- Routing
-
-For any of these, Matt works with a coding agent or developer.
+The v2 rebuild starts on a fresh branch (not the existing v2-rebuild branch, which gets wiped), with this spec as the reference.
 
 ---
 
-## 19. 🟦 Review checkpoints for Matt
+## 24. 🟦 Phase 2+ deferred items
 
-Coding agent will request Matt's review at specific checkpoints. This section defines what Matt should look at and what he should *not* need to look at.
+The following are intentionally deferred beyond Phase 1:
 
-### 19.1 Checkpoint 1: Foundation
+**Photo system:**
+- Timeline selection rubric (which photos best show growth over time)
+- Gallery-Herd rubric (best photos for The Herd gallery)
+- Gallery-Ranch rubric (best atmospheric photos)
+- Editorial rubric (curated ranch story shots)
+- Beauty/action rubric (card-front for not-available animals)
+- HEIC → WebP/AVIF server pipeline
+- EXIF strip + GPS removal
+- ML-based classification (Phase 1 uses heuristics + admin overrides)
 
-**After:** Astro project scaffold, Zod schemas written, seed data loading, base layout, tokens file.
+**Share sheet:**
+- Filter-aware OpenGraph composites
+- Per-gallery-section share images
+- Twitter handle if the ranch joins
 
-**Matt reviews:**
-- Visit `localhost:4321` (the dev URL)
-- Confirm the site loads and shows *something* (may be blank placeholder pages)
-- No specific content to review yet
+**Compare view:**
+- Full side-by-side build (Phase 1 ships URL-pattern placeholder only)
+- OpenGraph composite for compare URLs
 
-**Matt does NOT need to review:**
-- Code organization
-- Schema structure
-- Build configuration
-- Type checking
+**Admin:**
+- Atmospheric motion on Phase 2+ surfaces (Gallery Wall Live Photo loops)
+- Dark mode rollout (tokens are Phase 1; UI build Phase 2)
+- Nudge notifications via push
+- Failed login attempts in audit log
+- Media (`/admin/media/`) — photo library management surface
+- Calendar (`/admin/calendar/`) — breeding/calving events
 
-**Coding agent verifies on its own:**
-- `npm run build` succeeds with zero TypeScript errors
-- Zod validation passes for all seed data
-- No console errors on page load
+**Platform:**
+- Android upload pipeline (via Tasker)
+- PWA richer features (offline, install prompts beyond home-screen icon)
 
-**Checkpoint acceptance:** Matt sees the site load. Done.
-
-### 19.2 Checkpoint 2: Public static pages
-
-**After:** Home, About, Contact, base Gallery placeholder pages complete with placeholder copy.
-
-**Matt reviews:**
-- Visit each page at `localhost:4321`
-- Specifically look at:
-  - Does the overall tone feel right (warm, restrained, not corporate)?
-  - Does anything read as jarring or mismatched?
-  - Is the navigation obvious?
-- Matt should NOT expect to approve copy in detail — placeholder copy is fine at this checkpoint
-- Matt should NOT critique typography or palette yet — those are for the pre-launch style round
-
-**Coding agent verifies on its own:**
-- All pages render
-- Navigation works
-- Responsive layout works on mobile
-- No broken links
-
-**Checkpoint acceptance:** Matt's gut says "the site has the right vibe." Doesn't need to be final; needs to be not-wrong.
-
-### 19.3 Checkpoint 3: Herd page and card component
-
-**After:** Herd page at `/herd` renders with sectional binder layout, card components with front + back, mode toggle, sorts, filters, flip interaction, responsive layout.
-
-**Matt reviews:**
-- Visit `/herd` on desktop and mobile (use responsive dev tools if no phone available)
-- Specifically:
-  - Does the sectional binder layout feel right? (Bulls → Cows → Heifers → Calves)
-  - Does the card cycling work smoothly?
-  - Does flipping a card feel tactile? (Try both tap and swipe on mobile)
-  - Does the back of card scroll naturally with sticky section headers?
-  - Do the ribbons (For Sale, birthday, distinction) look restrained rather than gimmicky?
-  - Does the compact mode provide a clean alternate view?
-- Seed data has 11 animals; Matt should be able to navigate through all of them
-
-**Coding agent verifies on its own:**
-- Flip animation performs at 60fps on a reference device
-- Swipe gesture doesn't conflict with OS edge-back
-- Pull-to-refresh is disabled
-- Scroll snap works on mobile
-- Tooltip tap-to-show, tap-again-to-navigate pattern works
-
-**Checkpoint acceptance:** Matt can browse the herd and feels the card interaction is good. Specific UX issues become feedback for iteration.
-
-### 19.4 Checkpoint 4: Back-of-card content and interactions
-
-**After:** All eight back-of-card sections render, expandable, with proper section ordering. Sticky headers work. External link tooltips work. Inquire modal works for sale animals.
-
-**Matt reviews:**
-- Open multiple cards' backs
-- Expand and collapse sections
-- Tap registration number — does the tooltip appear? Does the second tap open hereford.org?
-- Tap For Sale ribbon — does the inquiry modal open pre-filled?
-- Submit an inquiry (to yourself as a test) — does the Formspree email arrive?
-
-**Coding agent verifies on its own:**
-- All section content renders correctly from seed data
-- Sections hide cleanly when all fields are null
-- Internal sire/dam links work
-- One-level return memory works
-
-**Checkpoint acceptance:** Matt can inspect an animal thoroughly and submit an inquiry.
-
-### 19.5 Checkpoint 5: Home page hero, Gallery placeholder, final Phase 1 polish
-
-**After:** Home page with hero composition, Gallery placeholder Wall with 9-13 photos arranged, responsive refinements, Lighthouse score achieved.
-
-**Matt reviews:**
-- Home page — does the quiet-welcome land?
-- Gallery — is the placeholder Wall visually coherent?
-- All pages on mobile — does anything feel cramped or awkward?
-
-**Coding agent verifies on its own:**
-- Lighthouse: 90+ Performance, 100 Accessibility, 100 Best Practices, 100 SEO
-- All spec acceptance criteria met
-
-**Checkpoint acceptance:** Matt approves Phase 1 as complete.
-
-### 19.6 Between-checkpoint behavior
-
-Between checkpoints, coding agent should commit frequently with clear PR-style summaries. Matt should NOT need to review intermediate commits unless coding agent explicitly requests.
-
-If coding agent asks "does this look right?" without a specific checkpoint request, Matt should feel free to respond with "proceed, I'll look at the next checkpoint."
+**Content:**
+- Tooltip content pass (infrastructure Phase 1, content late Phase 1 / post-launch)
+- Documents section content pass
 
 ---
 
-## 20. 🟦 Deferred for future specification
+## 25. 🟧 Coding agent kickoff instructions
 
-Explicitly not part of this spec. These features are acknowledged to exist in the future but are not being designed or built in Phase 1.
+**Start with this spec.** Read it end-to-end before writing any code. Ask Matt for clarification on any points that seem ambiguous.
 
-**Phase 2 (shortly after Phase 1 launch):**
-- Admin panel for cattle management (add/edit/delete animals through UI)
-- Media pipeline (Cloudflare Workers receiving iPhone Shortcut uploads)
-- Cloudflare R2 integration for photo storage
-- AI classification integration (shot type, quality, bounding box)
-- Real data flows replacing seed data
-- Nudge system full implementation with deep-linking
-- Wall curation engine (automated rotation)
+**Start from a fresh branch.** The existing `v2-rebuild` branch gets wiped. Start a new branch (name TBD with Matt) and begin from `main`.
 
-**Phase 2+ (not yet planned):**
-- Admin UI for each additional feature (Calendar, Media tab with Prefer/Hide controls)
-- AHA registration workflow integration (form pre-fill, PDF generation)
-- Seasonal detection system (calving season auto-banner)
-- "Recent Sales" or archive section with staleness guards
-- Events/auction announcement system
+**Preservation checklist — what survives from main:**
+- Astro scaffold (`astro.config.mjs`, `package.json`, `tsconfig.json`)
+- Zod schemas — update to match the data model in §22
+- `src/layouts/BaseLayout.astro` — update to use new `tokens.css`
+- Seed data loader — update to read new data model structure
 
-**Much later, if at all:**
-- Buyer accounts with login
-- Shop (merchandise: hats, key chains, t-shirts) — explicitly separate from cattle purchasing
-- Newsletter signup
-- Blog (only if Marty or Matt would maintain it; "stale content is worse" applies hard)
+**Deletion checklist — what gets wiped:**
+- All existing card components (front, back, flip logic)
+- All existing herd list components
+- All existing animal detail page logic
+- Any ribbon code (rebuilt per §19 with px units)
+- Any photo cycling logic (rebuilt per §14)
 
-**Open design questions deferred to future specs:**
-- Seasonal detection model for small-herd operations (calving season especially — reactive vs. forecast vs. manual vs. hybrid)
-- Pre-launch style variations presentation for Marty and Roianne
-- Registration workflow UX (the "button on the card that launches AHA registration" idea)
-- Public sold-animal archive (design when Marty has actual sold animals to archive)
+**Build order (roughly; parallelize where possible):**
 
----
+1. **Foundations (week 1):**
+   - Install and configure `tokens.css` with locked v4 values (§18)
+   - Update Zod schemas to match data model (§22)
+   - Update `BaseLayout.astro` to use tokens
+   - Seed data migration (wire new loader to data/ JSON structure)
+   - Write or update `docs/CLAUDE.md` per §23.5
 
-## 21. 🟧 Coding agent kickoff instructions
+2. **Public surfaces (weeks 2-4):**
+   - Home page (§8)
+   - Herd page with cards (§3, §4, §7)
+   - Animal detail page (§4 card back)
+   - Per-animal gallery (§5)
+   - About, Contact, Gallery (§9, §10)
+   - Compare placeholder (§6.1)
+   - OpenGraph composite generation (§20.2, §20.3)
 
-### 21.1 Branch strategy
+3. **Admin foundations (weeks 3-5, overlapping):**
+   - Passkey authentication (§12.2)
+   - Admin layout + navigation (§12.6)
+   - Herd landing with status strip and FAB (§7.4)
+   - Inline edit on animal detail (§12.7)
+   - Progressive disclosure patterns (§12.8)
+   - Settings sub-pages (§17)
+   - RBAC + capability gating (§12.4)
 
-- Create a **fresh branch** off `main` for the rebuild: `v2-card-rebuild` (or similar clean name)
-- Do NOT continue work on the existing `v2-rebuild` branch — it contains checkpoint 1-2 work built against the old spec that needs to be replaced
+4. **Admin operational (weeks 5-7):**
+   - Inquiries inbox (§13)
+   - Documents section (§16)
+   - Review queue (for Contributor uploads)
+   - Pending tags queue (§14.5)
+   - Upload issues queue (§14.6)
+   - Audit log view (§17.4)
 
-### 21.2 What to preserve from existing v2-rebuild work
+5. **Photo pipeline (weeks 4-7, overlapping with admin):**
+   - `/api/upload` Worker (§14)
+   - `/api/resolve-tag` Worker (§14.2)
+   - Classification stub (shot type, orientation, basic scores)
+   - Throne calculation logic (§14.8, §14.9)
+   - Staleness threshold and nudge generation (§14.11, §15)
+   - Web upload fallback page (§14.4)
+   - Install token endpoint (§17.5)
 
-The following survives the wipe and carries forward:
-- Astro project scaffold and configuration
-- TypeScript configuration (strict mode, path aliases)
-- Package.json dependency set (Astro, Zod, @astrojs/check)
-- Existing Zod schemas (will need updates per §14, but structure carries forward)
-- Seed data in `data/seed/` (may need supplementation for new fields in §14)
-- Design tokens file (`src/styles/tokens.css`)
-- Base layout component (`src/layouts/BaseLayout.astro`) — may need minor updates
-- Home page copy and About page copy (content, not code) — carry forward as placeholder, revisit during pre-launch
-- Contact page Formspree form wiring
-- Hamburger menu / footer if those exist
+6. **Launch readiness (week 7-8):**
+   - Deploy to Cloudflare Pages
+   - DNS cutover mrsummersranch.com
+   - Matt builds master Shortcut per §14.2, commits to repo
+   - Admin seed (Matt's Owner account) via `admin-users.json`
+   - First real data seeded (handful of Marty's current animals)
+   - End-to-end smoke test
 
-### 21.3 What to delete entirely
+**Where to ask Matt for clarification:**
+- When an amendment's intent feels ambiguous — the amendments file (archived in repo history) has the reasoning, not this spec
+- When a deferred Phase 2 item blocks a Phase 1 decision — escalate rather than guess
+- When a ribbon, copy, or tooltip needs new words — Matt will write or approve
 
-- All herd page code (`src/pages/herd/*`, `src/components/cattle/*`)
-- All card components built against the old spec
-- Any detail page scaffolding (`src/pages/herd/[animalId].astro` in its current form)
-- Any card-cycling components that don't match the new spec's cycling behavior
-
-### 21.4 CLAUDE.md at repo root
-
-**Replace CLAUDE.md at the repo root** with a v2-focused version that:
-- Describes the current architecture (Astro + TS + Zod, Cloudflare Pages target)
-- Points at this spec (`Website_Review-and-Redesign/phase-1-kickoff/CARD-REDESIGN-SPEC.md`) as authoritative
-- Describes the v2-card-rebuild branch as the active work
-- Notes that main branch still serves the live prototype at mrsummersranch.com
-- Removes the old brochure-site architecture description
-
-### 21.5 Build order for Phase 1
-
-Sequenced to allow Matt's review at each checkpoint:
-
-1. **Foundation (Checkpoint 1):** Scaffold, updated schemas, seed data loading, design tokens, base layout
-2. **Public static pages (Checkpoint 2):** Home, About, Contact, Gallery placeholder — all with placeholder copy
-3. **Herd page and card component (Checkpoint 3):** Herd at `/herd` with binder layout, cards with front + back, flip interaction, sorts/filters, compact/cards modes
-4. **Back-of-card content and interactions (Checkpoint 4):** All eight sections, sticky headers, external link tooltips, inquire modal
-5. **Final polish (Checkpoint 5):** Home hero, gallery Wall placeholder, responsive refinements, Lighthouse
-
-### 21.6 Things to ask Matt about before deciding
-
-Don't silently extend or change architectural decisions. Ask Matt if:
-- A case arises that this spec doesn't cover
-- You need to add a dependency beyond Astro + Zod + Astro plugins
-- You need to change design tokens beyond what the spec prescribes
-- You want to defer any Phase 1 acceptance criterion to Phase 2
-- Anything affects the iOS Shortcut workflow (Phase 2 concern but may come up)
-
-You can decide without asking:
-- Internal code organization within `src/components/`
-- CSS strategy (scoped styles, utilities, Astro patterns)
-- Internal naming conventions
-- Placeholder image strategy for Phase 1
-- Test framework choice (not required for Phase 1)
-- Specific library choices for gesture handling (any reasonable choice: Hammer.js, custom, Astro-native)
-
-### 21.7 Things Matt should NOT be asked to review
-
-Matt is a physicist, not a web developer. Do not ask him to review:
-- Code organization
-- Component architecture
-- Build configuration
-- TypeScript errors (fix them; don't surface them)
-- CSS structure
-- Dependency choices
-
-Matt reviews **product experience** — things he can see, tap, and feel. See §19 for specific checkpoint review prompts.
-
-### 21.8 Definition of "Phase 1 complete"
-
-All of the following must be true:
-- [ ] v2-card-rebuild branch contains the full implementation
-- [ ] `npm run build` succeeds with zero TypeScript errors and zero Zod validation errors
-- [ ] All 11 seed animals render as cards on `/herd`
-- [ ] Every card has a working front and back
-- [ ] The flip interaction works on both desktop (click) and mobile (swipe or button)
-- [ ] Sticky section headers behave correctly on long backs
-- [ ] External link tooltips work per spec (tap-show, tap-link-to-navigate)
-- [ ] Inquire modal works, Formspree receives test submissions
-- [ ] Home, About, Contact, Gallery pages render with placeholder content
-- [ ] Navigation works (hamburger, footer, internal links)
-- [ ] Responsive across mobile / tablet / desktop
-- [ ] Lighthouse: 90+ Performance, 100 Accessibility, 100 Best Practices, 100 SEO
-- [ ] Cloudflare Pages preview URL is live
-- [ ] Matt has signed off on all five checkpoints
-
-When all boxes are checked, coding agent writes a short Phase 1 completion summary for Matt with:
-- The preview URL
-- A brief tour of what's built
-- What Phase 2 covers
-- Any known Phase 1 issues deferred to Phase 2
+**Prompting notes:**
+- Matt uses voice dictation. Interpret generously — "Form Bree" = Formspree, "Roianne" = Roianne. 
+- Matt is a physicist, not a web developer. Translate technical tradeoffs into product/user consequences, not jargon.
+- Matt is direct. Don't soften honest feedback with excessive preamble. Don't overclaim confidence. Say "I don't know" when you don't.
+- Matt values research. Cite sources when you make a claim that depends on external convention or prior art.
 
 ---
 
-## 22. Appendix: cross-reference to earlier handoff documents
+## 26. Appendix — historical amendments
 
-This spec supersedes:
-- The herd catalog, card, and detail page sections of `RECOMMENDED-ARCHITECTURE.md`
-- The matching sections of `BEHAVIOR-PRESERVATION-CHECKLIST.md`
+The amendments file (`CARD-REDESIGN-SPEC-AMENDMENTS.md`) contains the full chronological record of 42 amendments (A1-A42) written during the design sessions. Those amendments are now folded into this spec; the file is preserved in git history as reference material.
 
-This spec does NOT supersede:
-- `PROJECT-SYNOPSIS-AND-HISTORY.md` (context remains accurate)
-- The admin authentication, iOS Shortcut, and pipeline sections of earlier docs (still valid for Phase 2 reference)
-- The Phase 1 Kickoff Brief — this spec is the next document after that kickoff
+**Amendment → section map** (for anyone tracing a decision back to its reasoning):
 
-**In case of conflict between this spec and an earlier document, this spec is correct.** When in doubt, ask Matt before implementing an apparent contradiction.
+| Amendments | Landing section(s) in this spec |
+|---|---|
+| A1 (slide vs flip) | §2 |
+| A2 (AHA distinction manual) | §3.3, §12.7 |
+| A3 (no watermarks) | §14 (upload — not enforced), §20 (share composites) |
+| A4 (Media Generation deferred) | §24 |
+| A5-A9 (orientation) | §3.6, §14 (classification), §22 (MediaAsset) |
+| A10-A12 (motion rules) | §3.2, §7.3, §9.3 |
+| A13-A20 (repo layout) | §23 |
+| A21 (admin URL space) | §12.1 |
+| A22-A23 (passkeys + provisioning) | §12.2, §12.3 |
+| A24 (inquiries inbox) | §13 |
+| A25 (notification prefs) | §17.2 |
+| A26 (PWA) | §24 (Phase 2+) |
+| A27 (dark mode) | §18, §24 |
+| A28-A30 (ribbon copy) | §19 |
+| A31 (outgoing share) | §20 |
+| A32 (Shortcut upload) | §14, §21 |
+| A33 (documents) | §16 |
+| A34 (picker always confirms) | §14.2 |
+| A35-A37 (RBAC) | §12.4, §12.5 |
+| A38 (admin nav + herd + progressive) | §7.4, §12.6, §12.7, §12.8 |
+| A39 (design tokens) | §18 |
+| A40 (Settings, self-service Contributor, accent color, ownership transfer) | §17 |
+| A41 (compare, Shortcut correction, platform scope, web upload) | §6, §14.1, §14.4 |
+| A42 (card photo redesign) | §3, §4, §5 |
 
 ---
 
-*End of Card Redesign Specification.*
+**End of consolidated specification.**
+
+Questions? Grep this file for `🟦` to find all product-level decisions. Grep for `🟧` to find implementation details. Grep for `🟨` for specs that serve both.
