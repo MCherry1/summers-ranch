@@ -1,0 +1,74 @@
+---
+/**
+ * Compare placeholder per spec §6.1. Phase 1 locks the URL pattern
+ * (/compare?animals=<comma-separated-tags>) and ships a placeholder
+ * page; the full side-by-side build is Phase 2. The compare-mode
+ * toggle in the herd controls stays hidden until then.
+ *
+ * Placeholder reads the animals query param, parses tags, and renders
+ * a simple stack. Real animal lookup against the seed data lands when
+ * the seed contains animals.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+
+const rawTags = Astro.url.searchParams.get("animals") ?? "";
+const tags = rawTags
+  .split(",")
+  .map((t) => t.trim())
+  .filter(Boolean);
+---
+
+<BaseLayout
+  title="Compare — Summers Ranch"
+  description="Compare animals from Summers Ranch side by side."
+  canonicalPath="/compare"
+>
+  <PageSection
+    kicker="Compare"
+    title={`Side by side <em>— soon.</em>`}
+    lead="The full side-by-side compare view is coming soon. In the meantime, this is a placeholder for the URL pattern."
+  >
+    {tags.length > 0 && (
+      <div class="tags">
+        <p class="label">Animals referenced</p>
+        <ul>
+          {tags.map((tag) => <li>#{tag}</li>)}
+        </ul>
+      </div>
+    )}
+  </PageSection>
+</BaseLayout>
+
+<style>
+  .tags {
+    margin-top: var(--space-6);
+  }
+
+  .label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0 0 var(--space-2);
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  li {
+    font-family: var(--font-body);
+    color: var(--color-ink);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+  }
+</style>

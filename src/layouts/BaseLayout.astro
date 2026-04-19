@@ -13,6 +13,8 @@
  */
 
 import "~/styles/global.css";
+import BaseNav from "~/components/layout/BaseNav.astro";
+import BaseFooter from "~/components/layout/BaseFooter.astro";
 
 interface Props {
   title: string;
@@ -20,6 +22,7 @@ interface Props {
   ogImage?: string;
   ogType?: "website" | "article";
   canonicalPath?: string;   // e.g. "/herd/840" — joined with site origin
+  chrome?: boolean;         // set false for surfaces that render their own shell
 }
 
 const {
@@ -28,6 +31,7 @@ const {
   ogImage = "/og/ranch-hero.jpg",
   ogType = "website",
   canonicalPath,
+  chrome = true,
 } = Astro.props;
 
 const canonicalUrl = canonicalPath
@@ -73,6 +77,8 @@ const absoluteOgImage = new URL(ogImage, Astro.site).toString();
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
+    {chrome && <BaseNav currentPath={Astro.url.pathname} />}
     <slot />
+    {chrome && <BaseFooter />}
   </body>
 </html>

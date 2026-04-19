@@ -1,0 +1,95 @@
+---
+/**
+ * Contact page — spec §9.2. Phone, email, physical location (optional
+ * per site settings), visiting hours, and an inquiry form posting to
+ * /api/inquiry (built-in, not Formspree, per §13.1).
+ *
+ * Inquiry form lands with the admin operational milestone when the
+ * Worker endpoint exists. Structural stub for now.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+import { site } from "~/lib/site";
+---
+
+<BaseLayout
+  title="Contact — Summers Ranch"
+  description="Get in touch with Summers Ranch."
+  canonicalPath="/contact"
+>
+  <PageSection
+    kicker="Get in touch"
+    title={`Say <em>hello.</em>`}
+    lead="Interested in an animal, visiting the ranch, or just asking a question? We'd love to hear from you."
+  >
+    <dl class="contact-list">
+      {site.contactPhone && (
+        <div class="row">
+          <dt>Phone</dt>
+          <dd>
+            <a href={`tel:${site.contactPhone.replace(/\s+/g, "")}`}>
+              {site.contactPhone}
+            </a>
+          </dd>
+        </div>
+      )}
+      {site.contactEmail && (
+        <div class="row">
+          <dt>Email</dt>
+          <dd>
+            <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>
+          </dd>
+        </div>
+      )}
+      {site.contactAddress && (
+        <div class="row">
+          <dt>Location</dt>
+          <dd>{site.contactAddress}</dd>
+        </div>
+      )}
+    </dl>
+  </PageSection>
+</BaseLayout>
+
+<style>
+  .contact-list {
+    max-width: var(--max-width-data);
+    margin: 0;
+    padding: 0;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+    padding: var(--space-6) 0;
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .row:first-child {
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+  }
+
+  @media (min-width: 640px) {
+    .row {
+      grid-template-columns: 8rem 1fr;
+      align-items: baseline;
+      gap: var(--space-6);
+    }
+  }
+</style>

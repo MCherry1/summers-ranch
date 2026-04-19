@@ -1,0 +1,22 @@
+---
+/**
+ * Gallery — "The Wall" — spec §9.3. Three sections (The Herd, The
+ * Ranch, The Work). Real curation rubrics deferred to Phase 2 per
+ * §24; Phase 1 uses admin-selected photos marked galleryHerdCandidate
+ * or galleryRanchCandidate. Structural stub until seed media exists.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+---
+
+<BaseLayout
+  title="Gallery — Summers Ranch"
+  description="Photography from Summers Ranch — the herd, the land, the work."
+  canonicalPath="/gallery"
+>
+  <PageSection
+    kicker="The wall"
+    title={`Photos from the <em>ranch.</em>`}
+    lead="A curated set of photographs from Summers Ranch. The gallery is coming soon."
+  />
+</BaseLayout>

@@ -1,0 +1,22 @@
+---
+/**
+ * Herd page — spec §7. Full implementation (cards + binder order +
+ * filters + sort + admin status strip) lands with the card component
+ * in the next public-surfaces push. For now: routable placeholder so
+ * nav links don't 404 and Cloudflare previews have a live URL.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+---
+
+<BaseLayout
+  title="The herd — Summers Ranch"
+  description="Registered Hereford cattle at Summers Ranch, Sutter Creek, California."
+  canonicalPath="/herd"
+>
+  <PageSection
+    kicker="Meet the herd"
+    title={`The <em>herd</em>`}
+    lead="Each animal has a card — front shows who they are at a glance, back opens the details. The full herd view is coming soon."
+  />
+</BaseLayout>

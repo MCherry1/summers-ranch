@@ -1,0 +1,16 @@
+{
+  "ranchName": "Summers Ranch",
+  "tagline": "A family tradition, honestly kept.",
+  "contactPhone": null,
+  "contactEmail": null,
+  "contactAddress": "Sutter Creek, California",
+  "publicSurfaceToggles": {},
+  "newUserNotificationDefaults": {
+    "new-inquiry-received": { "email": true, "sms": true },
+    "contributor-uploaded": { "email": false, "sms": false },
+    "pending-tag-requires-resolution": { "email": true, "sms": false },
+    "upload-issue-detected": { "email": false, "sms": false },
+    "nudge-surfaced": { "email": false, "sms": false }
+  },
+  "styleDirectionId": "v4-locked-2026-04-19"
+}
