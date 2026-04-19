@@ -2412,6 +2412,370 @@ The consolidated-single-file structure matches the style-system conventions of R
 
 ---
 
+### A40. Settings sub-structure, self-service Contributor creation, and miscellaneous refinements
+
+**Supersedes:** Resolves the remaining P6 Settings-structure work. Supersedes A32's cow-moo confirmation sound.
+
+**What changes:**
+
+This amendment locks the Settings sub-structure, introduces self-service Contributor creation (so Marty and Roianne can add their own helpers without needing Matt), adds per-user admin accent color customization, scraps the cow-moo confirmation sound, and addresses a handful of smaller items surfaced during the P6 workshop.
+
+---
+
+#### Part 1 — Settings sub-structure (five sub-pages)
+
+Settings lives under `/admin/settings/*` with five role-gated sub-pages:
+
+| Sub-page | Path | Visible to |
+|---|---|---|
+| Profile (landing) | `/admin/settings/` | All roles |
+| Notifications | `/admin/settings/notifications/` | All roles |
+| Devices | `/admin/settings/devices/` | All roles |
+| Team | `/admin/settings/team/` | Owner, Admin |
+| Site | `/admin/settings/site/` | Owner |
+
+Route-level gating per A35/A37: users hitting a sub-page above their role level receive a 404.
+
+**Navigation within Settings:**
+
+Desktop: sub-nav strip at the top of the Settings area showing only the items the current user can access. Mobile: same but horizontally scrollable; collapses to a dropdown at very narrow widths.
+
+---
+
+#### Part 2 — Profile (`/admin/settings/`)
+
+Landing sub-page. Every user manages their own profile. Contains:
+
+- Display name (shown in audit trails, Dashboard cards, team list)
+- Email (used for email notifications per A25)
+- Phone number (used for SMS notifications per A25; required for SMS opt-in)
+- Time zone (used for nudge scheduling, timestamp display)
+- **Admin accent color** (new — per-user, see Part 7)
+
+All fields use the inline-edit pattern from A38 (tap → edit → auto-save on blur). No Save button.
+
+---
+
+#### Part 3 — Notifications (`/admin/settings/notifications/`)
+
+Per-user notification preferences. Follows A25's channel infrastructure.
+
+**Available toggles** (default state shown in parentheses):
+
+- New inquiry received — email (on), SMS (on if phone set, else off)
+- Contributor uploaded — email (off), SMS (off) — per A37
+- Pending tag requires resolution — email (on), SMS (off)
+- Upload issue detected — email (owner: on, others: off), SMS (off)
+- Nudge surfaced on an animal you've edited in the last 90 days — email (off), SMS (off) — Phase 2 feature, toggle exists as placeholder
+
+Each toggle is inline-edited; changes auto-save. The "SMS" toggle is disabled with an inline hint if the user has no phone number set, linking to Profile.
+
+---
+
+#### Part 4 — Devices (`/admin/settings/devices/`)
+
+Two stacked sections: passkey devices and upload token.
+
+**Passkey devices section:**
+
+- List of registered passkey credentials with per-device: nickname (user-editable), device type (inferred from user agent at registration), date added, last-used timestamp
+- "+ Add a new device" button that initiates a standard WebAuthn registration flow
+- Per-device "Remove" action with confirmation
+- Warning line if only one passkey device remains: *"This is your only registered device. If you lose access to it, you'll need recovery (see below)."*
+
+**Upload token section:**
+
+- Current token status ("Active" with masked preview like `••••••••••••7Abc`, or "Not yet installed")
+- "Reinstall on phone" button that generates a one-time install link and presents share options (iMessage, email, Copy link) — uses the same install flow as Part 8
+- "Rotate token" button with confirmation. Rotating invalidates the previous token immediately and requires reinstalling the Shortcut on the user's phone.
+- Last-used timestamp (last successful upload)
+
+**Recovery section (bottom of Devices page):**
+
+- For Owner: view recovery codes. Generated once at initial Owner setup; 10 single-use codes. If exhausted, regenerate (invalidates all previous codes).
+- For Admin, Editor, Contributor: displays a one-line message *"If you lose access to your devices, contact [Owner name] for help restoring access."* No self-recovery path; Owner-assisted recovery handled via the Team page.
+
+---
+
+#### Part 5 — Team (`/admin/settings/team/`)
+
+User management. Visible to Owner and Admin; **add/remove/role-change capabilities gated further to Owner only** (per A37 capability matrix).
+
+**Main view — team list:**
+
+Rows: display name, role badge, status (Active / Not yet activated / Review-required), last-active timestamp, actions menu.
+
+Visible filters: All / Active / Contributors only / Activity in last 7 days.
+
+**"+ Add team member" flow (Owner and Admin only, per Part 8 for Contributors):**
+
+Opens a sheet with:
+- Display name (required)
+- Phone number (optional, enables SMS)
+- Email (required for Owner/Admin/Editor; optional for Contributor)
+- Role selector (Admin and Editor only for Owner; Contributor only for Admin — Admins cannot promote beyond their own level)
+- For Contributor: trust state toggle ("Review uploads before they appear publicly") default OFF (matches `default` state per A37)
+
+Create action generates the user record and proceeds to device/token setup:
+- For Owner/Admin/Editor: sends email invite with passkey-registration link (48-hour expiry)
+- For Contributor: generates upload token and presents Shortcut install flow (Part 8)
+
+**Per-user actions menu:**
+
+| Action | Owner | Admin |
+|---|---|---|
+| Edit display name/email/phone | ✓ | — (own profile only) |
+| Change role | ✓ | — |
+| Rotate upload token | ✓ | — |
+| Toggle Contributor trust state (default ↔ review-required) | ✓ | ✓ |
+| Revoke Contributor token | ✓ | ✓ |
+| Reset passkey registration (Owner-assisted recovery) | ✓ | — |
+| Remove user | ✓ | — |
+
+**Owner-assisted recovery:**
+
+When a user (not the Owner) loses all their passkey devices, they contact the Owner. The Owner opens the Team page, taps the locked-out user, and taps "Reset passkey registration." This clears all registered passkeys for that user and generates a one-time registration link delivered via the user's email. Visible in the audit log as a sensitive action.
+
+**Audit log (Owner-only view at bottom of Team page):**
+
+Chronological list of sensitive events:
+- User additions and removals
+- Role changes
+- Trust state changes
+- Ownership transfers (initiated, completed, declined)
+- Upload token rotations
+- Passkey device additions and removals (owner-initiated resets flagged)
+- Site config changes (from Site sub-page)
+- Contributor batch rejections
+
+Per entry: timestamp, actor, action, target, brief context. Retention: 1 year by default. "Export to CSV" action for longer-term archival.
+
+**Explicitly NOT logged:** animal record edits (they have their own per-field audit trail per A38), successful logins, failed login attempts (Phase 2 consideration).
+
+---
+
+#### Part 6 — Site (`/admin/settings/site/`)
+
+Owner-only. Site-level configuration.
+
+**Sections:**
+
+**Style** — the populated design-token values from A39. After Roianne's style-preview decision, Owner sees the current palette/typography choices here with a "Regenerate tokens from style preview" affordance. Manual token overrides are possible but discouraged (warning inline).
+
+**Ranch metadata** — public-facing info displayed on About, Contact, footer:
+- Ranch name (display)
+- Tagline ("Registered Herefords — Sutter Creek, California")
+- Primary contact phone (public)
+- Primary contact email (public)
+- Physical address (public, optional — privacy consideration)
+
+**Public surface toggles** (Phase 2 expansion): whether specific public pages render at all. Phase 1 has all pages always-on; the toggle infrastructure is locked now for Phase 2 use.
+
+**Default notification settings for new users** — the defaults a newly-created user receives in Notifications. Owner can adjust these so new team members start with sensible defaults.
+
+**Ownership transfer** — see Part 9.
+
+---
+
+#### Part 7 — Per-user admin accent color
+
+Each user has an `adminAccentColor` field on their AdminUser record. When set, this overrides `--color-accent` **on admin surfaces only** for that user. Public pages remain unaffected by any user's accent choice — public pages use the ranch-level accent from A39 tokens.
+
+**UI:**
+
+In Profile, a simple color picker with 8-12 preset options (avoiding clashes with any ribbon or nudge colors) plus a "default" option that uses the ranch accent. Picker shows a live preview of how it'll appear on common admin surfaces.
+
+**Technical:**
+
+`adminAccentColor: string | null` on AdminUser. Null means "use the ranch default." Non-null is a hex or semantic color value. Admin-surface components reference `--color-accent` as usual; a small CSS override is injected into the admin layout's inline styles based on the logged-in user's preference.
+
+**Reasoning:**
+
+Marty sees his own admin surface; Roianne sees hers. Small personal customization, no cost to others, no dilution of ranch identity. A light touch of ownership.
+
+---
+
+#### Part 8 — Self-service Contributor creation and Shortcut install flow
+
+**The goal:** Marty and Roianne can add their own Contributors (friend Jeff, visiting grandchild, seasonal helper) without needing Matt to configure anything. This is a Phase 1 feature.
+
+**Flow for adding a Contributor (from Team page):**
+
+1. Owner or Admin taps "+ Add team member" with role = Contributor
+2. Fills basic info: display name, phone number (optional)
+3. Taps Create
+4. System generates a unique upload token server-side
+5. Screen advances to "Send to [name]'s phone" with three actions:
+   - **Send via iMessage** — opens iOS share sheet with a pre-composed message containing the one-time install link
+   - **Send via email** — opens email composer with pre-filled subject/body and the install link
+   - **Copy link** — copies link to clipboard for any other channel
+6. The new Contributor receives the link, taps it on their iPhone
+7. iOS opens the install URL, which is a Cloudflare Worker endpoint that:
+   - Validates the one-time token (24-hour expiry, single-use)
+   - Redirects to the hosted iCloud Shortcut install URL with the token embedded as a query parameter
+8. iOS Shortcuts app opens with the prompt "Add Shortcut to your library?"
+9. The Shortcut imports with the upload token pre-filled (via "Ask When Import" variable)
+10. Contributor runs the Shortcut for the first time; first successful upload flips their status from "Not yet activated" to "Active"
+
+**Shortcut hosting and specification:**
+
+The master Shortcut is pre-built and hosted at `/public/shortcut/summers-ranch-upload.shortcut` (or on iCloud at a fixed URL). Its actions are:
+
+1. Receive images from share sheet (accepts photos, Live Photos)
+2. "Ask When Import" variable: `upload_token` — pre-filled during install via the one-time link
+3. Ask for Input (Number): tag number
+4. Get Contents of URL: `GET /api/resolve-tag?tag=<input>` with `Authorization: Bearer <upload_token>` header, returns JSON with `{ matches: [{ animalId, label }, ...] }`
+5. Choose From List: shown always (per A34), header `Matches for <input>:`, items are `label` strings + final "Add new tag" entry
+6. If "Add new tag" chosen: prompt `Use tag <input>?` Yes/No; Yes commits as new animal with the typed number, No opens Text input for letter tags
+7. For each selected image: Get Contents of URL: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>` and `X-Animal-Id: <resolved>` headers
+8. On all-202 success: brief confirmation toast (no sound per Part 10)
+9. Shortcut closes
+
+**Who builds the Shortcut:**
+
+The .shortcut file must be created in the iOS Shortcuts app itself (it cannot be generated programmatically from source by Claude or the coding agent). Matt builds the master Shortcut once, per the specification above, and uploads it to the hosting location. Coding agent builds the surrounding infrastructure: the one-time install link endpoint, the token validation, the Team page UI, and the redirect logic.
+
+**Implications for Phase 1 scope:**
+
+This adds three Phase 1 deliverables beyond what was in A32:
+- The Worker endpoint that validates the one-time install token and redirects to the iCloud Shortcut URL
+- Hosted Shortcut file itself (built by Matt, not the coding agent)
+- The Team-page "Send to phone" flow with iMessage/email/copy actions
+
+**Reasoning:**
+
+A32 originally assumed Matt would configure each Contributor individually. That scales poorly as soon as Marty wants to add a friend on a weekend. Self-service Contributor creation is the difference between Marty needing to call Matt every time someone new shows up, and Marty handling it himself in 30 seconds. The Shortcut install link solves the hardest UX problem — how does a technologically uncomfortable user install a custom iOS Shortcut with an embedded credential — by making the whole thing a single tap on a text message.
+
+---
+
+#### Part 9 — Ownership transfer (two-step)
+
+Transferring ownership is rare but consequential. Two-step mutual acknowledgment:
+
+**Step 1 — Owner initiates:**
+- Owner opens Site → Ownership transfer section
+- Selects an Admin from a dropdown (only Admins are eligible; Editors and Contributors cannot be Owners without first being promoted to Admin)
+- Types the target user's display name as a safety check
+- Taps "Propose transfer"
+- System creates a pending-transfer record and notifies the target via all available channels (email + SMS if configured + in-app banner on next login)
+
+**Step 2 — Target accepts or declines:**
+- On next login (or via notification link), target sees a banner: *"Matt has proposed transferring ownership of Summers Ranch to you. [Accept] [Decline]"*
+- Accept: roles swap immediately; target becomes Owner; previous Owner becomes Admin; audit log entry created; both parties receive confirmation notifications
+- Decline: transfer cancels; previous Owner notified; no role change
+- Automatic expiry: 7 days with no action cancels the transfer
+
+The current Owner can cancel a pending transfer at any time before acceptance.
+
+**Reasoning:**
+
+Single-step transfer with just a confirmation dialog is too dangerous — if someone compromises the Owner's account, they can transfer ownership before the real Owner notices. Two-step requires the legitimate target to actively accept, which provides a defensive pause and a natural point for the incoming Owner to confirm they were expecting the transfer.
+
+---
+
+#### Part 10 — Cow moo removed
+
+The cow moo confirmation sound from A32 is removed. No audio plays on upload success.
+
+The original framing ("subtle, restrained, quiet acknowledgment") was aspirational, but audio confirmations in a rancher's workflow tend to either be ignored (phone on silent) or obtrusive (phone in a pocket near cattle, unexpected audio startles animals or the user). The visual "✓ Sent!" confirmation from A32 is sufficient.
+
+The per-user sound toggle in Notifications is also removed from the Phase 1 spec, as there are no sounds to toggle.
+
+This decision is reversible by future amendment if the visual confirmation proves insufficient in practice.
+
+---
+
+#### Part 11 — Default user list at launch (supersedes A35/A37)
+
+- **Matt** — Owner
+- **Marty** — Admin
+- **Roianne** — Admin
+- **Marty and Roianne's son** — Editor
+- **Marty and Roianne's daughter** — Editor
+- No Contributors at launch; added by Admins via self-service as needed
+
+Editors have full herd operational access including record edits, pending-tag resolution, upload-issue resolution, Contributor review, and documents. They do not see financial data (when financial data is added to the site), inquiry inbox, user management, or site config.
+
+---
+
+#### Part 12 — Schema additions
+
+**AdminUser** (extends A35/A37):
+
+```typescript
+interface AdminUser {
+  // ... existing fields from A35/A37
+  displayName: string
+  email: string
+  phone: string | null
+  timeZone: string               // IANA zone, e.g., "America/Los_Angeles"
+  adminAccentColor: string | null  // hex or null = ranch default
+  passkeyDevices: Array<{
+    credentialId: string
+    nickname: string
+    deviceType: string           // inferred from user-agent at registration
+    addedAt: string
+    lastUsedAt: string | null
+  }>
+  recoveryCodes: Array<{         // Owner only; null/empty for other roles
+    codeHash: string
+    used: boolean
+    usedAt: string | null
+  }> | null
+  activationStatus: 'not-yet-activated' | 'active'  // flips on first successful token use for Contributors
+}
+```
+
+**PendingOwnershipTransfer** (new):
+
+```typescript
+interface PendingOwnershipTransfer {
+  id: string
+  fromUserId: string
+  toUserId: string
+  proposedAt: string
+  expiresAt: string     // proposedAt + 7 days
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired'
+  resolvedAt: string | null
+}
+```
+
+**AuditLogEntry** (new):
+
+```typescript
+interface AuditLogEntry {
+  id: string
+  timestamp: string
+  actorUserId: string
+  action: string              // enum of audit-logged actions
+  targetUserId: string | null
+  context: Record<string, unknown>  // action-specific payload
+}
+```
+
+**SiteConfig** (new, single-record):
+
+```typescript
+interface SiteConfig {
+  ranchName: string
+  tagline: string
+  contactPhone: string | null
+  contactEmail: string | null
+  contactAddress: string | null  // optional, privacy consideration
+  publicSurfaceToggles: Record<string, boolean>  // Phase 2
+  newUserNotificationDefaults: Record<string, boolean>
+  styleDirectionId: string       // references chosen style preview direction
+}
+```
+
+---
+
+**Reasoning (amendment as a whole):**
+
+The five-sub-page structure matches ecosystem convention (GitHub, Slack, Notion, Linear all use sub-paged settings rather than single-scroll) and provides clean role-gating boundaries. The self-service Contributor flow is the most structurally consequential addition — it's the difference between a team that needs ongoing admin intervention to grow and one that grows organically. The cow moo removal is a quiet correction of an earlier aesthetic choice that didn't survive sober consideration. The per-user accent color is a small piece of personality that costs nothing to implement and adds real ownership feeling.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -2554,15 +2918,14 @@ The classifier should detect the actual shot type of each photo based on its ang
 
 **To be workshopped. When we do, the specific decisions to lock are weighting ratios, shot-type angle boundaries, minimum-viable-score threshold, classifier infrastructure choice.**
 
-### P6. Admin surface contents — PARTIALLY RESOLVED 2026-04-19
+### P6. Admin surface contents — MOSTLY RESOLVED 2026-04-19
 
-Dashboard, Herd landing, animal detail edit affordances, navigation pattern, and progressive-disclosure pattern resolved in A38. Inquiries inbox resolved in A24. Pending-tags and upload-issues queues resolved in A32. Documents section scaffolded in A33. Review queue resolved in A37.
+Dashboard, Herd landing, animal detail edit affordances, navigation pattern, and progressive-disclosure pattern resolved in A38. Inquiries inbox resolved in A24. Pending-tags and upload-issues queues resolved in A32. Documents section scaffolded in A33 (content pass pending). Review queue resolved in A37. Settings sub-structure (Profile, Notifications, Devices, Team, Site) resolved in A40.
 
 Still open:
 
-- **Settings (`/admin/settings/`)** sub-structure — personal (notification prefs, passkey devices, phone), user management (Owner-only), site config, recovery. Next workshop target.
-- **Documents (`/admin/documents/`)** — final category contents and authoring workflow (A33 scaffolded, content pass pending).
-- **Media (`/admin/media/`)** — Phase 2+. Photo library, Prefer/Hide controls, Gallery Wall candidate view. Rough sketch during future admin workshop.
+- **Documents (`/admin/documents/`)** content pass — tooltip-voice writing of Photo Guidelines, Upload Instructions, Registration Forms, Industry Reference, Site Operations. Infrastructure locked in A33; words pending a targeted content session with Matt and Claude, review by Roianne.
+- **Media (`/admin/media/`)** — Phase 2+. Photo library, Prefer/Hide controls, Gallery Wall candidate view.
 - **Calendar (`/admin/calendar/`)** — Phase 2+. Breeding/calving/events log.
 
 ### P7. Compare view for cross-shopping buyers
