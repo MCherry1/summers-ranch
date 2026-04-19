@@ -1,0 +1,100 @@
+---
+/**
+ * Animal detail — spec §3 + §4. Full-width Card composing front and
+ * back with slide transition. Static generation: getStaticPaths builds
+ * one route per animal in the seed.
+ *
+ * OG per §20.2: this URL rewrites og:url and og:image to the animal's
+ * card-front composite so shared links deep-link to the front. The
+ * composite generation pipeline ships in a later push; canonicalPath
+ * and ogImage are wired now so OG meta is correct once assets land.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import Card from "~/components/cattle/Card.astro";
+import {
+  animals,
+  getAnimal,
+  getPrimaryPhoto,
+  getThumbnailPhoto,
+  getSire,
+  getDam,
+  getCalvesOf,
+} from "~/lib/cattle";
+import { displayName } from "~/lib/derive/naming";
+
+export function getStaticPaths() {
+  return animals.map((animal) => ({ params: { id: animal.id } }));
+}
+
+const { id } = Astro.params;
+const animal = id ? getAnimal(id) : null;
+
+if (!animal) {
+  return Astro.redirect("/herd");
+}
+
+const primaryPhoto = getPrimaryPhoto(animal.id);
+const thumbnailPhoto = getThumbnailPhoto(animal.id);
+const sire = getSire(animal);
+const dam = getDam(animal);
+const calves = getCalvesOf(animal);
+
+const name = displayName(animal);
+const pageTitle = `${name} — Summers Ranch`;
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={`${name} · Summers Ranch, Sutter Creek, California.`}
+  canonicalPath={`/herd/${animal.id}`}
+  ogImage={`/og/animal/${animal.id}.jpg`}
+  ogType="article"
+>
+  <main class="animal-surface">
+    <nav class="back-link">
+      <a href="/herd">&lsaquo; Back to the herd</a>
+    </nav>
+    <Card
+      animal={animal}
+      primaryPhoto={primaryPhoto}
+      thumbnailPhoto={thumbnailPhoto}
+      sire={sire}
+      dam={dam}
+      calves={calves}
+    />
+  </main>
+</BaseLayout>
+
+<style>
+  .animal-surface {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4) var(--space-12);
+  }
+
+  @media (min-width: 640px) {
+    .animal-surface {
+      padding: var(--space-10) var(--space-6) var(--space-16);
+    }
+  }
+
+  .back-link {
+    margin-bottom: var(--space-4);
+  }
+
+  .back-link a {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-muted);
+  }
+
+  .back-link a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+</style>

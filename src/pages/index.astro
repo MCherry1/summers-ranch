@@ -17,11 +17,9 @@ import AboutRanch from "~/components/home/AboutRanch.astro";
 import LookingToBuy from "~/components/home/LookingToBuy.astro";
 import GetInTouch from "~/components/home/GetInTouch.astro";
 import { site } from "~/lib/site";
+import { availableCount } from "~/lib/cattle";
 
-// When the herd data loader is wired up, availableCount will come from
-// the data layer. For now: 0 available (hides the "Looking to buy"
-// section per §8.2 — "better empty than wrong").
-const availableCount = 0;
+const available = availableCount();
 ---
 
 <BaseLayout
@@ -32,6 +30,6 @@ const availableCount = 0;
   <Hero />
   <MeetTheHerd />
   <AboutRanch />
-  {availableCount > 0 && <LookingToBuy count={availableCount} />}
+  {available > 0 && <LookingToBuy count={available} />}
   <GetInTouch />
 </BaseLayout>

@@ -10,9 +10,31 @@
  */
 import PageSection from "~/layouts/PageSection.astro";
 import Cta from "~/components/ui/Cta.astro";
+import { animals, getPrimaryPhoto } from "~/lib/cattle";
+import { displayName } from "~/lib/derive/naming";
+import { silhouetteFor } from "~/lib/display/silhouette";
 
-// Featured animals arrive with the herd data loader. For now: empty.
-const featured: Array<{ id: string; name: string | null; tag: string }> = [];
+// Pick 3 featured animals for the home teaser. Preference order:
+// available → distinction → newest DOB. Fallback: first 3 in seed.
+const available = animals.filter((a) => a.currentStatus === "available");
+const distinguished = animals.filter((a) => a.distinction !== null);
+const byDobDesc = [...animals].sort((a, b) => {
+  const aDob = a.dateOfBirth ?? "";
+  const bDob = b.dateOfBirth ?? "";
+  return bDob.localeCompare(aDob);
+});
+
+const seen = new Set<string>();
+const featured: typeof animals = [];
+for (const pool of [available, distinguished, byDobDesc]) {
+  for (const animal of pool) {
+    if (featured.length >= 3) break;
+    if (seen.has(animal.id)) continue;
+    if (animal.isReference) continue;
+    seen.add(animal.id);
+    featured.push(animal);
+  }
+}
 ---
 
 <PageSection
@@ -23,12 +45,23 @@ const featured: Array<{ id: string; name: string | null; tag: string }> = [];
 >
   {featured.length > 0 && (
     <div class="teaser-row">
-      {featured.map((animal) => (
-        <a href={`/herd/${animal.id}`} class="teaser">
-          <div class="photo-slot" aria-hidden="true"></div>
-          <p class="name">{animal.name ?? `#${animal.tag}`}</p>
-        </a>
-      ))}
+      {featured.map((animal) => {
+        const photo = getPrimaryPhoto(animal.id);
+        const photoUrl = photo?.uri ?? silhouetteFor(animal.sex);
+        return (
+          <a href={`/herd/${animal.id}`} class="teaser">
+            <div class="photo-slot">
+              <img
+                src={photoUrl}
+                alt={displayName(animal)}
+                loading="lazy"
+                class:list={["photo", { placeholder: photo === null }]}
+              />
+            </div>
+            <p class="name">{displayName(animal)}</p>
+          </a>
+        );
+      })}
     </div>
   )}
 
@@ -68,6 +101,19 @@ const featured: Array<{ id: string; name: string | null; tag: string }> = [];
     background: var(--color-cream-deep);
     border-radius: var(--radius-3);
     margin-bottom: var(--space-3);
+    overflow: hidden;
+  }
+
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .photo-slot img.placeholder {
+    object-fit: contain;
+    padding: 8%;
   }
 
   .name {

@@ -2,21 +2,26 @@
 /**
  * Compare placeholder per spec §6.1. Phase 1 locks the URL pattern
  * (/compare?animals=<comma-separated-tags>) and ships a placeholder
- * page; the full side-by-side build is Phase 2. The compare-mode
- * toggle in the herd controls stays hidden until then.
- *
- * Placeholder reads the animals query param, parses tags, and renders
- * a simple stack. Real animal lookup against the seed data lands when
- * the seed contains animals.
+ * that displays each referenced animal's name, tag, and current front
+ * photo in a simple vertical stack. Full side-by-side build is Phase 2.
  */
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
+import CardFront from "~/components/cattle/CardFront.astro";
+import { getAnimalByTag, getPrimaryPhoto } from "~/lib/cattle";
+import { displayName } from "~/lib/derive/naming";
 
 const rawTags = Astro.url.searchParams.get("animals") ?? "";
 const tags = rawTags
   .split(",")
   .map((t) => t.trim())
   .filter(Boolean);
+
+const resolved = tags
+  .map((tag) => getAnimalByTag(tag))
+  .filter((a): a is NonNullable<typeof a> => a !== null);
+
+const unresolved = tags.filter((tag) => !getAnimalByTag(tag));
 ---
 
 <BaseLayout
@@ -27,48 +32,76 @@ const tags = rawTags
   <PageSection
     kicker="Compare"
     title={`Side by side <em>— soon.</em>`}
-    lead="The full side-by-side compare view is coming soon. In the meantime, this is a placeholder for the URL pattern."
+    lead="The full side-by-side compare view is coming soon. For now, here are the animals you're looking at."
   >
-    {tags.length > 0 && (
-      <div class="tags">
-        <p class="label">Animals referenced</p>
-        <ul>
-          {tags.map((tag) => <li>#{tag}</li>)}
-        </ul>
+    {resolved.length > 0 && (
+      <div class="stack">
+        {resolved.map((animal) => (
+          <div class="stack-item">
+            <CardFront
+              animal={animal}
+              primaryPhoto={getPrimaryPhoto(animal.id)}
+              detailsHref={`/herd/${animal.id}`}
+            />
+            <p class="label">{displayName(animal)}</p>
+          </div>
+        ))}
       </div>
+    )}
+
+    {unresolved.length > 0 && (
+      <p class="unresolved">
+        Couldn&rsquo;t find: {unresolved.map((tag) => `#${tag}`).join(", ")}
+      </p>
+    )}
+
+    {tags.length === 0 && (
+      <p class="hint">
+        Compare URLs look like <code>/compare?animals=840,842,901</code>.
+      </p>
     )}
   </PageSection>
 </BaseLayout>
 
 <style>
-  .tags {
+  .stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
     margin-top: var(--space-6);
   }
 
-  .label {
-    font-family: var(--font-body);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-xs);
-    letter-spacing: var(--letter-spacing-kicker);
-    text-transform: uppercase;
-    color: var(--color-muted);
-    margin: 0 0 var(--space-2);
+  @media (min-width: 640px) {
+    .stack {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
   }
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  .stack-item {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-3);
   }
 
-  li {
-    font-family: var(--font-body);
-    color: var(--color-ink);
-    padding: var(--space-2) var(--space-4);
-    border: 1px solid var(--color-cream-deep);
-    border-radius: var(--radius-3);
+  .label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    text-align: center;
+    margin: 0;
+  }
+
+  .unresolved,
+  .hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin-top: var(--space-6);
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-1);
   }
 </style>

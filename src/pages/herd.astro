@@ -1,12 +1,22 @@
 ---
 /**
- * Herd page — spec §7. Full implementation (cards + binder order +
- * filters + sort + admin status strip) lands with the card component
- * in the next public-surfaces push. For now: routable placeholder so
- * nav links don't 404 and Cloudflare previews have a live URL.
+ * Herd page — spec §7.
+ *
+ * Primary browse surface. Binder order (Bulls / Cows / Heifers /
+ * Calves / Reference) per §7.1. Cards view ships now; compact view,
+ * sort/filter controls, and compare mode land in follow-ups.
+ *
+ * Empty state: warm copy when the seed has no animals yet, with a
+ * pointer to /about for context. "Better empty than wrong" — no fake
+ * placeholder cards, nothing to mis-represent.
  */
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
+import CardFront from "~/components/cattle/CardFront.astro";
+import { animals, groupByBinder, getPrimaryPhoto } from "~/lib/cattle";
+
+const sections = groupByBinder(animals);
+const isEmpty = animals.length === 0;
 ---
 
 <BaseLayout
@@ -16,7 +26,85 @@ import PageSection from "~/layouts/PageSection.astro";
 >
   <PageSection
     kicker="Meet the herd"
-    title={`The <em>herd</em>`}
-    lead="Each animal has a card — front shows who they are at a glance, back opens the details. The full herd view is coming soon."
-  />
+    title={`Every cow has a name. <em>Every name has a story.</em>`}
+    lead={
+      isEmpty
+        ? "The herd is being catalogued. Marty and Roianne are gathering photos and details for each animal — they'll appear here as they're ready."
+        : "Each animal has a card — the front shows who they are at a glance, the back opens the details."
+    }
+  >
+    {!isEmpty && (
+      <div class="binder">
+        {sections.map((section) => (
+          <section class="binder-section">
+            <h3 class="binder-label">{section.label}</h3>
+            <div class="card-grid">
+              {section.animals.map((animal) => (
+                <CardFront
+                  animal={animal}
+                  primaryPhoto={getPrimaryPhoto(animal.id)}
+                  detailsHref={`/herd/${animal.id}`}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+        <p class="end-of-list">That&rsquo;s the whole herd.</p>
+      </div>
+    )}
+  </PageSection>
 </BaseLayout>
+
+<style>
+  .binder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+  }
+
+  .binder-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .binder-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  @media (min-width: 640px) {
+    .card-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .card-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+    }
+  }
+
+  .end-of-list {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--font-size-md);
+    color: var(--color-muted);
+    text-align: center;
+    margin: var(--space-12) 0 0;
+  }
+</style>
