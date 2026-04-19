@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Summers Ranch — Style Preview v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Lato:wght@300;400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   STYLE PREVIEW v3 — CONFIGURABLE
+   A single design canvas with live controls.
+   Change palette, fonts, scrim, and light/dark independently.
+   Presets jump to named combinations; individual controls
+   fine-tune from there.
+   ========================================================= */
+
+/* ---------- reset + base ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--body-font, "Work Sans"), -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  line-height: 1.5;
+  transition: background 0.3s ease, color 0.3s ease;
+  padding-bottom: 7rem; /* leave room for floating control panel */
+  scroll-padding-bottom: 7rem;
+}
+
+/* ---------- design tokens ---------- */
+/* Defaults are Weathered / Playfair / Work Sans / neutral scrim / light mode.
+   Each data attribute below selectively overrides these. */
+:root {
+  /* Typography */
+  --display-font: "Playfair Display", Georgia, serif;
+  --body-font: "Work Sans", -apple-system, sans-serif;
+
+  /* Palette — light mode (Weathered original) */
+  --color-bg: #f4ede0;
+  --color-paper: #fdf9ef;
+  --color-ink: #231d13;
+  --color-muted: #6b6049;
+  --color-accent: #8f6425;       /* bronze in Weathered original */
+  --color-accent-deep: #6b4a15;
+  --color-accent-soft: #b8884a;
+  --color-secondary: #3c4a2f;    /* ranger-green in Weathered original */
+  --color-cream-deep: #e6d8b8;
+
+  --scrim-tint-rgb: 35, 29, 19;  /* dark warm brown; used for scrim */
+}
+
+/* ---------- palette: Burgundy Accent ---------- */
+body[data-palette="burgundy-accent"] {
+  --color-bg: #f4ede0;
+  --color-paper: #fdf9ef;
+  --color-ink: #231d13;
+  --color-muted: #6b6049;
+  --color-accent: #7a1e38;
+  --color-accent-deep: #5a0f24;
+  --color-accent-soft: #a8415f;
+  --color-secondary: #3c4a2f;
+  --color-cream-deep: #e6d8b8;
+  --scrim-tint-rgb: 35, 29, 19;
+}
+body[data-palette="burgundy-accent"][data-mode="dark"] {
+  --color-bg: #1a1410;
+  --color-paper: #241c16;
+  --color-ink: #f4ede0;
+  --color-muted: #a89c86;
+  --color-accent: #b8475e;
+  --color-accent-deep: #7a1e38;
+  --color-accent-soft: #d87a92;
+  --color-secondary: #6b8054;
+  --color-cream-deep: #3a2d20;
+  --scrim-tint-rgb: 15, 10, 8;
+}
+
+/* ---------- palette: Burgundy Primary ---------- */
+body[data-palette="burgundy-primary"] {
+  --color-bg: #f5ede0;
+  --color-paper: #fdfaf2;
+  --color-ink: #1f1814;
+  --color-muted: #6f6255;
+  --color-accent: #6a0f2b;
+  --color-accent-deep: #460818;
+  --color-accent-soft: #c46080;
+  --color-secondary: #6a0f2b;
+  --color-cream-deep: #e4d5b0;
+  --scrim-tint-rgb: 31, 24, 20;
+}
+body[data-palette="burgundy-primary"][data-mode="dark"] {
+  --color-bg: #120a0d;
+  --color-paper: #1c1215;
+  --color-ink: #f5ede0;
+  --color-muted: #b5a899;
+  --color-accent: #c84668;
+  --color-accent-deep: #8c1e3a;
+  --color-accent-soft: #e69aad;
+  --color-secondary: #c84668;
+  --color-cream-deep: #3a2824;
+  --scrim-tint-rgb: 10, 5, 7;
+}
+
+/* ---------- palette: Merlot & Cream (shirt palette) ---------- */
+body[data-palette="merlot-cream"] {
+  --color-bg: #f7f0e3;
+  --color-paper: #ffffff;
+  --color-ink: #14100e;
+  --color-muted: #5a5046;
+  --color-accent: #8b1e3a;
+  --color-accent-deep: #5c0f24;
+  --color-accent-soft: #d08a9a;
+  --color-secondary: #8b1e3a;
+  --color-cream-deep: #e8d9bd;
+  --scrim-tint-rgb: 20, 16, 14;
+}
+body[data-palette="merlot-cream"][data-mode="dark"] {
+  /* Black & Burgundy — the second shirt palette */
+  --color-bg: #0a0506;
+  --color-paper: #14090b;
+  --color-ink: #f7f0e3;
+  --color-muted: #a89d8c;
+  --color-accent: #c8425e;
+  --color-accent-deep: #8b1e3a;
+  --color-accent-soft: #e5a4b5;
+  --color-secondary: #c8425e;
+  --color-cream-deep: #2f1d21;
+  --scrim-tint-rgb: 8, 4, 5;
+}
+
+/* ---------- light/dark for Weathered original ---------- */
+body[data-palette="weathered"][data-mode="dark"] {
+  /* Dark Weathered — not shipped as default but available for completeness */
+  --color-bg: #1a1510;
+  --color-paper: #241e17;
+  --color-ink: #f4ede0;
+  --color-muted: #a89c86;
+  --color-accent: #b8884a;
+  --color-accent-deep: #8f6425;
+  --color-accent-soft: #d0a86a;
+  --color-secondary: #6b8054;
+  --color-cream-deep: #3a2d20;
+  --scrim-tint-rgb: 15, 10, 7;
+}
+
+/* ---------- font variants ---------- */
+body[data-display="playfair"] { --display-font: "Playfair Display", Georgia, serif; }
+body[data-display="cormorant"] { --display-font: "Cormorant Garamond", Georgia, serif; }
+body[data-display="fraunces"] { --display-font: "Fraunces", Georgia, serif; }
+
+body[data-body="worksans"] { --body-font: "Work Sans", -apple-system, sans-serif; }
+body[data-body="lato"] { --body-font: "Lato", -apple-system, sans-serif; }
+body[data-body="source"] { --body-font: "Source Sans 3", -apple-system, sans-serif; }
+
+body {
+  font-family: var(--body-font);
+}
+
+/* ---------- meta header ---------- */
+.meta-header {
+  background: #1a1a1a;
+  color: #f5f5f5;
+  padding: 0.9rem 1.25rem 0.75rem;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.meta-header h1 {
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.meta-header p {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Offset scroll anchors to account for sticky header */
+section[id] { scroll-margin-top: 4rem; }
+
+/* ---------- floating control panel ---------- */
+.controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  border-top: 1px solid #2a2a2a;
+  z-index: 99;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.25);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: transform 0.3s ease;
+}
+.controls.collapsed { transform: translateY(calc(100% - 2.5rem)); }
+.controls-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 1px solid #2a2a2a;
+  background: #0f0f0f;
+}
+.controls-handle .chevron {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.8rem;
+}
+.controls.collapsed .controls-handle .chevron { transform: rotate(180deg); }
+
+.controls-body {
+  padding: 0.85rem 1rem 1.1rem;
+  max-width: 64rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem 1.1rem;
+}
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.control-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.control-buttons {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.control-btn {
+  background: #2a2a2a;
+  color: #f5f5f5;
+  border: 1px solid #3a3a3a;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.7rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+.control-btn:hover {
+  background: #3a3a3a;
+  border-color: #555;
+}
+.control-btn.active {
+  background: #d8b874;
+  color: #1a1a1a;
+  border-color: #d8b874;
+  font-weight: 600;
+}
+
+/* Presets row — full width, above the grid */
+.controls-presets {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 0.15rem;
+}
+.preset-buttons {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.preset-btn {
+  background: transparent;
+  color: #f5f5f5;
+  border: 1px solid #444;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.72rem;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: all 0.15s ease;
+}
+.preset-btn:hover {
+  background: #d8b874;
+  color: #1a1a1a;
+  border-color: #d8b874;
+}
+
+/* =========================================================
+   SHARED RIBBON SYSTEM (from v1/v2, unchanged)
+   ========================================================= */
+:root {
+  --ribbon-gold: #c9a227;
+  --ribbon-gold-deep: #9a7a0f;
+  --ribbon-gold-light: #f0d874;
+  --ribbon-gold-shine: #fff2c4;
+  --ribbon-ink: #2c2416;
+
+  --ribbon-dod-blue: #1e4a7e;
+  --ribbon-dod-blue-deep: #0f2d52;
+  --ribbon-dod-blue-light: #3b6ba5;
+  --ribbon-dod-blue-shine: #5a8bc4;
+
+  --ribbon-sod-red: #8b1e1e;
+  --ribbon-sod-red-deep: #4a0f0f;
+  --ribbon-sod-red-light: #b03030;
+  --ribbon-sod-red-shine: #c94848;
+
+  --ribbon-baby-blue: #9ec5e8;
+  --ribbon-baby-blue-deep: #6a9dc4;
+  --ribbon-baby-blue-shine: #c8dff0;
+
+  --ribbon-baby-pink: #eabecb;
+  --ribbon-baby-pink-deep: #c48799;
+  --ribbon-baby-pink-shine: #f5dae3;
+}
+.ribbon-corner { position: absolute; width: 110px; height: 110px; overflow: hidden; z-index: 10; }
+.ribbon-corner-tr { top: -5px; right: -5px; }
+.ribbon-corner span {
+  position: absolute; display: block; width: 170px; padding: 7px 0;
+  background: linear-gradient(180deg, var(--ribbon-gold-shine) 0%, var(--ribbon-gold-light) 30%, var(--ribbon-gold) 55%, var(--ribbon-gold-deep) 100%);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.2);
+  color: var(--ribbon-ink);
+  font-family: "Lato", sans-serif; font-weight: 900;
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+.ribbon-corner-tr span { left: -20px; top: 22px; transform: rotate(45deg); }
+.ribbon-corner-tr::before, .ribbon-corner-tr::after {
+  position: absolute; content: ''; display: block;
+  border: 4px solid var(--ribbon-gold-deep); z-index: -1;
+}
+.ribbon-corner-tr::before { top: 0; left: 22px; border-top-color: transparent; border-right-color: transparent; }
+.ribbon-corner-tr::after { bottom: 22px; right: 0; border-bottom-color: transparent; border-left-color: transparent; }
+
+.ribbon-hanging {
+  position: absolute; top: 0; width: 34px; height: 90px; z-index: 10;
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+}
+.ribbon-hanging-position-1 { left: 12px; }
+.ribbon-hanging-position-2 { left: 54px; }
+.ribbon-hanging.dod {
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.25) 100%),
+    linear-gradient(180deg, var(--ribbon-dod-blue-shine) 0%, var(--ribbon-dod-blue-light) 20%, var(--ribbon-dod-blue) 55%, var(--ribbon-dod-blue-deep) 100%);
+}
+.ribbon-hanging.birthday-girl {
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 15%, rgba(255,255,255,0.3) 50%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.15) 100%),
+    linear-gradient(180deg, var(--ribbon-baby-pink-shine) 0%, var(--ribbon-baby-pink) 40%, var(--ribbon-baby-pink-deep) 100%);
+}
+.ribbon-hanging-emblem {
+  position: absolute; top: 5px; left: 0; right: 0; text-align: center;
+  font-size: 8px; line-height: 1; color: var(--ribbon-gold-light);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 4px rgba(255,210,110,0.4);
+  opacity: 0.85;
+}
+.ribbon-hanging-text {
+  position: absolute; top: 18px; bottom: 16px; left: 0; right: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; font-family: "Cinzel", serif; font-weight: 800;
+  font-size: 12px; line-height: 1.15; letter-spacing: 0.04em;
+  color: var(--ribbon-gold-light);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6), 0 0 3px rgba(255,210,110,0.3);
+}
+.ribbon-hanging-text .letter { display: block; }
+.ribbon-hanging.birthday-girl .ribbon-hanging-text {
+  top: 9px; bottom: 22px;
+  display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 8px;
+  font-family: "Cinzel", serif; font-weight: 700;
+  font-size: 7px; letter-spacing: 0.04em; line-height: 1.08;
+  color: var(--ribbon-gold-deep);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6), 0 0 4px rgba(154,122,15,0.3);
+}
+.ribbon-hanging.birthday-girl .ribbon-hanging-text .column {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ribbon-hanging.birthday-girl .ribbon-hanging-emblem { display: none; }
+
+/* =========================================================
+   DESIGN CANVAS
+   ========================================================= */
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative;
+  height: 68vh;
+  min-height: 420px;
+  max-height: 600px;
+  background-image: url('../../images/cattle/tag-HERE-1.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 2.5rem 1.75rem 2.25rem;
+  overflow: hidden;
+  color: #fbf4e3;
+}
+
+/* Scrim variants */
+body[data-scrim="none"] .hero::before { display: none; }
+body[data-scrim="neutral"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 50%,
+    rgba(0,0,0,0.7) 100%
+  );
+  pointer-events: none;
+}
+body[data-scrim="tinted"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(var(--scrim-tint-rgb), 0.15) 0%,
+    rgba(var(--scrim-tint-rgb), 0.1) 25%,
+    rgba(var(--scrim-tint-rgb), 0.6) 65%,
+    rgba(var(--scrim-tint-rgb), 0.92) 100%
+  );
+  pointer-events: none;
+}
+
+/* For 'none' scrim, add text shadows for legibility without dimming the photo */
+body[data-scrim="none"] .hero-content h1,
+body[data-scrim="none"] .hero-content .tagline,
+body[data-scrim="none"] .hero-content .established,
+body[data-scrim="none"] .hero-frame-top span {
+  text-shadow:
+    0 2px 8px rgba(0,0,0,0.9),
+    0 1px 2px rgba(0,0,0,0.95),
+    0 0 1px rgba(0,0,0,1);
+}
+
+.hero-content {
+  position: relative;
+  max-width: 42rem;
+  z-index: 2;
+}
+.hero-frame-top {
+  display: inline-flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+}
+.hero-frame-top::before, .hero-frame-top::after {
+  content: ""; width: 2rem; height: 1px;
+  background: rgba(251, 244, 227, 0.7);
+}
+.hero-frame-top span {
+  font-family: var(--body-font);
+  font-size: 0.65rem; font-weight: 500;
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: rgba(251, 244, 227, 0.95);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+}
+.hero h1 {
+  font-family: var(--display-font);
+  font-size: clamp(2.6rem, 8.5vw, 4.5rem);
+  font-weight: 400; line-height: 1; margin-bottom: 0.5rem;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+.hero h1 em {
+  font-style: italic;
+  color: #e9cf96;
+  font-weight: 400;
+}
+body[data-palette="burgundy-accent"] .hero h1 em { color: #e8a9b8; }
+body[data-palette="burgundy-primary"] .hero h1 em { color: #e5a4b5; }
+body[data-palette="merlot-cream"] .hero h1 em { color: #f7f0e3; opacity: 0.95; }
+.hero .tagline {
+  font-family: var(--display-font); font-style: italic;
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  color: rgba(232, 222, 203, 0.95);
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.hero .established {
+  font-family: var(--body-font); font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.28em; text-transform: uppercase;
+  color: rgba(230, 216, 184, 0.95);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* ---------- sections ---------- */
+.section {
+  padding: 3rem 1.5rem;
+  background: var(--color-bg);
+}
+.section.alt {
+  background: var(--color-paper);
+}
+.section-inner {
+  max-width: 42rem;
+  margin: 0 auto;
+  text-align: center;
+}
+.section-kicker {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+  color: var(--color-accent);
+  font-family: var(--body-font);
+}
+.section-title {
+  font-size: clamp(1.6rem, 5vw, 2.25rem);
+  line-height: 1.15;
+  margin-bottom: 0.8rem;
+  font-weight: 400;
+  color: var(--color-ink);
+  font-family: var(--display-font);
+}
+.section-title em {
+  font-style: italic;
+  color: var(--color-accent);
+  font-weight: 400;
+}
+body[data-palette="burgundy-primary"] .section-title {
+  font-weight: 500;
+}
+body[data-palette="merlot-cream"] .section-title {
+  font-weight: 500;
+  color: var(--color-accent);
+}
+body[data-palette="merlot-cream"] .section-title em {
+  color: var(--color-ink);
+  opacity: 0.85;
+}
+.section-body {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  max-width: 36rem;
+  margin: 0 auto 1.25rem;
+  color: var(--color-muted);
+  font-family: var(--body-font);
+}
+.section-cta {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.8rem;
+  text-decoration: none;
+  border-radius: 1px;
+  font-family: var(--body-font);
+  background: var(--color-secondary);
+  color: var(--color-paper);
+  border: 1px solid var(--color-secondary);
+  transition: all 0.25s ease;
+}
+.section-cta:hover {
+  background: var(--color-paper);
+  color: var(--color-secondary);
+}
+.section-cta.secondary {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+body[data-palette="burgundy-primary"] .section-cta,
+body[data-palette="merlot-cream"] .section-cta {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+body[data-palette="burgundy-primary"] .section-cta:hover,
+body[data-palette="merlot-cream"] .section-cta:hover {
+  background: var(--color-accent-deep);
+  color: var(--color-paper);
+  border-color: var(--color-accent-deep);
+}
+
+/* ---------- teaser row ---------- */
+.teaser-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  max-width: 56rem;
+  margin: 2rem auto 0;
+  padding: 0 1rem;
+}
+@media (max-width: 640px) {
+  .teaser-row { grid-template-columns: 1fr 1fr; }
+  .teaser-row > :nth-child(3) { display: none; }
+}
+.teaser {
+  aspect-ratio: 3/4;
+  background-size: cover;
+  background-position: center;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.teaser::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.75) 100%);
+}
+.teaser-label {
+  position: absolute;
+  bottom: 0.8rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  color: #fbf4e3;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  z-index: 2;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  font-family: var(--body-font);
+}
+
+/* ---------- contact grid ---------- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 32rem;
+  margin: 1.5rem auto 0;
+  font-size: 0.88rem;
+  color: var(--color-ink);
+  font-family: var(--body-font);
+}
+@media (max-width: 480px) {
+  .contact-grid { grid-template-columns: 1fr; }
+}
+.contact-grid strong {
+  display: block;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  color: var(--color-accent);
+}
+
+/* ---------- card ---------- */
+.card-demo-wrap {
+  padding: 2.5rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--color-bg);
+}
+.card-demo-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  font-family: var(--body-font);
+}
+.card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--body-font);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+.card-photo {
+  position: relative;
+  aspect-ratio: 3/4;
+  background-image: url('../../images/cattle/tag-HERE-1.jpg');
+  background-size: cover;
+  background-position: center;
+}
+.card-date {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.35);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.card-reg {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.35);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.card-body { padding: 1rem 1.2rem 1.25rem; }
+.card-name {
+  font-family: var(--display-font);
+  color: var(--color-ink);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1.1;
+  margin-bottom: 0.2rem;
+}
+body[data-palette="burgundy-primary"] .card-name,
+body[data-palette="merlot-cream"] .card-name {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+.card-name .distinction {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  color: var(--color-accent);
+}
+body[data-palette="burgundy-primary"] .card-name .distinction,
+body[data-palette="merlot-cream"] .card-name .distinction {
+  color: var(--color-ink);
+  opacity: 0.7;
+}
+.card-tag {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 0.85rem;
+  font-family: var(--body-font);
+}
+body[data-palette="burgundy-primary"] .card-tag,
+body[data-palette="merlot-cream"] .card-tag {
+  color: var(--color-muted);
+}
+.card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1.1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--color-cream-deep);
+}
+.card-stat-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 0.15rem;
+}
+.card-stat-value {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.card-footer-row {
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--color-cream-deep);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+.card-footer-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  opacity: 0.85;
+}
+.card-footer-value {
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+/* ---------- config summary chip (floating) ---------- */
+.config-chip {
+  position: fixed;
+  top: 3.5rem;
+  right: 0.75rem;
+  background: rgba(26, 26, 26, 0.88);
+  color: #f5f5f5;
+  padding: 0.4rem 0.7rem;
+  border-radius: 3px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  z-index: 98;
+  pointer-events: none;
+  opacity: 0.85;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  max-width: 14rem;
+  line-height: 1.4;
+}
+.config-chip strong {
+  opacity: 0.7;
+  font-weight: 500;
+  margin-right: 0.25rem;
+}
+
+</style>
+</head>
+<body class="" data-mode="light" data-palette="weathered" data-display="playfair" data-body="worksans" data-scrim="neutral">
+
+<div class="meta-header">
+  <h1>Summers Ranch — Style Preview v3</h1>
+  <p>Configurable. Adjust the controls at the bottom to try combinations.</p>
+</div>
+
+<div class="config-chip" id="configChip">
+  <div><strong>Palette</strong><span id="chipPalette">Weathered</span></div>
+  <div><strong>Display</strong><span id="chipDisplay">Playfair</span></div>
+  <div><strong>Body</strong><span id="chipBody">Work Sans</span></div>
+  <div><strong>Mode</strong><span id="chipMode">Light</span></div>
+</div>
+
+<!-- ============== HOME PAGE ============== -->
+<section id="home">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-frame-top"><span>Registered Herefords · Est. 1998</span></div>
+      <h1>Summers <em>Ranch</em></h1>
+      <p class="tagline">Herefords raised the old way, for people who still understand what that means.</p>
+      <p class="established">Sutter Creek, California</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-kicker">Meet the herd</div>
+      <h2 class="section-title">Every cow has a name. <em>Every name has a story.</em></h2>
+      <p class="section-body">Marty and Roianne started the herd in 1998 with a handful of registered Herefords and a long view. Today you can meet each animal individually, see their pedigree, and follow their story from calf to cow.</p>
+      <a class="section-cta" href="#">See the Herd</a>
+    </div>
+    <div class="teaser-row">
+      <div class="teaser" style="background-image:url('../../images/cattle/hereford-profile.jpg')"><div class="teaser-label">Sweetheart · Cow</div></div>
+      <div class="teaser" style="background-image:url('../../images/cattle/calf-portrait.jpg')"><div class="teaser-label">Calf · 2 months</div></div>
+      <div class="teaser" style="background-image:url('../../images/cattle/hereford-bull.jpg')"><div class="teaser-label">Mr Success · Sire</div></div>
+    </div>
+  </div>
+
+  <div class="section alt">
+    <div class="section-inner">
+      <div class="section-kicker">About the ranch</div>
+      <h2 class="section-title">A family tradition, <em>honestly kept.</em></h2>
+      <p class="section-body">We run a small registered Hereford operation in the foothills of the Sierra Nevada. Every animal is raised, handled, and sold by the same two people who watched them be born.</p>
+      <a class="section-cta secondary" href="#">Our story</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-inner">
+      <div class="section-kicker">For sale</div>
+      <h2 class="section-title">Looking for your <em>next sire?</em></h2>
+      <p class="section-body">Three yearling bulls currently offered for private treaty sale. Full pedigree, performance data, and in-person visits welcome.</p>
+      <a class="section-cta" href="#">See what's available</a>
+    </div>
+  </div>
+
+  <div class="section alt">
+    <div class="section-inner">
+      <div class="section-kicker">Get in touch</div>
+      <h2 class="section-title">Stop by or give us a call.</h2>
+      <div class="contact-grid">
+        <div><strong>Phone</strong>(209) 555-0142</div>
+        <div><strong>Email</strong>info@mrsummersranch.com</div>
+        <div><strong>Location</strong>Sutter Creek, CA</div>
+        <div><strong>Visits</strong>By appointment</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CATTLE CARD ============== -->
+<section id="card">
+  <div class="card-demo-wrap">
+    <div class="card-demo-label">Example cattle card · front</div>
+    <div class="card">
+      <div class="card-photo">
+        <div class="ribbon-hanging dod ribbon-hanging-position-1">
+          <div class="ribbon-hanging-emblem">★</div>
+          <div class="ribbon-hanging-text">
+            <span class="letter">D</span><span class="letter">O</span><span class="letter">D</span>
+          </div>
+        </div>
+        <div class="ribbon-hanging birthday-girl ribbon-hanging-position-2">
+          <div class="ribbon-hanging-emblem">✦</div>
+          <div class="ribbon-hanging-text">
+            <div class="column"><span>H</span><span>A</span><span>P</span><span>P</span><span>Y</span></div>
+            <div class="column"><span>B</span><span>I</span><span>R</span><span>T</span><span>H</span><span>D</span><span>A</span><span>Y</span></div>
+          </div>
+        </div>
+        <div class="ribbon-corner ribbon-corner-tr"><span>Available</span></div>
+        <div class="card-date">May 2025</div>
+        <div class="card-reg">AHA #44109820</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Sweetheart<span class="distinction">· DOD</span></div>
+        <div class="card-tag">Tag #840</div>
+        <div class="card-stats">
+          <div><div class="card-stat-label">Sex</div><div class="card-stat-value">Cow</div></div>
+          <div><div class="card-stat-label">Breed</div><div class="card-stat-value">Hereford</div></div>
+          <div><div class="card-stat-label">Age</div><div class="card-stat-value">9 years</div></div>
+          <div><div class="card-stat-label">Status</div><div class="card-stat-value">Available</div></div>
+        </div>
+        <div class="card-footer-row">
+          <span class="card-footer-label">Sire</span>
+          <span class="card-footer-value">Mr Success 2214</span>
+        </div>
+        <div class="card-footer-row">
+          <span class="card-footer-label">Dam</span>
+          <span class="card-footer-value">Summers Heather 412</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FLOATING CONTROL PANEL ============== -->
+<div class="controls" id="controls">
+  <div class="controls-handle" onclick="toggleControls()">
+    <span class="chevron">▼</span>
+    <span>Customize</span>
+    <span class="chevron">▼</span>
+  </div>
+  <div class="controls-body">
+
+    <div class="controls-presets">
+      <div class="control-label">Presets</div>
+      <div class="preset-buttons">
+        <button class="preset-btn" onclick="applyPreset('original-weathered')">Original Weathered</button>
+        <button class="preset-btn" onclick="applyPreset('burgundy-accent')">Burgundy Accent</button>
+        <button class="preset-btn" onclick="applyPreset('merlot-cream')">Merlot &amp; Cream</button>
+        <button class="preset-btn" onclick="applyPreset('dark-merlot')">Dark Merlot (shirt match)</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Palette</div>
+      <div class="control-buttons" data-control="palette">
+        <button class="control-btn" data-value="weathered">Weathered</button>
+        <button class="control-btn" data-value="burgundy-accent">Burgundy Accent</button>
+        <button class="control-btn" data-value="burgundy-primary">Burgundy Primary</button>
+        <button class="control-btn" data-value="merlot-cream">Merlot &amp; Cream</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Display font</div>
+      <div class="control-buttons" data-control="display">
+        <button class="control-btn" data-value="playfair">Playfair</button>
+        <button class="control-btn" data-value="cormorant">Cormorant</button>
+        <button class="control-btn" data-value="fraunces">Fraunces</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Body font</div>
+      <div class="control-buttons" data-control="body">
+        <button class="control-btn" data-value="worksans">Work Sans</button>
+        <button class="control-btn" data-value="lato">Lato</button>
+        <button class="control-btn" data-value="source">Source Sans</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Hero scrim</div>
+      <div class="control-buttons" data-control="scrim">
+        <button class="control-btn" data-value="none">None</button>
+        <button class="control-btn" data-value="neutral">Neutral</button>
+        <button class="control-btn" data-value="tinted">Tinted</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Mode</div>
+      <div class="control-buttons" data-control="mode">
+        <button class="control-btn" data-value="light">Light</button>
+        <button class="control-btn" data-value="dark">Dark</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const PALETTE_NAMES = {
+    'weathered': 'Weathered',
+    'burgundy-accent': 'Burgundy Accent',
+    'burgundy-primary': 'Burgundy Primary',
+    'merlot-cream': 'Merlot & Cream'
+  };
+  const DISPLAY_NAMES = {
+    'playfair': 'Playfair',
+    'cormorant': 'Cormorant',
+    'fraunces': 'Fraunces'
+  };
+  const BODY_NAMES = {
+    'worksans': 'Work Sans',
+    'lato': 'Lato',
+    'source': 'Source Sans'
+  };
+
+  function setControl(control, value) {
+    document.body.setAttribute('data-' + control, value);
+    // Update active state of buttons in that group
+    document.querySelectorAll('[data-control="' + control + '"] .control-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === value);
+    });
+    updateChip();
+  }
+
+  function updateChip() {
+    document.getElementById('chipPalette').textContent = PALETTE_NAMES[document.body.dataset.palette] || '';
+    document.getElementById('chipDisplay').textContent = DISPLAY_NAMES[document.body.dataset.display] || '';
+    document.getElementById('chipBody').textContent = BODY_NAMES[document.body.dataset.body] || '';
+    document.getElementById('chipMode').textContent = document.body.dataset.mode === 'dark' ? 'Dark' : 'Light';
+  }
+
+  function applyPreset(preset) {
+    const presets = {
+      'original-weathered': { palette: 'weathered', display: 'playfair', body: 'worksans', scrim: 'neutral', mode: 'light' },
+      'burgundy-accent': { palette: 'burgundy-accent', display: 'playfair', body: 'worksans', scrim: 'neutral', mode: 'light' },
+      'merlot-cream': { palette: 'merlot-cream', display: 'playfair', body: 'worksans', scrim: 'neutral', mode: 'light' },
+      'dark-merlot': { palette: 'merlot-cream', display: 'playfair', body: 'worksans', scrim: 'neutral', mode: 'dark' }
+    };
+    const config = presets[preset];
+    if (!config) return;
+    Object.entries(config).forEach(([k, v]) => setControl(k, v));
+  }
+
+  // Wire up all control buttons
+  document.querySelectorAll('.control-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.closest('[data-control]');
+      if (!group) return;
+      setControl(group.dataset.control, btn.dataset.value);
+    });
+  });
+
+  // Initialize active states from current body attrs
+  ['palette', 'display', 'body', 'scrim', 'mode'].forEach(control => {
+    const currentValue = document.body.getAttribute('data-' + control);
+    if (currentValue) setControl(control, currentValue);
+  });
+
+  // Collapsible controls
+  function toggleControls() {
+    const c = document.getElementById('controls');
+    c.classList.toggle('collapsed');
+  }
+</script>
+
+</body>
+</html>
