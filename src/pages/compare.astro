@@ -1,4 +1,7 @@
 ---
+// Note: not prerendered — compare needs runtime access to ?animals=
+// query params for SSR resolution against the seed. If the seed is
+// empty, this still SSRs a minimal placeholder.
 /**
  * Compare placeholder per spec §6.1. Phase 1 locks the URL pattern
  * (/compare?animals=<comma-separated-tags>) and ships a placeholder
