@@ -2246,6 +2246,172 @@ The inline-edit pattern with auto-save matches modern SaaS convention (Linear, N
 
 ---
 
+### A39. Full design-token system — typography, spacing, radius, shadow, motion
+
+**Supersedes:** Extends A27 (dark-mode semantic color tokens). A27's tokenization requirement, which previously covered color only, is extended to cover the full design-token surface.
+
+**What changes:**
+
+The "no hardcoded values in components" rule established in A27 for color is generalized: typography, spacing, border radius, shadow, and animation timing all become token-based. Any hardcoded value for any of these properties in a component file is a bug.
+
+**Token categories and file structure:**
+
+A single consolidated tokens file `src/styles/tokens.css` contains all token categories. Matches industry convention (most style systems use one tokens file, imported globally, rather than splitting by category). Categories within the file are grouped with comment-block separators for readability.
+
+```css
+:root {
+  /* ========================================
+     COLOR (per A27 — already locked)
+     ======================================== */
+  --color-bg: /* populated from style choice */;
+  --color-paper: /* populated */;
+  --color-ink: /* populated */;
+  --color-muted: /* populated */;
+  --color-accent: /* populated */;
+  --color-ribbon-sale: /* gold */;
+  --color-ribbon-distinction: /* DOD blue / SOD red */;
+  --color-ribbon-birthday-bull: /* blue */;
+  --color-ribbon-birthday-cow: /* pink */;
+  --color-nudge-pulse: /* gold, per A38 nudge system */;
+  
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+  
+  /* Font families */
+  --font-display: /* populated from style choice — headlines, card titles */;
+  --font-body: /* populated — body copy, form fields */;
+  --font-mono: /* tag numbers, code-like data */;
+  
+  /* Font sizes — modular scale */
+  --font-size-xs: /* e.g., 0.75rem */;
+  --font-size-sm: /* e.g., 0.875rem */;
+  --font-size-base: /* e.g., 1rem */;
+  --font-size-lg: /* e.g., 1.125rem */;
+  --font-size-xl: /* e.g., 1.25rem */;
+  --font-size-2xl: /* e.g., 1.5rem */;
+  --font-size-3xl: /* e.g., 1.875rem */;
+  --font-size-4xl: /* e.g., 2.25rem */;
+  
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Line heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Letter spacing */
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.05em;
+  --letter-spacing-ribbon: /* populated from style choice */;
+  
+  /* ========================================
+     SPACING
+     ======================================== */
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  
+  /* ========================================
+     BORDER RADIUS
+     ======================================== */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+  --radius-card: /* populated from style choice — the card's radius is a brand element */;
+  
+  /* ========================================
+     SHADOW
+     ======================================== */
+  --shadow-none: none;
+  --shadow-sm: /* populated */;
+  --shadow-md: /* populated */;
+  --shadow-lg: /* populated */;
+  --shadow-card: /* populated — specific to card component */;
+  --shadow-modal: /* populated */;
+  --shadow-inset: /* populated — for depressed states */;
+  
+  /* ========================================
+     MOTION
+     ======================================== */
+  
+  /* Durations */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-crossfade: 700ms;  /* card photo crossfade per main spec */
+  
+  /* Easing */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);  /* for card slide commits per A1 */
+  
+  /* ========================================
+     Z-INDEX (for surface stacking)
+     ======================================== */
+  --z-base: 0;
+  --z-sticky: 10;    /* status strip per A38 */
+  --z-overlay: 20;   /* ribbons, card chrome */
+  --z-modal: 50;     /* lightbox, login modal */
+  --z-toast: 100;    /* save confirmations, error flashes */
+}
+```
+
+**Values marked `/* populated from style choice */`** are placeholders filled in once Marty and Roianne select a style direction from the style preview. The architecture is locked now; the specific values wait on their decision.
+
+**Semantic vs. primitive tokens:**
+
+The token list above mixes primitive tokens (`--space-4`, `--font-size-lg`) with semantic tokens (`--color-bg`, `--radius-card`). Both are legitimate. Primitives are the raw design vocabulary; semantics are purpose-named aliases pointing to primitives. Components should prefer semantic tokens when one exists ("use `--radius-card`, not `--radius-lg`") and fall back to primitives when no semantic alias fits.
+
+Future amendments may add more semantic tokens as patterns emerge. The primitive set should stay stable; the semantic set grows.
+
+**Dark mode (per A27):**
+
+The `@media (prefers-color-scheme: dark)` block in tokens.css only overrides color values. Typography, spacing, radius, shadow, and motion tokens remain identical in dark mode. This is the intended design: dark mode is a palette change, not a different design system.
+
+**What this does NOT include:**
+
+- **No component-specific tokens outside tokens.css.** If a component needs a specific value not covered by any existing token, the right move is to add a new token (primitive or semantic) to tokens.css, not to introduce a local variable in the component.
+- **No theming-beyond-dark-mode.** We're not building a multi-theme system where, e.g., users could pick between "classic" and "modern" variants. A27 and A39 together prepare for two themes max: light (default) and dark (Phase 2).
+- **No runtime token swapping.** Tokens are CSS custom properties resolved at render time, not JavaScript state. Changes require a CSS file edit and deploy.
+
+**Implementation checklist for the coding agent:**
+
+1. Single `src/styles/tokens.css` file with the structure above, imported globally via the base Astro layout
+2. Linter or pre-commit check that flags hardcoded values in component files for properties that should use tokens (color, font-family, font-size, margin, padding, border-radius, box-shadow, transition-duration, transition-timing-function)
+3. Token value population deferred until style direction is chosen by Marty and Roianne
+4. When the style direction is chosen, the populated token values are the first commit in the style-integration pass — a single PR touching only `tokens.css`
+5. Subsequent token value changes (e.g., Marty says "cards feel too round, soften the radius") are single-file edits
+
+**Reasoning:**
+
+Tokenizing only color (per A27) was a half-measure. The same argument that applied to color — "Marty might want to change this six months in, don't make that a component refactor" — applies equally to every other visual property. Typography especially: fonts are load-bearing brand decisions that frequently get revisited, and components that hardcode `font-family: 'Playfair Display', serif` are components that resist future iteration.
+
+The slight added complexity of "everything via tokens" is a Phase 1 cost that pays back indefinitely. Coding-agent discipline to consult tokens.css instead of inventing values is easy at project start, hard to enforce retroactively.
+
+The consolidated-single-file structure matches the style-system conventions of Radix UI, shadcn/ui, Tailwind's own custom-properties build, and most modern Astro/React template systems. One file, one search, one place to change.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
