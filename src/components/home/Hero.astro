@@ -5,20 +5,42 @@
  * italic emphasis on "Ranch"), italic tagline, small uppercase
  * "Sutter Creek, California" below.
  *
- * Phase 1: no hero photograph shipped yet (Matt re-provides). Current
- * hero is a cream surface with typographic content; when the landscape
- * photo is available, add it via background-image on .hero and the
- * bottom-third scrim per §18.4 will layer on top. Hero sizing follows
- * POLISH §5.1: height 68vh, min 420px, max 600px.
+ * Background photograph: prefers /dummy-photos/hero.jpg when Matt
+ * drops a real shot into that path; otherwise falls back to the
+ * authored SVG landscape placeholder. The check runs at build time
+ * via Astro's import.meta.glob over public/dummy-photos so no fetch
+ * happens at runtime.
  *
- * Text is left-aligned on mobile (POLISH §8.3 — centered mobile hero
- * looks like every other site) and centered on desktop per POLISH §4.2
- * which carves out home-page hero display titles as a centered case.
+ * When a photograph is present, the bottom-third scrim engages per
+ * spec §18.4 to preserve photo color in the top 60-70% while holding
+ * text legibility below. When only the SVG placeholder shows, the
+ * scrim stays off — the SVG is already warm+textured and doesn't
+ * need darkening.
+ *
+ * Hero sizing follows POLISH §5.1: height 68vh, min 420px, max 600px.
+ * Text is left-aligned on mobile (POLISH §8.3) and centered on
+ * desktop per POLISH §4.2's hero carve-out.
  */
 import { site } from "~/lib/site";
+
+// Build-time check: is the real hero photo in place yet?
+const realHeroCandidates = import.meta.glob(
+  "../../../public/dummy-photos/hero.{jpg,jpeg,webp,avif}",
+  { eager: true }
+);
+const hasRealHero = Object.keys(realHeroCandidates).length > 0;
+
+const heroImageUrl = hasRealHero
+  ? `/dummy-photos/${Object.keys(realHeroCandidates)[0]!.split("/").pop()}`
+  : "/dummy-photos/hero-placeholder.svg";
 ---
 
-<section class="hero" aria-labelledby="hero-title">
+<section
+  class:list={["hero", { "with-photo": hasRealHero }]}
+  style={`background-image: url('${heroImageUrl}');`}
+  aria-labelledby="hero-title"
+>
+  {hasRealHero && <div class="hero-scrim" aria-hidden="true"></div>}
   <div class="hero-inner">
     <p class="kicker">Registered Herefords &middot; Est. 1998</p>
     <h1 id="hero-title" class="display">
@@ -27,7 +49,6 @@ import { site } from "~/lib/site";
     <p class="tagline">{site.tagline}</p>
     <p class="location">{site.contactAddress}</p>
   </div>
-  <div class="hero-scrim" aria-hidden="true"></div>
 </section>
 
 <style>
@@ -36,14 +57,12 @@ import { site } from "~/lib/site";
     height: 68vh;
     min-height: 420px;
     max-height: 600px;
-    background: var(--color-bg);
+    background-color: var(--color-bg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     overflow: hidden;
   }
-
-  /* When a hero photo is added: background-image on .hero itself,
-     background-size: cover, background-position: center. The scrim
-     below sits on top and concentrates in the bottom third per
-     §18.4, preserving the upper photograph. */
 
   .hero-scrim {
     position: absolute;
@@ -56,12 +75,12 @@ import { site } from "~/lib/site";
       rgba(0, 0, 0, 0.55) 75%,
       rgba(0, 0, 0, 0.82) 100%
     );
-    opacity: 0;                 /* off until photo is in place */
+    z-index: var(--z-base);
   }
 
   .hero-inner {
     position: relative;
-    z-index: var(--z-base);
+    z-index: calc(var(--z-base) + 1);
     max-width: var(--max-width-page);
     margin: 0 auto;
     height: 100%;
@@ -109,6 +128,22 @@ import { site } from "~/lib/site";
     text-transform: uppercase;
     color: var(--color-muted);
     margin: 0;
+  }
+
+  /* When a real photo is loaded, text flips to cream with layered
+     drop shadows for legibility over varied photography. */
+  .hero.with-photo .kicker,
+  .hero.with-photo .display,
+  .hero.with-photo .tagline,
+  .hero.with-photo .location {
+    color: var(--color-bg);
+    text-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.5),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero.with-photo .kicker {
+    color: var(--color-accent-soft);
   }
 
   @media (min-width: 640px) {
