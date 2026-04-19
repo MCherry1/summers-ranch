@@ -2776,6 +2776,179 @@ The five-sub-page structure matches ecosystem convention (GitHub, Slack, Notion,
 
 ---
 
+### A41. Compare view (P7 resolution), Shortcut distribution correction, web upload fallback, platform scope
+
+**Supersedes:** Resolves P7. Corrects A40 Part 8's Shortcut distribution implementation. Clarifies platform scope for the upload pipeline.
+
+**What changes:**
+
+This amendment resolves the last open workshop (P7 compare view), corrects an implementation error in the A40 Shortcut distribution flow, clarifies Android/iOS platform scope, and adds a browser-based upload fallback for admins.
+
+---
+
+#### Part 1 — Compare view (resolves P7)
+
+**Reframe from the original P7 stub:** Compare is not primarily an evaluation tool (buyers can already see all 3-5 available animals on two scrolls at Summers Ranch scale). It is a **sharing tool** — a buyer selects 2-3 animals and shares a URL with a spouse, business partner, or co-decision-maker who can view them side-by-side without browsing the full site themselves. This reframing simplifies the design and clarifies scope.
+
+**Core design:**
+
+- **URL pattern:** `/compare?animals=<comma-separated-tags>`. The URL is the source of truth — no server-side state, no user session, no localStorage.
+- **Scope:** public surface, no authentication. Admins use the herd list with multi-sort for their own comparison needs (breeding pairings, culling decisions) — compare is not needed on the admin side.
+- **Max animals:** 3. Mobile viewport constraints make 4+ unusable.
+- **Attribute set:** mirrors the card-back section vocabulary (identity, pedigree, registration, performance, sale details). Absent values render as muted *"not disclosed"* rather than blank — in compare, absence is meaningful information (different from the card-level rule where empty sections are hidden).
+- **Photos:** single primary photo per animal (side-profile throne-holder per A36). No carousel, no Live Photo motion in compare.
+- **Ask affordance:** "Ask about these animals" button at the bottom of the compare surface opens the inquiry form (per A24) with all selected animals pre-referenced in the subject/body.
+
+**Mode-toggle selection UX (not long-press):**
+
+Compare mode is entered via a **Compare toggle** in the herd list controls row (same strip as sort, filter, view toggle). When off (default), swiping and tapping work normally. When on:
+
+- Taps on cards add/remove them from the compare selection
+- Selected cards show a subtle selection indicator (checkmark in corner + colored outline via `--color-accent`)
+- A compare tray appears fixed to the bottom of the viewport, showing thumbnails of selected animals and a "Compare" button
+- Tray's "Compare" button opens `/compare?animals=...` with the current selection
+- Tray has an "Exit compare mode" affordance that deselects all and returns the herd list to normal
+
+**Why mode-toggle over long-press:**
+
+Long-press is an iOS-developer convention, not a user-discoverable pattern. For an audience that includes older ranchers and their spouses, a labeled "Compare" button in the controls row is clearer. Mode-toggle also avoids colliding with the existing tap/swipe/pinch vocabulary during normal browsing.
+
+**Visibility rule — hide compare when nothing to compare:**
+
+The compare toggle renders in the controls row only when the current active filter matches 2+ animals. A filter that matches 0 or 1 animal hides the toggle entirely — offering a Compare button when there's nothing to compare is silly and draws attention to an absence.
+
+Rule extends: if a user enters compare mode, selects animals, then changes filter to a set with fewer than 2 matching animals, the mode gracefully exits without an error dialog.
+
+**Phase placement:**
+
+- **Phase 1:** URL pattern is locked and routable. `/compare?animals=...` renders a placeholder page that lists the selected animals with names, tags, and primary photos, plus a message: *"Side-by-side comparison coming soon. In the meantime, here are the animals you're looking at."* The compare toggle in the herd list is hidden in Phase 1 (since there's nothing to toggle into).
+- **Phase 2:** Full compare surface build-out — side-by-side attribute grid, compare toggle active in the herd list, inquiry integration, OpenGraph composite for shared URLs (per A31 pattern).
+
+Phase 1 locks the URL pattern so buyers who discover or bookmark compare URLs during Phase 1 see a graceful placeholder rather than a 404.
+
+**Schema:**
+
+No schema changes. Compare is URL-only; the data model is unchanged. The compare page reads animal records at render time and joins them in the view layer.
+
+---
+
+#### Part 2 — Shortcut distribution correction (supersedes A40 Part 8)
+
+A40 Part 8 described the Shortcut install flow as using a Cloudflare Worker that redirects to a hosted iCloud Shortcut with the token embedded as a URL parameter. **This doesn't work** — iCloud Share Links for Shortcuts don't natively accept URL parameters to pre-fill Import Questions. Users following the link would be prompted to type the token at install time, which defeats the single-tap goal.
+
+**The actual mechanism:**
+
+Matt builds the master Shortcut once in the iOS Shortcuts app, with an `upload_token` variable as a Text action at the top. Matt exports the Shortcut as a `.shortcut` file (binary format) and commits it to the repo (e.g., `src/shortcuts/summers-ranch-upload-base.shortcut`).
+
+A Cloudflare Worker endpoint — `GET /install/shortcut?install_id=<uuid>` — does the token injection:
+
+1. Validates the one-time `install_id` (24-hour expiry, single-use)
+2. Retrieves the associated Contributor's upload token from the database
+3. Reads the base `.shortcut` file
+4. Programmatically substitutes the token into the right bytes of the file
+5. Returns the personalized file with `Content-Type: application/x-apple-shortcut`
+6. Marks the install_id as consumed
+
+When the Contributor (Jeff) taps the install link on their iPhone, iOS downloads the personalized `.shortcut` file and offers to install it. The Shortcut imports with the token already embedded — no prompt, no typing.
+
+**Why this works:**
+
+- `.shortcut` files are a documented Apple format; substituting values within them is byte-level string manipulation, not an Apple-API interaction
+- The Worker uses no Apple Developer account, no iCloud API, no CloudKit
+- One-time links expire after use or 24 hours, limiting replay risk
+- The token never appears in the URL (only in the signed install_id), so if a text message is intercepted or forwarded, the actual credential isn't exposed beyond the single install
+
+**Fallback if byte-substitution proves fragile:**
+
+If the `.shortcut` file format changes in a future iOS version and byte-substitution breaks, the Worker can fall back to serving the base Shortcut unchanged, and Jeff would be prompted to type the token at install time. The one-time install link would include the token in the URL as a query parameter for manual copy-paste. Degraded but functional.
+
+**Updated implementation checklist:**
+
+1. Matt builds the master Shortcut once, matching the spec in A40 Part 8 (actions: receive images → ask tag number → resolve via API → picker with identity labels → per-file upload with token auth)
+2. Master Shortcut is committed to the repo as `src/shortcuts/summers-ranch-upload-base.shortcut`
+3. Coding agent builds the Worker endpoint at `GET /install/shortcut?install_id=<uuid>` with token-injection logic
+4. Coding agent builds the "Send to phone" flow in `/admin/settings/team/` that generates one-time install_ids and produces the install URL for iMessage/email/copy
+
+---
+
+#### Part 3 — Platform scope for the upload pipeline
+
+The Shortcut pipeline (A32 + A34 + A40) is **iOS only** through at least Phase 2. There is no equivalent on Android for these reasons:
+
+- iOS Shortcuts have no direct Android equivalent that ships with the OS
+- Android's share-sheet + automation ecosystem (Tasker, IFTTT, Google Shortcuts) varies widely by device, launcher, and Android version
+- Designing for both platforms simultaneously would require a dual design track that doesn't serve the current user base
+
+**Current and foreseeable users** (Matt, Marty, Roianne, their children, friend Jeff if he joins) are all iPhone users. Android support is deferred until there's genuine Android demand.
+
+**Workflow for Android-using contributors:**
+
+If a ranch helper uses an Android phone (e.g., a future Jeff-equivalent), the practical workflow is:
+
+1. Android user takes photos on their phone
+2. Sends photos to an iOS-using admin (Marty or Roianne) via text message, AirDrop (doesn't work), Google Photos share, or email
+3. iOS-using admin uploads the photos via their own Shortcut on behalf of the Android user, tagging with the correct animal
+
+This is approximately how the workflow would have functioned without any new tool, but now the iOS-using admin has the fast Shortcut pipeline on their end. No degraded experience for the Android user; they just route through a trusted intermediary.
+
+**If Phase 2 Android demand materializes:**
+
+The likely path is a Tasker profile equivalent distributed similarly to the iOS Shortcut — a pre-built Tasker XML exported from a reference Android device and distributed with token injection via the same Worker pattern. Not a Phase 1 or Phase 2 commitment, but the architecture remains parallel enough that if Android support becomes necessary, the server-side API (A32's `/api/resolve-tag` and `/api/upload` endpoints) works without modification.
+
+---
+
+#### Part 4 — Web upload fallback (`/admin/upload/`)
+
+To give admins a browser-based upload option (useful when the phone Shortcut isn't handy, or for larger batches from a laptop), a Phase 1 web upload page is added at `/admin/upload/`.
+
+**Availability:** Owner, Admin, Editor. Contributors cannot use the web upload (they don't have web admin access at all per A37). Contributor upload remains exclusively via the Shortcut pipeline.
+
+**Flow:**
+
+1. User navigates to `/admin/upload/`
+2. Tag prompt — same "always-confirm picker" flow as the Shortcut (A34), but rendered as a web form
+3. Large file picker / drag-and-drop zone for images
+4. Client-side progress bar per file during upload
+5. Each file posts to the same `/api/upload` Worker endpoint the Shortcut uses, with session-cookie-based auth substituted for token-based (admins are web-authenticated via passkey at `/admin/login`)
+6. Batch ID generated once per upload session (web visit), applied to all files uploaded in that session
+
+**Design:**
+
+Minimal page — drag-and-drop zone, tag picker above, "Upload all" button, progress list below. No animations, no marketing copy. It's an admin utility, not a consumer surface.
+
+**Why include this:**
+
+- Android-using admins (if any ever exist) have a non-Shortcut option
+- Laptop/desktop uploads for larger batches (e.g., processing an imported photoshoot) don't require shuttling files to a phone first
+- It's cheap to build because the Worker endpoint already exists (the web page is a thin UI layer)
+- It serves as a backup if a user's Shortcut is broken or they haven't installed it yet
+
+This is a Phase 1 deliverable.
+
+---
+
+#### Part 5 — Schema and URL additions
+
+No schema additions. URL additions:
+
+- `/compare?animals=<tags>` — public, Phase 1 placeholder, Phase 2 full surface
+- `/install/shortcut?install_id=<uuid>` — Worker endpoint, Phase 1
+- `/admin/upload/` — admin web upload page, Phase 1
+
+---
+
+**Reasoning (amendment as a whole):**
+
+The P7 reframe from evaluation-tool to sharing-tool is the right one at Summers Ranch's scale and for the likely user base. Buyers who are actively browsing don't need a dedicated compare surface when there are only 5 animals available; buyers who are sharing with a co-decision-maker benefit hugely from a single-URL side-by-side view.
+
+The Shortcut distribution correction is a meaningful architectural fix — the original A40 Part 8 implementation would have silently failed at the key one-tap goal. Worker-generated personalized `.shortcut` files achieve the intended UX with no Apple Developer account and no CloudKit.
+
+Explicit iOS-only scoping prevents the spec from implying cross-platform support that doesn't exist. The Android-user-routes-through-admin pattern is a reasonable degradation, not a blocker; the web upload fallback gives admins a universal option.
+
+The compare-mode toggle approach resolves the long-press concern without compromising discoverability. Hiding the toggle when there's nothing to compare maintains the "better empty than wrong" principle consistently across surfaces.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -2928,7 +3101,11 @@ Still open:
 - **Media (`/admin/media/`)** — Phase 2+. Photo library, Prefer/Hide controls, Gallery Wall candidate view.
 - **Calendar (`/admin/calendar/`)** — Phase 2+. Breeding/calving/events log.
 
-### P7. Compare view for cross-shopping buyers
+### P7. Compare view for cross-shopping buyers — RESOLVED 2026-04-19
+
+Resolved in A41: reframed as a sharing tool (not an evaluation tool), Phase 1 URL-pattern placeholder, Phase 2 full build with compare-mode toggle, max 3 animals, URL-only persistence, "ask about these animals" inquiry integration.
+
+#### P7 historical context (preserved for reference)
 
 Flagged 2026-04-18. Public-side feature for buyers evaluating multiple for-sale animals against each other.
 
