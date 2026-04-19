@@ -1,0 +1,136 @@
+---
+/**
+ * Home hero — spec §8.3. Small uppercase kicker ("Registered Herefords
+ * · Est. 1998"), large Playfair display title ("Summers Ranch" with
+ * italic emphasis on "Ranch"), italic tagline, small uppercase
+ * "Sutter Creek, California" below.
+ *
+ * Phase 1: no hero photograph shipped yet (Matt re-provides). Current
+ * hero is a cream surface with typographic content; when the landscape
+ * photo is available, add it via background-image on .hero and the
+ * bottom-third scrim per §18.4 will layer on top. Hero sizing follows
+ * POLISH §5.1: height 68vh, min 420px, max 600px.
+ *
+ * Text is left-aligned on mobile (POLISH §8.3 — centered mobile hero
+ * looks like every other site) and centered on desktop per POLISH §4.2
+ * which carves out home-page hero display titles as a centered case.
+ */
+import { site } from "~/lib/site";
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-inner">
+    <p class="kicker">Registered Herefords &middot; Est. 1998</p>
+    <h1 id="hero-title" class="display">
+      Summers <em>Ranch</em>
+    </h1>
+    <p class="tagline">{site.tagline}</p>
+    <p class="location">{site.contactAddress}</p>
+  </div>
+  <div class="hero-scrim" aria-hidden="true"></div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    height: 68vh;
+    min-height: 420px;
+    max-height: 600px;
+    background: var(--color-bg);
+    overflow: hidden;
+  }
+
+  /* When a hero photo is added: background-image on .hero itself,
+     background-size: cover, background-position: center. The scrim
+     below sits on top and concentrates in the bottom third per
+     §18.4, preserving the upper photograph. */
+
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 45%,
+      rgba(0, 0, 0, 0.55) 75%,
+      rgba(0, 0, 0, 0.82) 100%
+    );
+    opacity: 0;                 /* off until photo is in place */
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: var(--z-base);
+    max-width: var(--max-width-page);
+    margin: 0 auto;
+    height: 100%;
+    padding: var(--space-16) var(--space-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-6);
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-6);
+    max-width: var(--max-width-hero);
+  }
+
+  .tagline {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--font-size-lg);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-6);
+    max-width: var(--max-width-hero);
+  }
+
+  .location {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .display {
+      font-size: var(--font-size-4xl);
+    }
+
+    .tagline {
+      font-size: var(--font-size-xl);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .hero-inner {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .display,
+    .tagline {
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+</style>
