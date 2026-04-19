@@ -1276,6 +1276,160 @@ Build-time generation (rather than Worker-rendered) keeps Phase 1 infrastructure
 
 ---
 
+### A32. Incoming share sheet — iOS Shortcut photo upload pipeline
+
+**Supersedes:** New addition, no prior coverage in main spec. Resolves the incoming half of P4.
+
+**What changes:**
+
+Marty (and other admin users) upload photos to the site via the native iOS Photos app share sheet, which invokes a custom Shortcut that handles tag resolution and upload to a Cloudflare Worker endpoint. Originals are preserved in full fidelity. Feedback is immediate after bytes land in R2, with downstream processing (derivatives, classifier, metadata commit) happening asynchronously.
+
+**Design priorities, in order:**
+
+1. **Full-file preservation** — non-negotiable. Originals go to R2 at source resolution and format, including HEIC, Live Photo .MOV pairs, and ProRAW if ever used. No client-side compression, no pre-upload resize.
+2. **Snappy feedback** — target end-to-end latency (tap Share → confirmation plays) under 5 seconds on WiFi, under 10 seconds on usable LTE. Slower is acceptable when the network genuinely cannot keep up, but the system never *feels* slow on a fast network.
+3. **Minimal input** — one tag entry per upload session, server handles the rest.
+
+**Platform scope:**
+
+iOS only in Phase 1. Android support is flagged for future discussion if and when another uploader joins whose primary device is Android. Current uploaders (Marty, Roianne, Matt) are all iPhone users.
+
+**The Shortcut flow:**
+
+1. User selects photos in the iOS Photos app (one animal's worth), taps Share
+2. Taps "Summers Ranch" in the share sheet, which invokes the Shortcut
+3. Shortcut prompts: "Tag number?" — numpad input type (big keys, numbers only)
+4. User types the numeric portion of the tag (e.g., `206`), taps Done
+5. Shortcut calls `GET /api/resolve-tag?tag=206` — returns JSON with 0, 1, or N matching animal records
+6. **If exactly one match:** proceed directly, no further prompt
+7. **If multiple matches:** Shortcut shows "Choose from List" picker with identity-labeled options; user taps one
+8. **If zero matches:** Shortcut shows picker with a single "New animal" option plus a "Cancel" option; user confirms new animal or cancels
+9. Shortcut uploads each selected photo (and paired Live Photo .MOV if present) to `POST /api/upload` with the resolved animal ID in a header, one file at a time
+10. Worker receives each file, writes the original to R2 under a deterministic key, returns 202 Accepted
+11. When the final file's 202 is received, the Shortcut plays a confirmation sound and displays a brief "✓ Sent!" toast
+12. Shortcut closes; user is back in Photos app
+
+Steps 10-12 happen per-file in rapid succession. If the user selected 8 photos of one calf, they see 8 quick acknowledgments or a single final confirmation (coding-agent choice based on which feels better in practice).
+
+**Tag matching rule (server-side):**
+
+The server extracts the first run of digits from each tag's physical identifier and compares it to the user's input for exact equality.
+
+- Tag `106` → numeric run `106` → matches input `106`
+- Tag `TY265A` → numeric run `265` → matches input `265`
+- Tag `206-1` → numeric run `206` → matches input `206`
+- Tag `1065` → numeric run `1065` → does NOT match input `106` (different numeric run, avoids false positives)
+
+For the common case where mother and calf share the same physical tag number (Hereford convention — calves are tagged with their dam's number, distinguishable by visual position/size on the tag, not by suffix), both records share the same numeric run and both surface in the picker.
+
+**Disambiguation picker format:**
+
+When the server returns multiple matches, the Shortcut's "Choose from List" shows each animal labeled by identity, not by tag variant. Labels are constructed server-side from available data:
+
+- `Sweetheart · Cow · 4y` — named adult, sex and age in human-readable form
+- `Sweetheart's calf · 1mo` — unnamed calf, identified by relationship to its dam and human-readable age
+- `Sweetheart's calf · 1mo · Twin 1` / `Sweetheart's calf · 1mo · Twin 2` — twin disambiguation when needed
+
+When a calf is eventually named via admin, future pickers use the name. The server owns the label logic, so UI changes don't require Shortcut updates.
+
+**One tag per upload session:**
+
+All photos selected in the current share-sheet invocation receive the same resolved animal ID. If Marty needs to upload photos of multiple animals, he runs the Shortcut separately per animal. This is explicit, simple, and matches the likely real-world workflow (he typically photographs one animal per field visit-moment anyway).
+
+**Live Photo handling:**
+
+When the user shares a Live Photo, iOS provides both the still HEIC and the motion .MOV through the share sheet. The Shortcut uploads both, paired by filename convention. The server stores them as a linked MediaAsset pair — the still is the primary display asset, the .MOV is stored as associated motion. Whether and where motion is displayed on the site is a separate display decision (deferred), but the capture happens now so motion data is preserved from day one.
+
+MediaAsset schema gains an optional `motionFile` field (URL or object key pointing to the paired .MOV). Empty when the source was a regular still photo.
+
+**Authentication:**
+
+Each Shortcut user has a pre-shared long random token (32+ bytes, base64-encoded) baked into the `Authorization` header of their Shortcut's upload actions. The Worker validates the token against a small list stored in Worker environment variables or KV.
+
+- Matt, Marty, Roianne each get a unique token at setup time
+- Tokens are scoped narrowly: the only action they permit is "upload photos with a claimed animal ID." They do not grant admin access, read access to data, or any other capability.
+- Token rotation: if a phone is lost or the token is believed compromised, the corresponding Worker-stored token is invalidated. The user receives a new Shortcut with a fresh token.
+- Setup convenience: generate a per-user Shortcut with token pre-filled, delivered via a one-time signed link from `/admin/settings/` that the user opens on their phone to install the Shortcut.
+
+This is deliberately separate from the passkey-based admin auth (A22). Shortcuts cannot perform WebAuthn, and a long-lived token is fine given the limited scope of upload permissions.
+
+**Confirmation sound:**
+
+A subtle cow moo plays on successful upload. The sound is short (under 1 second), restrained rather than cartoonish, and designed to feel like a quiet acknowledgment rather than a gimmick. Default on; user-settable off in `/admin/settings/` for users who upload frequently and find it repetitive.
+
+**Fast-ack semantics:**
+
+The Worker returns 202 Accepted only *after* the original file is safely persisted to R2. "Sent!" has to mean something: if WiFi drops mid-upload, the user does not get the moo. Everything downstream of R2 persistence is async and invisible to the user:
+
+- Derivative generation (HEIC → JPEG conversion, 2400px resize for display)
+- Metadata write to the canonical herd data store
+- Classifier run (shot-type detection, quality score per P5)
+- GitHub commit for metadata (if still in the Phase 1 static-build model) or direct write to data store (Phase 2+)
+- Throne-holder re-evaluation if the new photo challenges an existing throne
+
+Any of these async steps can fail without affecting the user's experience. Failures surface in the admin upload-issues queue (see below) rather than the uploader's phone.
+
+**New admin surfaces (Phase 1):**
+
+Two new admin surfaces are required by this pipeline and are part of Phase 1 scope:
+
+- **`/admin/pending-tags/`** — queue of uploads tagged with a numeric tag that returned zero matches at upload time (new animal not yet in the system, or typo). For each entry: the uploaded photos, the typed tag, uploader identity, timestamp. Admin actions: "Create new animal with this tag" (opens the animal-creation form with tag pre-filled) or "Merge into existing animal" (shows tag search, reassigns photos).
+
+- **`/admin/upload-issues/`** — queue of uploads that completed at the R2 persistence stage but failed at one or more async downstream stages (derivative generation errored, classifier crashed, commit conflict, dedup hash collision, etc.). For each entry: the original R2 object, the failure stage, the error message, admin actions appropriate to the failure mode (retry, manual resolve, discard).
+
+Both surfaces dispatch notifications per user notification prefs (A25) — default ON for Matt (owner), OFF for Marty and Roianne (they do not handle operational issues).
+
+**Data model additions:**
+
+- `MediaAsset.originalR2Key: string` — stable key for the preserved original in R2
+- `MediaAsset.motionFile: string | null` — R2 key for paired Live Photo .MOV, if present
+- `MediaAsset.sourceFormat: 'heic' | 'jpeg' | 'proraw' | 'other'` — format of the preserved original, informs derivative pipeline
+- `MediaAsset.uploadedBy: string` — admin user ID (matt / marty / roianne) for audit and the Prefer-flag respect logic
+
+**R2 storage layout:**
+
+```
+originals/
+  [animalId]/
+    [uploadTimestamp]-[sha256-prefix].heic       // original still
+    [uploadTimestamp]-[sha256-prefix].mov        // paired Live Photo motion, if present
+derivatives/
+  [animalId]/
+    [mediaAssetId]-[version].jpg                 // display-ready 2400px derivative
+    [mediaAssetId]-thumb-[version].jpg           // small thumbnail for compact view
+og/
+  animal-[animalId]-v[version].png               // share-sheet composite (per A31)
+```
+
+**Implementation checklist for the coding agent:**
+
+1. Worker endpoint `GET /api/resolve-tag?tag=<n>` returning `{ matches: [{ animalId, label }, ...] }`
+2. Worker endpoint `POST /api/upload` with `Authorization: Bearer <token>`, `X-Animal-Id: <id>` header, binary body; returns 202 after R2 persist
+3. Shortcut template with three actions: Ask For Input (Number), Get Contents of URL (resolve-tag), Choose From List (if multiple), Get Contents of URL loop (upload each photo)
+4. Per-user token generation and delivery via `/admin/settings/` one-time-link
+5. Worker async processor for derivative generation + classifier + metadata write
+6. `/admin/pending-tags/` UI with create-new and merge-into flows
+7. `/admin/upload-issues/` UI with per-failure-mode actions
+8. Notification dispatch to admin-users-configured channels (SMS/email per A25) on pending-tag landing and on upload-issue landing
+
+**Reasoning:**
+
+The share sheet is the right entry point because Marty already knows how to use it — no new app to learn, no new mental model. The uncomfortable "Shortcut stays pending" feeling is eliminated by fast-ack architecture: acknowledge as soon as R2 has the bytes, not after the full pipeline runs. Full-file preservation is cheap with R2 (storage is the cheapest part of the stack), and preserving originals keeps future options open — if we ever want to re-derive a different display size, re-run the classifier with a better model, or display Live Photo motion, the source material is still there.
+
+The tag-matching rule plus identity-based disambiguation means Marty interacts with the system in the vocabulary he naturally uses ("which animal is this photo of") rather than the system's vocabulary ("what string encodes this animal's record"). The server bridges that gap.
+
+Pending-tag and upload-issue queues must be Phase 1, not Phase 2, because without them there's no graceful handling of new animals and no visibility into failures. Shipping the upload pipeline without them would create silent-failure footguns.
+
+**Deferred to Phase 2 or later:**
+
+- Android Shortcut equivalent (deferred pending actual Android uploader)
+- iCloud Drive + CloudKit path for true-background upload (deferred pending operational signal that foreground upload is insufficient)
+- Client-side compression optional toggle (explicitly rejected — originals always preserved)
+- Bulk tag-assignment tools (e.g., assigning different tags to different photos within the same upload session) — deferred pending signal that single-tag-per-session is insufficient
+- Upload retry from failed state on the phone — iOS Shortcuts don't natively support this well; Phase 2 migration to a different upload mechanism (e.g., URLSession background task via a native iOS app) would enable it
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -1292,9 +1446,11 @@ Resolved into amendments A13-A19 (see below).
 
 Admin architecture and authentication are locked in amendments A21-A22. The remaining work is detailing the *contents* of the admin surfaces themselves — what's on the Dashboard specifically, what Manage Herd shows beyond the herd view, what Media and Calendar and Settings contain. This is a workshop continuation, not a new workshop.
 
-### P4. Share sheet mechanics — PARTIALLY RESOLVED 2026-04-18
+### P4. Share sheet mechanics — RESOLVED 2026-04-18
 
-Outgoing half resolved in A31 (OpenGraph / Twitter Card previews with build-time card-front composites). Incoming half (iOS Shortcut photo upload pipeline) remains open.
+Outgoing half resolved in A31 (OpenGraph / Twitter Card previews with build-time card-front composites). Incoming half resolved in A32 (iOS Shortcut upload pipeline with fast-ack Worker, R2 original preservation, identity-based tag disambiguation).
+
+#### P4 historical context (preserved for reference)
 
 **Incoming upload-UX observations (2026-04-18, from Matt's Shortcut testing):**
 
