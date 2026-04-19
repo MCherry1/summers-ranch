@@ -1599,6 +1599,243 @@ Route-level gating rather than UI-level permission errors is both better UX (no 
 
 ---
 
+### A36. Card-front photo selection — throne mechanic, scoring rubrics, and schema scaffolding
+
+**Supersedes:** Significantly narrows and supersedes the card-front portions of the P5 workshop framing. The earlier P5 description of a three-slot throne system (side-profile / head / three-quarter) with the card cycling through all three is **replaced** by a single-slot throne system using side-profile only. The "three canonical shot types" framing is also withdrawn — research confirmed only the side profile is industry-codified; head shots and three-quarter shots are supplementary rather than canonical.
+
+**Scope note:** A36 covers **card-front photo selection only**. Timeline selection (card back), gallery surfaces, and editorial/about surfaces are explicitly out of scope. Each of those surfaces will get its own selection rubric in later amendments. A36 does, however, lock Phase 1 schema additions that make future purpose-specific rubrics possible without migration.
+
+---
+
+#### Part 1 — Card-front throne model
+
+Each animal's card front displays exactly one photo at a time: the current **side-profile throne-holder**. When a new photo is uploaded and classified as a side profile, it competes with the current throne-holder via a blended score. Higher score wins the throne; previous throne-holder is demoted but preserved.
+
+**Non-side-profile uploads** are classified (head shot, three-quarter, full body, rear, detail, with-dam, action, scenic, landscape, incidental) but do not compete for the card-front throne. They are routed to their purpose-appropriate surfaces (Timeline, Gallery, Editorial) per the purpose-eligibility tags in Part 5.
+
+**Empty throne handling:** If an animal has zero side-profile uploads (e.g., brand-new calf, admin has only captured head shots so far), the card displays the best-available non-side-profile photo (next-ranked by overall aesthetic score) and a coverage nudge is dispatched to admin: *"No side profile yet for [animal] — needed to complete card."* This is consistent with the "better empty than wrong" principle at the animal level (don't fabricate or skip) while keeping the card visually functional during the coverage gap.
+
+---
+
+#### Part 2 — The blended score
+
+Each side-profile photo receives two raw scores at ingest:
+
+- **Prescription score (0-100)** — how well it meets industry-prescribed side-profile criteria (see Part 3)
+- **Aesthetic score (0-100)** — neutral photographic craft quality (see Part 4)
+
+The two combine via an **availability-dependent, age-weighted blend**:
+
+```
+finalScore = (prescriptionWeight × prescriptionScore) + (aestheticWeight × aestheticScore)
+```
+
+Where `prescriptionWeight + aestheticWeight = 1.0`, and the specific weights depend on the animal's current availability status and the photo's age relative to the life-stage staleness curve.
+
+**Availability-dependent weighting:**
+
+| Animal status | Fresh weighting (prescription : aesthetic) | Fully-decayed weighting |
+|---|---|---|
+| Available | 0.90 : 0.10 | 0.80 : 0.20 |
+| Not available | 0.70 : 0.30 | 0.50 : 0.50 |
+
+Between the fresh point and the full-decay point, weighting interpolates linearly. Weighting is applied per-photo using that photo's own age; the incumbent throne-holder and any challenger are both scored using their own respective ages, then directly compared.
+
+**Design rationale:**
+
+- Available animals never let aesthetics dominate because a gorgeous-but-stale photo misrepresents an animal someone is about to buy
+- Not-available animals can let aesthetics partially take over once the throne-holder has aged, because the photo is now functioning partly as gallery/heritage rather than evaluation material
+- Neither mode ever lets aesthetic fully exceed prescription — side-profile evaluation purpose is always at least half of what the card is for
+
+---
+
+#### Part 3 — Prescription score sub-weights
+
+Total weight: 100. Sub-weights reflect what cattle judges actually need to evaluate, adapted from livestock judging scorecard principles (top-weighted criteria are those without which evaluation fails entirely).
+
+| Criterion | Weight | What it enables |
+|---|---|---|
+| Camera axis perpendicular to spine (target 85-95°, falls off rapidly outside) | 25 | Silhouette, conformation, frame evaluation — the purpose of a side profile |
+| Leg positioning (back leg nearest camera back, off-side forward, fronts square) | 20 | Feet and legs assessment — top-priority judging criterion |
+| Full body visible without occlusion | 15 | Cannot evaluate what is not visible |
+| Camera height near animal eye level (not shot from above) | 12 | Shooting from above foreshortens and distorts proportions |
+| Head position (up and forward, ears forward if possible) | 8 | Breed character, alertness assessment |
+| Animal cleanliness (free from mud, debris, occluding other animals) | 8 | Coat, markings, muscling visibility |
+| Ground and background (uncluttered, non-distracting) | 6 | Silhouette readability |
+| Lighting (proper exposure, no harsh shadows, flash-compensated for dark cattle) | 6 | Detail visibility; partial overlap with aesthetic score |
+
+Sub-weights are proposals, tunable by later amendment once the classifier has been validated against real uploads. The structural invariant: the top three criteria (angle, legs, full-body) together total 60 and dominate the score.
+
+---
+
+#### Part 4 — Aesthetic score sub-weights
+
+Total weight: 100. Deliberately restricted to measurable craft criteria rather than subjective taste criteria.
+
+| Criterion | Weight | What it measures |
+|---|---|---|
+| Technical quality (sharpness, exposure, no motion blur, appropriate depth of field) | 35 | Objectively measurable photographic execution |
+| Composition (framing, balance, rule of thirds, negative space, no distracting elements) | 30 | Universal compositional principles |
+| Lighting character (quality of light on subject — not just exposure, but whether it reveals form) | 20 | Craft signal, not taste signal |
+| Color and tonal balance (pleasing color, reasonable contrast, not oversaturated) | 15 | Technical rather than preferential |
+
+**Deliberately excluded:**
+
+- **Emotional impact / "wow factor"** — standard in photo competitions but bakes in subjective preference
+- **Creativity / originality** — not what card-front photos are optimizing for (they are documentary, not artistic)
+- **Adherence to theme** — not applicable
+
+The aesthetic score measures *photographic craft*, not *artistic merit*. A well-executed, neutral, professional-looking photo scores high whether or not it is emotionally striking. This matches the design goal of universal neutrality over personal preference.
+
+**Note:** emotional and artistic criteria are appropriate and necessary for gallery and editorial surfaces — they are excluded here because card-front has a different purpose. Future amendments for gallery/editorial selection will include them.
+
+---
+
+#### Part 5 — Life-stage staleness curves
+
+**Life stage definitions** (anchored at 2-year maturity per industry standard for medium-frame beef breeds):
+
+| Life stage | Age range |
+|---|---|
+| Newborn | 0-60 days |
+| Young calf | 60-205 days |
+| Weanling | 205-365 days |
+| Yearling | 1-2 years |
+| Mature | 2+ years |
+
+**Staleness curves** (fresh period uses fresh weighting; full-decay point uses fully-decayed weighting; linear interpolation between):
+
+| Life stage | Fresh period | Full-decay point |
+|---|---|---|
+| Newborn | 30 days | 90 days |
+| Young calf | 60 days | 180 days |
+| Weanling | 90 days | 270 days |
+| Yearling | 180 days | 540 days |
+| Mature, not available | 365 days | 1460 days (~4 years) |
+| Mature, available (for sale) | 60 days | 180 days |
+
+**Rule of thumb:** full-decay = 3× fresh period, except mature-not-available which gets 4× (adult cows change slowly once frame-mature). Mature-available overrides to the tight 60/180 curve because for-sale photos must represent current condition.
+
+---
+
+#### Part 6 — Schema additions
+
+**MediaAsset** (extending prior additions in A5 and A32):
+
+```typescript
+interface MediaAsset {
+  // ... existing fields from A5, A32, A28/A29/A30 ribbon state
+  
+  // Shot classification (assigned by classifier at ingest)
+  detectedShotType:
+    | 'side-profile'
+    | 'head'
+    | 'three-quarter'
+    | 'full-body'       // front-on or rear-on
+    | 'rear'
+    | 'detail'          // udder, feet, muzzle close-up
+    | 'with-dam'        // calf with mother, maternal context
+    | 'action'
+    | 'scenic'          // cattle subject but compositionally atmospheric
+    | 'landscape'       // no cattle subject or cattle incidental
+    | 'other'
+  
+  // Purpose-eligibility flags (surfaces this photo can legitimately appear on)
+  cardFrontEligible: boolean      // passes side-profile classifier gate
+  timelineEligible: boolean        // shows the animal clearly; eligible for Timeline
+  galleryHerdCandidate: boolean    // cattle-subject, compositional or environmental interest
+  galleryRanchCandidate: boolean   // environment, landscape, flora/fauna, place
+  editorialCandidate: boolean      // wide, contextual, person/place character
+  
+  // Card-front throne scoring
+  prescriptionScore: number | null       // 0-100; null if not a side profile
+  prescriptionSubscores: {               // breakdown per Part 3 criteria
+    angleToSpine: number
+    legPositioning: number
+    fullBodyVisible: number
+    cameraHeight: number
+    headPosition: number
+    cleanliness: number
+    background: number
+    lighting: number
+  } | null
+  
+  aestheticScore: number                 // 0-100; assigned to every photo
+  aestheticSubscores: {                  // breakdown per Part 4 criteria
+    technical: number
+    composition: number
+    lightingCharacter: number
+    colorTonalBalance: number
+  }
+  
+  // Per-surface scores reserved for future population by respective rubrics (Phase 2)
+  timelineScore: number | null
+  galleryScore: number | null
+  editorialScore: number | null
+  
+  lastEvaluatedAt: string                // ISO timestamp of last classifier pass
+  classifierVersion: string              // for reproducibility as models update
+}
+```
+
+**CattleMediaLink** (extending existing):
+
+```typescript
+interface CattleMediaLink {
+  // ... existing fields
+  
+  cardFrontThrone: boolean           // currently the card-front displayed photo
+  cardFrontThroneSince: string | null  // ISO timestamp this photo took the throne
+  cardFrontThroneLostAt: string | null // ISO timestamp this photo was displaced (null if never or current)
+}
+```
+
+**Phase 1 implementation notes:**
+
+- All schema fields exist in Phase 1 even if Phase 1 does not populate all of them
+- Phase 1 classifier populates `detectedShotType`, purpose-eligibility flags, `prescriptionScore` + subscores (for side profiles), `aestheticScore` + subscores
+- `timelineScore`, `galleryScore`, `editorialScore` remain null in Phase 1 until their respective rubrics are designed
+- Card-front selection logic consults `prescriptionScore`, `aestheticScore`, animal availability, and photo age to compute the current throne via the Part 2 blend formula
+- Throne re-evaluation fires on every new MediaAsset ingest for that animal, and on animal availability status changes
+
+---
+
+#### Part 7 — What this amendment does NOT resolve
+
+Explicit non-scope to prevent over-application of card-front logic:
+
+- **Timeline selection rubric (back of card)** — Deferred to future workshop. Will emphasize chronological coverage and within-interval quality; not prescription-dominated.
+- **Gallery selection rubrics** — Deferred. See Part 8 for the gallery split that Phase 1 schema prepares for.
+- **Editorial / About page rubric** — Deferred. Will emphasize contextual, wide, human-inclusive photos.
+- **Classifier infrastructure choice** — Deferred to Phase 2 kickoff (Claude vision API vs. fine-tuned model). Phase 1 ships with schema + manual overrides available via admin Prefer/Hide flags.
+- **Prefer flag × throne interaction** — Still open. Current behavior is undefined; to be resolved when admin surface is designed (P6) or by targeted future amendment.
+- **Challenge threshold / churn prevention** — Tactical. Likely a small deadzone (e.g., new photo must exceed throne by ≥2 points to win) prevents oscillation between visually-similar photos. To be tuned once the classifier produces real scores.
+- **Classifier uncertainty handling** — Tactical. Low-confidence subscores contribute 0 weight rather than neutral score, so ambiguous photos do not artificially inflate or deflate totals. To be formalized at Phase 2 classifier implementation.
+
+---
+
+#### Part 8 — Gallery split (Phase 2 target, Phase 1 schema preparation)
+
+To enable Phase 1 schema to tag photos correctly for later surfaces, the gallery is split into named surfaces at the conceptual level:
+
+- **The Herd** — cattle-subject shots that are not card-material. Distant pasture scenes, grazing behavior, cows with calves in natural poses, unusual angles, action, scenic-with-cattle.
+- **The Ranch** — place and environment. Landscapes, barn, pasture, gates, weather, seasonal atmosphere, incidental flora and fauna.
+- **The Work** *(optional, Phase 2+ decision)* — people working, calving season, tagging, loading, operational reality. Inclusion subject to Roianne's curation preference.
+
+Phase 1 classifier populates `galleryHerdCandidate` and `galleryRanchCandidate` flags based on subject detection. `galleryScore` stays null until Phase 2 rubric is designed. No gallery UI in Phase 1; the tagging preserves Phase 2 optionality.
+
+---
+
+**Reasoning for this amendment's scope:**
+
+The earlier P5 framing treated the card front as the site's primary photo-selection problem. After workshopping it became clear that card-front selection is one of four distinct photo-selection problems, each with a different purpose and therefore a different rubric. Locking a universal rubric would have been a category error — what makes a good card-front photo makes a mediocre gallery photo and vice versa.
+
+A36 locks the card-front rubric at high precision (sub-weights, blend formula, staleness curves all specified numerically) because this is the surface with the most structural consequence: buyers evaluating seedstock. The other three surfaces are left unspecified but schema-prepared, preventing the Phase 1 build from baking in choices that constrain later workshops.
+
+The availability-dependent blend is the key structural insight: a photo's appropriate weighting depends on what the card is being used for at that moment. An available animal's card is a sales surface; a not-available animal's card is a herd gallery entry. One rubric handles both cleanly.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -1642,7 +1879,20 @@ The desired behavior is **iMessage-like**: tap send, the system handles it relia
 
 **To be workshopped together with P4 outgoing. Incoming is more complex and more Phase 2; outgoing is simpler and may touch Phase 1.**
 
-### P5. Photo quality competition — ongoing per-animal leaderboard
+### P5. Photo quality competition — PARTIALLY RESOLVED 2026-04-19
+
+Card-front selection resolved in A36 (single-slot side-profile throne with prescription + aesthetic scoring, availability-dependent blend, life-stage staleness curves, schema scaffolding for non-card-front surfaces).
+
+Still open:
+- **Timeline selection rubric (card back)** — chronological growth record selection
+- **Gallery selection rubrics** — The Herd, The Ranch (and optional The Work) per A36 Part 8
+- **Editorial / About page rubric**
+- **Classifier infrastructure choice** — Phase 2 kickoff decision
+- **Prefer flag × throne interaction** — installed vs. display-override
+- **Challenge threshold / churn prevention** — tactical, tune once classifier produces real scores
+- **Classifier uncertainty handling** — tactical, to be formalized at Phase 2 classifier implementation
+
+#### P5 historical context (preserved for reference)
 
 Flagged 2026-04-17; reframed in conversation from "burst discrimination" (initial misreading) to **ongoing quality competition** (actual intent).
 
