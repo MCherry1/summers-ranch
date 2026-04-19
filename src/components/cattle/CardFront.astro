@@ -1,0 +1,299 @@
+---
+/**
+ * CardFront — spec §3.
+ *
+ * Top ~75% is one photograph (or silhouette placeholder per §3.5 for
+ * zero-photo animals). Below: six data rows — tag, name (hidden if
+ * null), sex, breed, age, status — rendered only when non-null per
+ * "better empty than wrong."
+ *
+ * Four corner affordances:
+ *   TL — distinction and/or birthday ribbons (§3.3, §19)
+ *   TR — availability ribbon (gold diagonal, §19.1)
+ *   BL — photo capture date overlaid on photo with drop shadow
+ *        (hidden when silhouette is shown — no date to attribute)
+ *   BR — registration number overlaid on photo with drop shadow
+ *        (hidden when null)
+ *
+ * Right edge: "Details ›" affordance. When rendered inside a <Card>
+ * wrapper, the wrapper's toggle handles slide to back; when rendered
+ * standalone (e.g. herd grid tease), the affordance is a link to
+ * /herd/[id] — controlled by the `detailsHref` prop.
+ *
+ * Photo motion rules (§3.2, §7.3): no motion on herd-list cards;
+ * Live Photo plays once on arrival when card is primary. The `static`
+ * prop enforces still-frame-only rendering. Live Photo plumbing
+ * lands in the polish pass.
+ */
+import type { AnimalRecord, MediaAsset } from "~/schemas";
+import { formatAge } from "~/lib/derive/age";
+import { sexLabel } from "~/lib/derive/naming";
+import { isBirthday } from "~/lib/derive/birthday";
+import { silhouetteFor } from "~/lib/display/silhouette";
+import { STATUS_LABEL } from "~/lib/display/status";
+import RibbonAvailable from "~/components/ribbons/RibbonAvailable.astro";
+import RibbonDistinction from "~/components/ribbons/RibbonDistinction.astro";
+import RibbonBirthday from "~/components/ribbons/RibbonBirthday.astro";
+
+interface Props {
+  animal: AnimalRecord;
+  primaryPhoto: MediaAsset | null;    // null → silhouette
+  detailsHref?: string;               // when standalone (herd grid)
+  detailsAction?: "link" | "toggle";  // "toggle" when inside <Card>
+  static?: boolean;                   // true on list grids per §7.3
+  ageOverride?: string | null;        // test hook for deterministic dates
+}
+
+const {
+  animal,
+  primaryPhoto,
+  detailsHref,
+  detailsAction = "link",
+  ageOverride,
+} = Astro.props;
+
+const ageString = ageOverride ?? formatAge(animal.dateOfBirth);
+const today = new Date();
+const birthday = isBirthday(animal.dateOfBirth, today);
+
+const showAvailableRibbon = animal.currentStatus === "available";
+const showDistinction = animal.distinction !== null;
+const showBirthday = birthday;
+
+// Hanging ribbon positioning per §3.3:
+//   distinction alone → position 1 (left:12px)
+//   birthday alone    → position 1 (left:12px)
+//   both              → distinction position 1, birthday position 2 (left:54px)
+const birthdayLeft = showDistinction ? 54 : 12;
+
+const photoUrl = primaryPhoto?.uri ?? silhouetteFor(animal.sex);
+const isPlaceholder = primaryPhoto === null;
+
+// Photo date per §3.3: short form for current-year captures
+function formatCaptureDate(iso: string): string {
+  const date = new Date(iso);
+  const thisYear = date.getFullYear() === today.getFullYear();
+  const month = date.toLocaleString("en-US", { month: "long" });
+  return thisYear ? month : `${month} ${date.getFullYear()}`;
+}
+
+const captureDateLabel = primaryPhoto
+  ? formatCaptureDate(primaryPhoto.capturedAt)
+  : null;
+---
+
+<article class="card-front" data-status={animal.currentStatus}>
+  <div class="photo-slot">
+    <img
+      src={photoUrl}
+      alt={
+        isPlaceholder
+          ? `Silhouette placeholder — photo of ${animal.name ?? `#${animal.tag}`} coming soon`
+          : `Side profile of ${animal.name ?? `#${animal.tag}`}`
+      }
+      loading="lazy"
+      class:list={["photo", { placeholder: isPlaceholder }]}
+    />
+
+    {showDistinction && (
+      <RibbonDistinction
+        distinction={animal.distinction!}
+        year={animal.distinctionYear}
+      />
+    )}
+    {showBirthday && (
+      <RibbonBirthday
+        sex={animal.sex}
+        animalName={animal.name}
+        leftPx={birthdayLeft}
+      />
+    )}
+    {showAvailableRibbon && <RibbonAvailable />}
+
+    {captureDateLabel && (
+      <span class="overlay bl" aria-hidden="true">{captureDateLabel}</span>
+    )}
+    {animal.registrationNumber && (
+      <span class="overlay br" aria-hidden="true">
+        AHA #{animal.registrationNumber}
+      </span>
+    )}
+  </div>
+
+  <div class="identity">
+    <dl class="rows">
+      <div class="row">
+        <dt>Tag</dt>
+        <dd>#{animal.tag}</dd>
+      </div>
+      {animal.name && (
+        <div class="row">
+          <dt>Name</dt>
+          <dd>{animal.name}</dd>
+        </div>
+      )}
+      <div class="row">
+        <dt>Sex</dt>
+        <dd>{sexLabel(animal.sex)}</dd>
+      </div>
+      <div class="row">
+        <dt>Breed</dt>
+        <dd>{animal.breed}</dd>
+      </div>
+      {ageString && (
+        <div class="row">
+          <dt>Age</dt>
+          <dd>{ageString}</dd>
+        </div>
+      )}
+      <div class="row">
+        <dt>Status</dt>
+        <dd>{STATUS_LABEL[animal.currentStatus]}</dd>
+      </div>
+    </dl>
+
+    {detailsAction === "link" && detailsHref ? (
+      <a href={detailsHref} class="details-affordance">
+        Details <span aria-hidden="true">&rsaquo;</span>
+      </a>
+    ) : detailsAction === "toggle" ? (
+      <button type="button" class="details-affordance" data-card-toggle="back">
+        Details <span aria-hidden="true">&rsaquo;</span>
+      </button>
+    ) : null}
+  </div>
+</article>
+
+<style>
+  .card-front {
+    background: var(--color-paper);
+    border-radius: var(--radius-3);
+    overflow: hidden;
+    box-shadow: var(--shadow-resting);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .photo-slot {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    background: var(--color-cream-deep);
+    overflow: hidden;
+  }
+
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 400ms ease;
+  }
+
+  .photo.placeholder {
+    object-fit: contain;
+    padding: 8%;
+  }
+
+  .overlay {
+    position: absolute;
+    bottom: 12px;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-medium);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.7),
+      0 2px 6px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .overlay.bl {
+    left: 12px;
+  }
+
+  .overlay.br {
+    right: 12px;
+  }
+
+  .identity {
+    padding: var(--space-5) var(--space-5) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .rows {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--space-4);
+    row-gap: 0;
+  }
+
+  .row {
+    display: contents;
+  }
+
+  dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .row:first-child dt,
+  .row:first-child dd {
+    border-top: 0;
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    padding: var(--space-2) 0;
+    text-align: right;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  /* animal name gets the Playfair treatment and burgundy ink — it's
+     the human identifier and deserves typographic weight (POLISH §3.1
+     and §4 card-back naming cue). */
+  .row:nth-child(2) dd {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-accent);
+  }
+
+  .details-affordance {
+    align-self: flex-end;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    text-decoration: none;
+    padding: var(--space-2) 0;
+    margin-top: var(--space-2);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .details-affordance:hover {
+    color: var(--color-accent-deep);
+  }
+
+  .details-affordance[disabled] {
+    opacity: 0.5;
+    cursor: default;
+  }
+</style>
