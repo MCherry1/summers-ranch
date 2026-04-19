@@ -1836,6 +1836,144 @@ The availability-dependent blend is the key structural insight: a photo's approp
 
 ---
 
+### A37. RBAC update — four-tier model and Contributor review workflow
+
+**Supersedes:** A35 in its entirety. The three-tier model (Owner / Admin / Contributor) is replaced by a four-tier model. The upload batch tracking and Contributor-review states are new.
+
+**What changes:**
+
+The RBAC model gains an **Editor** tier between Admin and Contributor. The role enum becomes:
+
+- **Owner** — Matt. Full capabilities plus user management, site config, ownership transfer. Exactly one at a time.
+- **Admin** — Marty, Roianne. Full operational access including financial data (when it exists), inquiry inbox, all herd records. Cannot add/remove users or change site config.
+- **Editor** — trusted helpers. Herd record edits, pending-tags resolution, upload-issues resolution, media curation, documents section access. No financial data, no inquiry inbox, no user management, no site config.
+- **Contributor** — upload-only via Shortcut. Own upload history, own settings. No operational web admin access.
+
+Financial data (when added to the site) is a capability gate: Owner and Admin only. Editor and Contributor never see it.
+
+**Revised capability matrix** (replaces the A35 matrix):
+
+| Capability | Owner | Admin | Editor | Contributor |
+|---|---|---|---|---|
+| Upload photos via Shortcut | ✓ | ✓ | ✓ | ✓ |
+| View own upload history | ✓ | ✓ | ✓ | ✓ |
+| Own profile settings (notifications, passkey devices, rotate own token) | ✓ | ✓ | ✓ | ✓ |
+| Set/clear Needs Attention flags | ✓ | ✓ | ✓ | own uploads only |
+| View/edit herd records | ✓ | ✓ | ✓ | — |
+| Delete animals (destructive) | ✓ | — | — | — |
+| Inquiry inbox (read, reply, mark handled) | ✓ | ✓ | — | — |
+| Media library curation (Prefer/Hide, organize) | ✓ | ✓ | ✓ | — |
+| Resolve pending-tags queue | ✓ | ✓ | ✓ | — |
+| Resolve upload-issues queue | ✓ | ✓ | ✓ | — |
+| Review Contributor upload batches (approve/reject) | ✓ | ✓ | ✓ | — |
+| Toggle Contributor's review-required status | ✓ | ✓ | — | — |
+| Documents section (read, upload, edit) | ✓ | ✓ | ✓ | — |
+| View financial data (when added) | ✓ | ✓ | — | — |
+| Add/remove users | ✓ | — | — | — |
+| Change other users' roles | ✓ | — | — | — |
+| Rotate other users' upload tokens | ✓ | — | — | — |
+| Transfer ownership | ✓ | — | — | — |
+| Change site-level config | ✓ | — | — | — |
+| View audit logs | ✓ | — | — | — |
+
+**Contributor trust states (per-Contributor, managed by Owner or Admin):**
+
+Each Contributor user record has a trust state with three possible values:
+
+- **`default`** — uploads auto-publish immediately. Cow moo fires, photos compete in the throne algorithm like any other upload. This is the initial state for every new Contributor.
+- **`review-required`** — uploads land in a review queue; not visible on the public site until approved. The Contributor's phone experience is unchanged (numpad prompt, tag picker, cow moo on R2 persistence). They are not notified that their uploads are now gated. Set by Owner or Admin when a specific Contributor's upload quality degrades.
+- **`revoked`** — upload token invalidated. Contributor cannot upload at all. Terminal state.
+
+State transitions are one-directional in normal use (`default` → `review-required` → `revoked`) but can be manually reverted by Owner or Admin (e.g., a Contributor whose access was paused during seasonal downtime can be restored to `default`).
+
+**Upload batch tracking (applies to all uploaders, not just Contributors):**
+
+Every upload session receives a unique `batchId`. All photos uploaded in the same Shortcut invocation share a batch. This field is stored on MediaAsset and enables batch-level operations:
+
+- Batch rejection (reject an entire mistaken session at once, e.g., wrong tag applied to 8 photos)
+- Batch review UI (photos grouped by upload session in review queues)
+- Batch provenance (audit trail showing which photos came in together)
+
+**MediaAsset schema addition** (extends A32 and A36):
+
+```typescript
+interface MediaAsset {
+  // ... existing fields
+  batchId: string                                 // UUID generated per upload session
+  uploaderTrustStateAtUpload:                     // captured at ingest for audit clarity
+    'default' | 'review-required'                 // (revoked uploads never reach ingest)
+  publishState:
+    | 'published'                                 // live on the site
+    | 'pending-review'                            // Contributor upload awaiting approval
+    | 'rejected'                                  // removed from site but preserved in admin
+  rejectedAt: string | null                       // ISO timestamp if rejected
+  rejectedBy: string | null                       // user ID of reviewer, if rejected
+  rejectionReason: string | null                  // optional free-text, internal only
+}
+```
+
+**AdminUser schema addition** (extends A35):
+
+```typescript
+interface AdminUser {
+  // ... existing fields (now four-role enum)
+  role: 'owner' | 'admin' | 'editor' | 'contributor'
+  contributorTrustState: 'default' | 'review-required' | 'revoked'  // only meaningful if role === 'contributor'
+}
+```
+
+**Contributor upload awareness — two mechanisms:**
+
+1. **Dashboard card (always visible to Owner/Admin/Editor):** "Recent Contributor uploads" widget shows the last N Contributor batches with per-batch summary (uploader name, animal, photo count, timestamp) and a Review action. Passive awareness — admins see it only when they visit the Dashboard.
+
+2. **Notification dispatch (opt-in per admin, default off):** Using the notification infrastructure from A25, each Owner/Admin/Editor user can opt into receiving a notification (email or SMS per their preferences) whenever any Contributor uploads. Default off to avoid noise for admins who don't want per-upload pings.
+
+Dashboard card is always-on. Notification is opt-in.
+
+**Review actions:**
+
+- **Approve batch** (for `pending-review` state) — flips `publishState` to `published`, photos go live, throne algorithm re-evaluates.
+- **Reject batch** (for either `published` auto-published Contributor uploads or `pending-review` queue items) — flips `publishState` to `rejected`, photos removed from public surfaces, preserved in admin for later audit or restoration. Affected animals' throne algorithm re-evaluates without these photos.
+- **Individual photo approve/reject** within a batch, same semantics on a single photo.
+
+When an Admin rejects a Contributor batch, **the Contributor is not notified**. Silent rejection. The assumption is that any user-facing rejection UI creates social friction that outweighs its value; quality feedback to Contributors should happen offline through the human relationship, not through the system.
+
+**New admin surface (Phase 1):**
+
+- **`/admin/review/`** — review queue for Contributor uploads in `pending-review` state, and a retrospective view for recently auto-published Contributor uploads. Batch-grouped. Approve/reject actions per batch or per photo.
+
+This is the surface where the "review-required" trust state's uploads land. For `default`-state Contributors, this surface also shows recent auto-published batches for retroactive review.
+
+**Route-level gating (reiterated from A35):**
+
+Users navigating to a URL above their role level receive a 404, not a "permission denied" error. Contributors hitting `/admin/herd/` see a 404, same as any non-admin visitor. Prevents the UI from revealing surfaces a user cannot access.
+
+**Default user list at launch:**
+
+- **matt** — Owner
+- **marty** — Admin
+- **roianne** — Admin
+- no Editors at launch; added as trusted helpers emerge
+- no Contributors at launch; added case by case
+
+**Deferred (unchanged from A35):**
+
+- Per-user capability overrides (if ever needed, added as boolean flags layered on top of the role matrix)
+- Time-bounded access (seasonal helper auto-expiry)
+- Multi-owner model
+
+**Reasoning:**
+
+The gap between Admin (full operational, including financial) and Contributor (upload only) was too wide once financial data was contemplated. Editor fills the trusted-helper slot — someone who can genuinely operate the herd-management workflows but shouldn't see the books. Four tiers matches the WordPress model (Administrator / Editor / Author / Contributor) adapted for our domain.
+
+The publish-by-default Contributor model matches how modern CMS systems handle guest publishing and avoids the dead-letter-queue failure mode where Contributor uploads sit unpublished for weeks because no admin reviews them. The trust-state escalation (`default` → `review-required` → `revoked`) mirrors how real working relationships degrade before termination, giving admins a graduated response instead of a binary trust switch.
+
+Batch tracking is a shared primitive worth the minimal schema cost. It enables recoverability for all uploaders, not just Contributors — a mistyped tag by Marty is recovered the same way as one by a Contributor. The fact that it also unlocks the Contributor-review workflow is a bonus.
+
+Silent rejection for Contributors is the right social default. The relationship is managed offline; the system's job is to quietly remove bad data, not to deliver feedback to someone who probably just took photos as a favor on a weekend visit.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
