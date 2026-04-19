@@ -1430,6 +1430,78 @@ Pending-tag and upload-issue queues must be Phase 1, not Phase 2, because withou
 
 ---
 
+### A33. Admin documents section
+
+**Supersedes:** New addition. Establishes a new admin surface; detailed contents to be designed during P6.
+
+**What changes:**
+
+The admin area gains a documents section at `/admin/documents/` that serves as a general-purpose ranch-office reference library. It supports both uploaded files (PDFs, printable registration forms, breed-association documents) and native markdown pages authored in the site repo (upload instructions, industry reference, site operations guides).
+
+**Initial category scaffolding (suggestive, finalized during P6):**
+
+- **Photo Guidelines** — industry photography standards, what makes a good seedstock photo, the criteria the site's classifier applies. Authored markdown drawing from the P5 research notes.
+- **Upload Instructions** — how the Shortcut works, how to install it on a new phone, troubleshooting common issues, what to do when an upload fails.
+- **Registration Forms** — AHA (American Hereford Association) registration forms, transfer forms, blank templates ready to print. Uploaded PDFs.
+- **Industry Reference** — breed standards, terminology glossary, context on why registration matters, how EPDs work. Authored markdown.
+- **Site Operations** — how to recover admin access if a phone is lost, how to rotate an upload token, how to add a new admin user. Authored markdown.
+
+Category list is not locked. P6 will finalize what exists at launch and the UI for browsing/organizing.
+
+**Storage model:**
+
+- Uploaded files → R2 under `docs/` prefix, served behind admin auth
+- Authored markdown → site repo under `src/content/admin-docs/` (version-controlled, renders via standard Astro content collections)
+
+**Visibility:**
+
+Admin-only in Phase 1. Some content (particularly Photo Guidelines and parts of Industry Reference) may later be surfaced on the public side as buyer-facing context — that's a Phase 2 decision, not committed here.
+
+**Reasoning:**
+
+During the P4 incoming-share-sheet workshop, it surfaced that Marty didn't know industry-prescribed photography guidelines existed. That's a gap: ranchers who don't know the reference standards can't meet them. Centralizing that reference material on the site makes it available where Marty already spends time, rather than requiring him to remember it exists on some breed-association website.
+
+The broader move is reframing the admin surface from "herd/inquiry dashboard" to "ranch office." Registration paperwork, operational how-tos, industry reference — the things Marty currently keeps in a paper binder or (worse) in his head — all live in one place he can reach from his phone. Low implementation cost (file list + markdown renderer), meaningful conceptual value, and the Photo Guidelines page specifically creates a virtuous loop: it explains the standards the P5 classifier is silently applying to his uploads.
+
+---
+
+### A34. Amendment to A32: always-confirm picker + letter-keyboard escape
+
+**Supersedes:** A32 steps 6-8 (the "if exactly one match, proceed directly" logic).
+
+**What changes:**
+
+The Shortcut's disambiguation picker is shown **always**, even when the server returns exactly one match. The flow becomes uniform:
+
+1. User types tag number, taps Done
+2. Shortcut calls `/api/resolve-tag?tag=<n>`
+3. Shortcut shows picker titled `Matches for <typed input>:` with:
+   - All matching animals, identity-labeled per A32
+   - A bottom entry: `Add new tag`
+4. User taps one option
+5. If an animal entry was tapped: upload proceeds with that animal ID
+6. If `Add new tag` was tapped: Shortcut prompts `Use tag <typed input>?` with Yes / No
+   - **Yes** → creates new animal record with the typed tag, upload proceeds
+   - **No** → opens full Text keyboard with typed input pre-filled; user edits (adds letters, corrects digits), taps Done; new animal is created with the edited tag; upload proceeds
+
+**Why always-confirm:**
+
+Auto-proceeding on a single match sounded clever but introduces a silent failure mode: Marty fat-fingers `830` when he meant `840`, the server finds one match for 830, photo lands on the wrong animal, the error isn't caught for weeks. One extra tap per upload is a cheap insurance premium against that class of bug, and the uniform 2-tap flow is easier to learn than a conditional flow that branches based on match count.
+
+Putting the typed input in the picker header (`Matches for 206:`) gives the user a moment to notice a typo before committing.
+
+**Why the Yes/No step after "Add new tag":**
+
+The Yes/No prompt is the clean escape path from the numpad to the letter keyboard. Without it, there's no way to enter a letter-containing tag (e.g., `TY265A` for an animal that doesn't yet exist in the system and whose tag has a registration-letter prefix). The Yes branch handles the common case (pure-numeric new tag, one extra tap); the No branch handles the rare case (letter tag, opens full keyboard with input pre-filled as the starting point).
+
+If field testing shows the No branch is never used, it can be removed in a future Shortcut edit without changing the server contract.
+
+**Server-side tag matching rule (reiterated from A32, unchanged):**
+
+Server extracts the first run of digits from each tag's physical identifier and matches against the typed input. Input `265` matches tags `265`, `TY265A`, `265-1`, etc. (all share numeric run `265`). Input `106` does not match `1065` (different numeric runs).
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
