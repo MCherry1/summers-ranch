@@ -1502,6 +1502,103 @@ Server extracts the first run of digits from each tag's physical identifier and 
 
 ---
 
+### A35. Admin role-based access control (Owner / Admin / Contributor)
+
+**Supersedes:** A23 (admin users record model — role enum replaces the implicit owner/admin flag).
+
+**What changes:**
+
+Admin users gain a `role` field with three allowed values. A23 treated admin users as functionally equal with only an implicit owner distinction; A35 formalizes this as a three-tier RBAC model with a concrete capability matrix. Naming follows ecosystem convention (GitHub, Slack, Google Workspace) rather than idiosyncratic coinage.
+
+**The three roles:**
+
+- **Owner** — full capabilities plus user management, token rotation of other users, site-level config, ownership transfer. Matt.
+- **Admin** — full operational access; cannot manage other users or change site config. Marty, Roianne.
+- **Contributor** — limited access; primarily photo upload via Shortcut, own upload history, own settings. Future ranch hands.
+
+**Role invariants:**
+
+- Exactly one Owner at all times; Owner cannot demote themselves without first transferring ownership to another user
+- Only the Owner can promote/demote users or add/remove users
+- Admins and Contributors cannot change any user's role, including their own
+- Role is set at user creation and changed only via the Owner's user-management surface
+
+**Data model (extends A23):**
+
+```typescript
+interface AdminUser {
+  // ... existing fields from A23 (id, name, email, phone, passkeyCredentials, uploadToken, notifications, etc.)
+  role: 'owner' | 'admin' | 'contributor'
+}
+```
+
+**Capability matrix:**
+
+| Capability | Owner | Admin | Contributor |
+|---|---|---|---|
+| Upload photos via Shortcut (token auth) | ✓ | ✓ | ✓ |
+| View own upload history | ✓ | ✓ | ✓ |
+| Own profile settings (notifications, passkey devices, rotate own token) | ✓ | ✓ | ✓ |
+| Set/clear Needs Attention flags | ✓ | ✓ | own uploads only |
+| View/edit herd records | ✓ | ✓ | — |
+| Delete animals (destructive) | ✓ | — | — |
+| Inquiry inbox (read, reply, mark handled) | ✓ | ✓ | — |
+| Media library curation (Prefer/Hide, organize) | ✓ | ✓ | — |
+| Resolve pending-tags queue | ✓ | ✓ | — |
+| Resolve upload-issues queue | ✓ | ✓ | — |
+| Documents section (read, upload, edit) | ✓ | ✓ | — |
+| Add/remove admin users | ✓ | — | — |
+| Change other users' roles | ✓ | — | — |
+| Rotate other users' upload tokens | ✓ | — | — |
+| Transfer ownership | ✓ | — | — |
+| Change site-level config (style, palette, public toggles) | ✓ | — | — |
+| View audit logs | ✓ | — | — |
+
+**Shortcut token independence from role:**
+
+Upload tokens (A32) authorize "upload photos with a claimed animal ID" regardless of role. The two axes of access are independent:
+
+- **Web admin access** via passkey (determines what admin surfaces you can see, based on role)
+- **Shortcut upload access** via token (binary: have a valid token or don't)
+
+A user can have either, both, or neither. A Contributor with only a token (no passkey) cannot log in to the web admin at all — they only interact via Shortcut. An Admin with only a passkey and no token cannot upload via Shortcut but has full operational access to the web admin. Rotating one credential does not affect the other.
+
+**Contributor web admin surface (preview; detailed during P6):**
+
+When a Contributor logs in via passkey, they see a stripped-down admin surface:
+
+- Their own upload history (photos they've uploaded, tagged animals)
+- Animals flagged Needs Attention that they've contributed to, so they can re-photograph or follow up
+- Their own settings (notification prefs, passkey devices, their upload token)
+
+They do not see: dashboard metrics beyond their own activity, inquiry inbox, media library, other users, herd editing surfaces, site config, documents section.
+
+Route-level gating rather than UI-level gating: Contributors navigating to an Admin-only URL receive a 404, not a "permission denied" message. Prevents the UI from revealing the existence of surfaces they can't access.
+
+**Default user list at launch (supersedes A23):**
+
+- **matt** — Owner
+- **marty** — Admin
+- **roianne** — Admin
+
+No Contributors at launch; added as needed when ranch hands join.
+
+**Reasoning:**
+
+Three-tier RBAC is the mainstream pattern for small-to-mid orgs (GitHub, Slack, Google Workspace, WordPress's tier model collapses to this shape for most uses). The trust gradient at Summers Ranch — full trust, operational trust, upload-only trust — maps cleanly to three tiers, no more, no less. Owner is kept as its own tier rather than "an Admin with an ownership flag" because ownership-transfer and final user-management decisions differ meaningfully from full-admin capabilities, and it matches natural speech ("Matt's the owner, Marty and Roianne are admins").
+
+Upload tokens are kept independent of role so the two access paths can be granted independently. A ranch hand who only uploads photos shouldn't need a passkey. An Admin who doesn't use Shortcut shouldn't be forced to manage a token. This also means token compromise is scoped: a stolen token grants upload capability only, not any web admin access.
+
+Route-level gating rather than UI-level permission errors is both better UX (no "you can't do this" dead ends) and simpler to implement (single auth middleware check per route group).
+
+**Deferred:**
+
+- **Per-user capability overrides** (e.g., "this one Contributor can also access inquiries") — if ever needed, added as boolean flags layered on top of the role matrix. Not a refactor to capability-based auth.
+- **Time-bounded access** (e.g., seasonal ranch hand with Contributor access only during calving season) — standard auto-expiry pattern, added when the operational need appears.
+- **Multi-owner model** — Summers Ranch has a single clear owner; defer pending genuine ambiguity about site ownership.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
