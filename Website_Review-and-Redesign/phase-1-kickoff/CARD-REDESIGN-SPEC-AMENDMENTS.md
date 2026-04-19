@@ -2949,6 +2949,217 @@ The compare-mode toggle approach resolves the long-press concern without comprom
 
 ---
 
+### A42. Card photo system redesign — availability-gated front, corner-thumbnail back, bucketed chronological carousel
+
+**Supersedes:** A36's implicit assumption that the side-profile throne-holder always displays on the card front. Supersedes A36 Part 1's "empty throne" handling. Extends A36 Part 8's per-animal gallery concept into a concrete Phase 1 surface. Revises the date overlay treatment on card photos.
+
+**What changes:**
+
+This amendment reshapes the card's photo system to separate the card's two distinct jobs: the front invites attention, the back enables evaluation. The single-throne-everywhere model is replaced by a context-aware model where the front image depends on commercial status, the back offers a compact evaluation summary with optional expansion, and an adaptive chronological carousel reveals the animal's growth story at appropriate density for their life stage.
+
+---
+
+#### Part 1 — Card front: availability-gated photo selection
+
+The card front's primary photo depends on the animal's current availability status:
+
+- **Available animal** → card front displays the current side-profile throne-holder (per A36's scoring and blend formula). Rationale: a buyer looking at an available animal is in evaluation mode; the card serves as a sales surface, and the side profile is the industry-standard evaluation shot.
+
+- **Not-available animal** → card front displays the current "beauty/action" throne-holder. Rationale: the card serves as a herd-gallery entry; the front's job is to draw the viewer in. A posed side profile is less engaging than a well-composed action or beauty shot.
+
+- **Empty throne** (new calf with no side profile yet, or no beauty shot yet) → card front displays best-available photo by aesthetic score, regardless of shot type, with a coverage nudge to admin.
+
+The card's visual emphasis thus changes with the animal's commercial role. A heifer aging from yearling (not available) through her first listing (available) to sold-and-reference-only (not available again) will see her card front shift: beauty shot → side profile → beauty shot. This is a feature, not a bug — the card adapts to the buyer's likely mindset at each phase of the animal's commercial life.
+
+**The "beauty/action" selection rubric is deferred** to a future amendment. Phase 1 populates the throne infrastructure; Phase 2 designs the specific scoring criteria. Interim: most-recent photo classified as `action`, `scenic`, `three-quarter`, `head`, `with-dam`, or `other` (whatever is highest-quality by aesthetic score) wins the front slot.
+
+**Schema (extends A36's `CattleMediaLink`):**
+
+```typescript
+interface CattleMediaLink {
+  // ... existing fields from A36 including cardFrontThrone (side profile)
+  cardFrontBeautyThrone: boolean          // separate throne for beauty/action front
+  cardFrontBeautyThroneSince: string | null
+  cardFrontBeautyThroneLostAt: string | null
+}
+```
+
+The card-front renderer selects from `cardFrontThrone` when animal is available and `cardFrontBeautyThrone` otherwise. Both throne slots persist independently so a status transition (available ↔ not-available) swaps the displayed photo instantly without recomputation.
+
+**Live Photo motion on the card front:** per prior decisions, a front-of-card photo plays its Live Photo motion once on card arrival (when the user swipes to this animal), then settles to a still. No cycling on the front regardless of status.
+
+---
+
+#### Part 2 — Card back: corner thumbnail with toggle-to-expand
+
+The card's back is the evaluation surface. Its primary content is the animal's detail sections (identity, pedigree, registration, performance, sale details, etc. — per main spec Section 4). These are the things a serious buyer reads.
+
+The **side-profile evaluation photo** lives as a thumbnail in the top-right corner of the back surface. Not a hero image. Not a leading photo. A corner thumbnail, roughly the size of a few stacked stat rows.
+
+**Thumbnail behavior:**
+
+- Still image only (no cycling, no Live Photo motion at thumbnail size)
+- Shows the current side-profile throne-holder
+- Subtle visual affordance suggesting expansion (e.g., a small expand-corner glyph or a tap-ready outline on hover)
+
+**Expansion toggle:**
+
+Tapping the thumbnail expands it to fill the viewport width while the card-back content remains active in the background. Tapping again collapses back to thumbnail. During expansion:
+
+- Image takes the full width of the card-back surface
+- Card-back text content scrolls behind/underneath (still readable, still accessible)
+- Background content does not become modal or dismissive — the card-back is still the active surface
+
+This is a **toggle, not a modal lightbox**. The user's task is still "read the card back." The expanded image is a temporary visual amplification, not a context switch.
+
+**Why this pattern over a traditional lightbox:** a modal lightbox would force the user to close it to continue reading. The toggle lets them leave the photo expanded while their eye moves down through the stats, then collapse it when they're ready to see the tag and age again. It respects that the back is fundamentally an information surface where the photo supports but doesn't dominate.
+
+**Autoplay triggers on expansion, not at thumbnail size.** When the user expands the thumbnail, the carousel begins autoplay per Part 3. Collapsing back to thumbnail pauses autoplay and resets state.
+
+---
+
+#### Part 3 — Bucketed chronological carousel (within the expanded view)
+
+When the user expands the thumbnail, the expanded view becomes a **chronological carousel of side-profile photos across the animal's life**. The system selects a small, well-distributed set of photos rather than showing every side profile ever taken.
+
+**The underlying selection is invisible to the user.** No "bucket" terminology appears in the UI. The user sees a handful of photos that feel naturally spaced across the animal's life. The machinery behind that feeling is hidden.
+
+**Adaptive density by life stage (system-internal, not user-facing):**
+
+| Life stage | Age range | Max photos shown | Approximate cadence |
+|---|---|---|---|
+| Newborn | 0-60 days | 4 | ~2 weeks |
+| Young calf | 60-205 days | 5 | ~1 month |
+| Weanling | 205-365 days | 3 | ~2 months |
+| Yearling | 1-2 years | 4 | ~3 months |
+| Mature | 2+ years | 1 per year | annual |
+
+Total theoretical maximum for a 9-year-old: 4 + 5 + 3 + 4 + 7 = 23 photos across her life. Most animals won't hit these maxes — the system displays what exists at each density tier.
+
+**Within each time slice:** the best side-profile by A36's scoring formula wins, evaluated against the animal's availability state at the time of that slice. Non-winning photos are not shown in the carousel but remain in the per-animal gallery (Part 4).
+
+**Slices slide forward with time:** a 14-month-old's photos live in their own weanling/yearling slices today; six months from now, the same photos will have aged into wider yearling slices and some will drop out in favor of bucket winners. The system re-computes on every load.
+
+**Slices with zero photos are silently skipped.** No placeholder, no "no photos from this period" message. The dot pager just has one fewer dot. The visual narrative stays intact — the user sees a chronological progression and doesn't perceive the absence.
+
+**Autoplay behavior:**
+
+1. Expansion triggers autoplay
+2. First frame: the **most recent** photo (the current side-profile throne-holder), held for 10 seconds — this is what the cow looks like now, shown first
+3. Transition to oldest chronological photo
+4. Cycle forward through each slice winner: Live Photo motion plays once (~2 seconds), then still held for ~3-5 seconds, then transition to next
+5. When the cycle reaches the current-most-recent, extended 10-second hold
+6. Cycle loops back to oldest
+
+**Controls visible during expansion:**
+
+- Play/pause button (top-left corner of expanded image, high-contrast)
+- Left/right chevrons at the edges for manual previous/next
+- Dot pager along the bottom — one dot per photo shown (not per bucket, not per life stage, just per actual displayed photo); tapping a dot jumps and pauses
+- Close/collapse affordance (top-right, or tap outside the image area)
+- Date overlay on each frame (see Part 5)
+
+**prefers-reduced-motion:** autoplay defaults to paused, manual advancement only, Live Photo motion replaced with still frame.
+
+---
+
+#### Part 4 — Per-animal gallery (`/herd/[id]/gallery`)
+
+A separate page linked from the card back for buyers who want to see all of an animal's photos, not the curated carousel.
+
+**URL pattern:** `/herd/[id]/gallery`
+
+**Entry point:** a small text link at the bottom of the card back, below the stats sections: *"Sweetheart's gallery"* (or appropriate name per Part 6).
+
+**Page structure:**
+
+- Header with the animal's name (per Part 6)
+- Sort toggle: Newest first (default) / Oldest first
+- Grid of all photos for this animal, chronologically ordered
+- Tap any photo to expand in a full-screen lightbox with left/right navigation
+- No classification filters (side profile / head shot / etc. are not surfaced as filters)
+- No autoplay — passive gallery, user-driven pacing
+
+**Rationale:** a buyer reaching this surface is already engaged. They don't need filters to help them search — they want to browse. The single-axis sort (newest/oldest) is the one meaningful control. Anything else adds complexity for a narrow use case.
+
+**Shot type classifications still exist in the data layer** (per A36 Part 6) but are not exposed as filter UI here. The per-animal gallery shows all photos regardless of type, in pure chronological order.
+
+---
+
+#### Part 5 — Date overlay redesign (supersedes main spec §3 and A36 references)
+
+The existing treatment — a semi-opaque black pill containing `May 2025` overlaid on the photo corner — reads as UI chrome competing with the photograph. Replaced with a cleaner pattern modeled on Apple Photos, Google Photos, and Instagram archive views.
+
+**New date overlay specification:**
+
+- Position: bottom-left inside the photo, 12px from edges
+- Size: small body (11-12px)
+- Color: `rgba(255,255,255,0.9)` white text
+- Drop shadow: `0 1px 3px rgba(0,0,0,0.6)` plus a tighter `0 0 1px rgba(0,0,0,0.8)` for legibility over varied backgrounds
+- No background pill, no border, no outline
+- Format: `Month YYYY` by default (e.g., `May 2025`); shortened to `Month` for photos in the current calendar year
+- Font: matches the site's `--font-body` for consistency with other UI text
+
+This treatment applies everywhere photo dates appear: card front corner, card back thumbnail, expanded carousel frames, per-animal gallery grid, compare surface, share composites.
+
+The existing registration number overlay in the opposite corner (currently a similar black pill) uses the same new treatment.
+
+---
+
+#### Part 6 — Per-animal gallery naming
+
+The page header of `/herd/[id]/gallery` uses a consistent naming function applied everywhere the animal is referenced with "ownership" phrasing:
+
+**Rules:**
+
+- Animal has a name → `<Name>'s gallery` (e.g., *"Sweetheart's gallery"*, *"Mr Success 2214's gallery"*)
+- Animal has no name → `<Sex> #<tag>'s gallery` (e.g., *"Cow #842's gallery"*, *"Calf #840's gallery"*, *"Bull #901's gallery"*, *"Heifer #850's gallery"*)
+
+The server-side naming function lives alongside the label-construction logic from A32 (identity-labeled picker results) — one canonical function used everywhere an animal needs a human-readable reference. Consistent naming across: picker in Shortcut, gallery page title, share composite titles, compare page references.
+
+**Schema note:** no new fields. Name, sex, and tag already exist on AnimalRecord.
+
+---
+
+#### Part 7 — Front-of-card autoplay behavior (clarification)
+
+The card front shows one photo at a time. It does not cycle. Specifically:
+
+- When the user swipes to the animal's card (arrives on the front), the Live Photo motion plays once (~2 seconds), then settles to a still
+- The still remains until the user swipes away or swipes to the back
+- Swiping back to the front replays the Live Photo motion once
+- Tapping the photo does not restart motion (reserved for zoom intent per earlier decisions)
+- No thumbnail selector, no dot pager, no chips on the front — the front is a single deliberate image
+
+This supersedes any earlier framing of the front as a cycling carousel.
+
+---
+
+#### Part 8 — Compact view implications
+
+In the compact (multi-animal-per-screen) herd view, each card shows its front image per Part 1's availability-gated rule. No motion, no cycling — compact view cards show still frames only, matching main spec Section 5 which established compact cards as static.
+
+---
+
+#### Part 9 — What this amendment does NOT resolve
+
+- **Beauty/action selection rubric for not-available animals' card fronts** — deferred, as noted in Part 1. Phase 1 uses a fallback (most-recent aesthetic winner among relevant shot types).
+- **Exact visual treatment of the "expand" affordance on the thumbnail** — design detail to be refined during component implementation; options include a small corner glyph, a hover outline, or a subtle shadow
+- **Lightbox interaction on the per-animal gallery grid** — Phase 1 opens full-screen with left/right navigation and a close affordance; finer interaction details during build
+- **Pinch-to-zoom on the expanded thumbnail and gallery lightbox** — earlier discussions established pinch-to-zoom as desired on mobile; reiterated here but exact gesture handling deferred to implementation
+
+---
+
+**Reasoning:**
+
+The card's front and back do different jobs. Forcing a single photo-selection rubric to serve both compromises both. Availability-gated fronts honor the different mindsets of the two buyer states — exploratory (not available) and evaluative (available). The corner-thumbnail-with-toggle on the back respects that the back is fundamentally an information surface where the photo supports rather than dominates.
+
+The adaptive chronological bucketing is the key engineering move. The user never sees or thinks about "buckets" — they see a small, well-distributed set of photos that feels right for the animal's age. The system makes this feeling possible by internally adapting density to life stage, but the UX is invisible machinery producing a natural result. This is the ideal state for any such selection system: the user's experience is that it "just works," and they couldn't explain what "it" is if asked.
+
+The per-animal gallery serves the tail of user intent — the buyer so engaged that they want to see everything this animal has ever looked like. Keeping it separate from the card means the card itself doesn't carry that exhaustive burden.
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
