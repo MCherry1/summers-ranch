@@ -1,0 +1,129 @@
+---
+/**
+ * Birthday ribbon — spec §19.1. Same vertical-hanging chevron shape
+ * as distinction (34×90, swallowtail). Baby pink for females (cows,
+ * heifers, heifer calves), baby blue for males (bulls, bull calves,
+ * steers). Text reads "HAPPY" | "BIRTHDAY" in two stacked columns
+ * per §3.3 — not the age number.
+ *
+ * Position per spec §3.3: when coexisting with distinction, birthday
+ * takes position 2 (left:54px). Caller controls via leftPx prop;
+ * default is position 1.
+ *
+ * All units px. Cinzel 7px bold, deep-gold on pink / deep-blue on
+ * baby-blue per §19.1.
+ */
+import type { Sex } from "~/schemas";
+
+interface Props {
+  sex: Sex;
+  animalName: string | null;
+  leftPx?: number;
+}
+
+const { sex, animalName, leftPx = 12 } = Astro.props;
+
+const isGirl = sex === "cow" || sex === "heifer";
+// Calf sex is ambiguous; default to neutral pink until sex is clarified.
+const palette: "girl" | "boy" = isGirl
+  ? "girl"
+  : sex === "bull" || sex === "steer"
+    ? "boy"
+    : "girl";
+
+const happy = "HAPPY".split("");
+const birthday = "BIRTHDAY".split("");
+const ariaLabel = animalName
+  ? `Happy birthday, ${animalName}`
+  : "Happy birthday";
+---
+
+<div
+  class:list={["birthday-ribbon", palette]}
+  style={`left: ${leftPx}px;`}
+  role="img"
+  aria-label={ariaLabel}
+>
+  <div class="columns">
+    <div class="col">
+      {happy.map((letter) => <span class="letter">{letter}</span>)}
+    </div>
+    <div class="col">
+      {birthday.map((letter) => <span class="letter">{letter}</span>)}
+    </div>
+  </div>
+</div>
+
+<style>
+  .birthday-ribbon {
+    position: absolute;
+    top: 0;
+    width: 34px;
+    height: 90px;
+    z-index: var(--z-ribbon);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 14px),
+      50% 100%,
+      0 calc(100% - 14px)
+    );
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 5px;
+    pointer-events: none;
+  }
+
+  .birthday-ribbon.girl {
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0.1) 0%,
+        rgba(0,0,0,0) 20%,
+        rgba(255,255,255,0.12) 50%,
+        rgba(0,0,0,0) 80%,
+        rgba(0,0,0,0.1) 100%),
+      linear-gradient(180deg, #f5dae3 0%, #eabecb 45%, #c48799 100%);
+  }
+
+  .birthday-ribbon.boy {
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0.1) 0%,
+        rgba(0,0,0,0) 20%,
+        rgba(255,255,255,0.12) 50%,
+        rgba(0,0,0,0) 80%,
+        rgba(0,0,0,0.1) 100%),
+      linear-gradient(180deg, #c8dff0 0%, #9ec5e8 45%, #6a9dc4 100%);
+  }
+
+  .columns {
+    display: flex;
+    gap: 3px;
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .letter {
+    font-family: "Cinzel", Georgia, serif;
+    font-weight: 700;
+    font-size: 7px;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+
+  .birthday-ribbon.girl .letter {
+    color: #8a5a00;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .birthday-ribbon.boy .letter {
+    color: #1e4a7e;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+</style>

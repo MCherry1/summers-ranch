@@ -1,0 +1,119 @@
+---
+/**
+ * Distinction ribbon — spec §19.1. Vertical hanging ribbon, 34px ×
+ * 90px, chevron swallowtail bottom. DOD (Dam of Distinction) in AHA
+ * blue, SOD (Sire of Distinction) in AHA red. Gold ★ emblem at top,
+ * Cinzel stacked letters below.
+ *
+ * Position is the caller's responsibility: spec §3.3 says distinction
+ * sits at position 1 (left:12px). The caller sets `left` via style
+ * prop; this component only draws the ribbon.
+ *
+ * Fabric-depth treatment: horizontal gradient (edge shading) + inner
+ * box-shadow for vertical fabric weight. drop-shadow filter follows
+ * the clip-path chevron shape per POLISH §7.4.
+ *
+ * All units px. Year shows in the tooltip (Phase 2, hover/tap pending).
+ */
+import type { Distinction } from "~/schemas";
+
+interface Props {
+  distinction: Distinction;
+  year: number | null;
+  leftPx?: number;  // spec §3.3 default 12; birthday+distinction overrides
+}
+
+const { distinction, year, leftPx = 12 } = Astro.props;
+
+const label =
+  distinction === "DOD" ? "Dam of Distinction" : "Sire of Distinction";
+const letters = distinction.split("");   // ['D','O','D'] or ['S','O','D']
+---
+
+<div
+  class:list={["distinction-ribbon", distinction.toLowerCase()]}
+  style={`left: ${leftPx}px;`}
+  role="img"
+  aria-label={year ? `${label}, ${year}` : label}
+>
+  <span class="star" aria-hidden="true">&#9733;</span>
+  <span class="letters">
+    {letters.map((letter) => <span class="letter">{letter}</span>)}
+  </span>
+</div>
+
+<style>
+  .distinction-ribbon {
+    position: absolute;
+    top: 0;
+    width: 34px;
+    height: 90px;
+    z-index: var(--z-ribbon);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 14px),
+      50% 100%,
+      0 calc(100% - 14px)
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    gap: 3px;
+    pointer-events: none;
+  }
+
+  /* horizontal edge shading layered on top of the vertical color
+     gradient by using box-shadow insets — gives the fabric a sense
+     of depth without a second element. */
+
+  .distinction-ribbon.dod {
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0.18) 0%,
+        rgba(0,0,0,0) 15%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(0,0,0,0) 85%,
+        rgba(0,0,0,0.18) 100%),
+      linear-gradient(180deg, #5a8bc4 0%, #3b6ba5 35%, #1e4a7e 75%, #0f2d52 100%);
+  }
+
+  .distinction-ribbon.sod {
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0.18) 0%,
+        rgba(0,0,0,0) 15%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(0,0,0,0) 85%,
+        rgba(0,0,0,0.18) 100%),
+      linear-gradient(180deg, #c94848 0%, #b03030 35%, #8b1e1e 75%, #4a0f0f 100%);
+  }
+
+  .star {
+    font-size: 13px;
+    line-height: 1;
+    color: #f0d874;
+    text-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.3),
+      0 0 2px rgba(240, 216, 116, 0.6);
+  }
+
+  .letters {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .letter {
+    font-family: "Cinzel", Georgia, serif;
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1;
+    color: #f0d874;
+    letter-spacing: 0;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  }
+</style>

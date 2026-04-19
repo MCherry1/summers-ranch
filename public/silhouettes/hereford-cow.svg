@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hereford cow silhouette placeholder">
+  <rect width="300" height="400" fill="#f7f0e3"/>
+  <g fill="#c9b79a" opacity="0.85">
+    <!-- body -->
+    <path d="M 55 195
+             C 50 175, 55 165, 72 162
+             L 230 162
+             C 250 162, 260 175, 258 195
+             L 258 255
+             C 258 270, 252 278, 238 280
+             L 230 280
+             L 228 320
+             C 228 328, 224 332, 218 332
+             L 210 332
+             C 204 332, 200 328, 200 320
+             L 200 280
+             L 108 280
+             L 108 320
+             C 108 328, 104 332, 98 332
+             L 90 332
+             C 84 332, 80 328, 80 320
+             L 78 280
+             L 72 280
+             C 60 278, 52 268, 50 255
+             Z"/>
+    <!-- head (lowered grazing posture), stylized Hereford profile -->
+    <path d="M 235 172
+             C 255 168, 272 172, 280 182
+             C 285 188, 287 195, 284 202
+             C 280 210, 270 214, 262 212
+             L 258 212
+             L 258 195
+             Z"/>
+    <!-- ear -->
+    <path d="M 248 168 C 252 162, 258 162, 262 167 L 260 178 L 252 175 Z"/>
+    <!-- tail -->
+    <path d="M 50 195 C 42 198, 38 205, 40 214 L 45 225 L 52 215 L 50 205 Z"/>
+    <!-- udder suggestion (defines cow vs bull) -->
+    <ellipse cx="155" cy="275" rx="18" ry="6"/>
+  </g>
+  <!-- subtle placeholder marker -->
+  <text x="150" y="380" text-anchor="middle" font-family="Georgia, serif"
+        font-size="9" fill="#7d6a5a" opacity="0.4" font-style="italic">
+    photo coming soon
+  </text>
+</svg>
