@@ -1974,6 +1974,278 @@ Silent rejection for Contributors is the right social default. The relationship 
 
 ---
 
+### A38. Admin navigation, Herd landing, animal detail edit, and progressive disclosure
+
+**Supersedes:** The high-level admin URL structure from A21 is refined and extended. The P6 "Dashboard contents TBD" open item is resolved (Dashboard is folded into the Herd landing).
+
+**What changes:**
+
+This amendment locks the Phase 1 admin surface shape: navigation pattern, herd landing page as the primary admin surface, animal detail page edit affordances, and the progressive-disclosure pattern that balances aspirational completeness against overwhelm.
+
+---
+
+#### Part 1 — Navigation pattern
+
+**Mobile (primary interface for most admin users):**
+
+Bottom navigation bar with **four items**, persistent across all admin surfaces:
+
+1. **Herd** (leftmost, default landing) — `/admin/`
+2. **Inbox** — `/admin/inquiries/` (badge shows unread count)
+3. **Review** — `/admin/review/` (badge shows combined count of pending items)
+4. **More** — opens bottom sheet with secondary items
+
+Icons are accompanied by labels (not icon-only — icon-only mobile nav has measurable discoverability problems).
+
+The More sheet contains:
+- Documents (`/admin/documents/`)
+- Settings (`/admin/settings/`)
+- Media (`/admin/media/`) — Phase 2, appears disabled/coming-soon in Phase 1
+- Calendar (`/admin/calendar/`) — Phase 2, appears disabled/coming-soon in Phase 1
+
+**Desktop:**
+
+Left rail, permanently visible, 240px wide. Contains the same four primary items as mobile bottom nav, plus the secondary items expanded below (no More menu on desktop). Matches convention (WordPress, Notion, Linear, Slack admin).
+
+**Visibility by role:**
+
+Navigation items respect the role capability matrix from A37. Contributors navigating to `/admin/` see their own stripped-down surface (upload history + own settings) with a reduced nav — no Inbox, no Review (Contributors don't approve anyone), no Documents, no Media, no Calendar. Route-level gating: Contributors hitting Admin-only URLs receive a 404.
+
+**Session and login:**
+
+Admin users arriving unauthenticated are redirected to a minimal `/admin/login` page for passkey auth (per A22). After auth, they land wherever they were trying to go (or `/admin/` if no specific destination).
+
+---
+
+#### Part 2 — Herd landing (`/admin/`)
+
+The Herd landing is the dashboard. There is no separate `/admin/dashboard/` page. This resolves the P6 "Dashboard contents TBD" open item by concluding that a separate dashboard surface would be redundant — everything a dashboard would show is already herd-related, so the herd list itself is the dashboard.
+
+**Three stacked zones, top to bottom:**
+
+**Zone 1 — Status strip** (sticky to top of viewport when scrolling). Four inline counts:
+
+- `N inquiries` (unread) — tap → `/admin/inquiries/`
+- `N to review` (combined pending Contributor batches + pending tags + upload issues) — tap → `/admin/review/`
+- `N need attention` (animals with any active nudge) — tap → filters the list to that subset
+- `N animals` (total herd count) — tap → clears filter, shows all
+
+Zero-count items render greyed but still tappable. "Better empty than wrong" — when nothing needs attention, the strip is quiet rather than decorative.
+
+**Zone 2 — List controls** (one row below the strip).
+
+- **Sort dropdown**, default `Needs Attention`. Other options: `Tag ↑`, `Age ↑`, `Age ↓`, `Name`, `Recently updated`.
+- **Filter dropdown**, default `All`. Other options: `Available`, `Needs Attention`, `Bulls`, `Cows`, `Heifers`, `Calves`, `Reference`.
+- **View toggle**: Cards / Compact (same control as on the public `/herd`).
+
+**Zone 3 — The list.** Same card component as public `/herd`, with `mode="admin"` which surfaces:
+
+- Needs Attention badge inline on the card, visible when the animal has any active nudge
+- Inline "recently edited" timestamp on cards edited in the last 14 days
+- Inline annotation on cards with unreviewed Contributor batches (e.g., *"Recent upload: 2 photos from Jeff, 3d ago"*)
+
+Tapping any card → `/admin/herd/[id]/` (animal front with edit affordances).
+
+**FAB for new animal:**
+
+A floating action button (+) in the bottom-right corner of the herd list, persistent across scroll. Visible to Owner, Admin, Editor (never Contributor). Tap → inline "Add animal" sheet slides up from bottom with chained-progression field entry (tag, name, sex, breed, status). Cancel closes sheet; Save creates the record and navigates to it.
+
+---
+
+#### Part 3 — Animal detail page (`/admin/herd/[id]/` and `/admin/herd/[id]/details/`)
+
+The admin animal detail pages use the **same card component as public** (as established in A21), with `mode="admin"` making fields tappable and editable. The public-admin mode parity is not just an architectural convenience — it means Marty's edit surface visually matches what buyers see, so he's always editing in context.
+
+**Edit affordance pattern: inline edit on card back, auto-save on blur.**
+
+- Tap any field → keyboard/picker appropriate to data type opens → edit value → tap away (blur) → auto-save fires
+- No separate edit mode, no Save button, no modal form pages
+- Save indicator: brief inline "Saved" flash near the field (1-2 seconds, then fades)
+- Save failures: field outlines red, value remains editable, retry on next blur
+- No explicit cancel (changes aren't "in flight" — each field's save is atomic)
+
+**Input type matches data type (chained progression, per A32 philosophy):**
+
+- Numeric fields (weight, age-in-days, birth weight) → numpad
+- Text fields (name, notes) → text keyboard
+- Date fields (birth date, purchase date) → date picker
+- Enum fields (sex, breed, status) → picker with button-list options
+- Long text (notes, description) → expanding text area
+- Relational fields (sire, dam) → tag search picker, same pattern as the Shortcut's disambiguation picker
+
+**Audit trail per field:**
+
+Every editable field has a collapsed audit trail underneath, expandable with a one-tap affordance. Shows the last N changes with user and timestamp. Defensive — if a Contributor or Editor mis-edits a field, Owner/Admin can see what it was and revert. Not visible to Contributors.
+
+---
+
+#### Part 4 — Progressive disclosure pattern
+
+This part is the structural answer to the tension between aspirational completeness (Marty wants to move toward full registration, performance tracking, etc.) and overwhelm (he'll close the app if confronted with 40 empty fields).
+
+**Three rules that work together:**
+
+**Rule 1 — Section labels use plain ranching language, not industry vocabulary.**
+
+The data model stores canonical section and field names (e.g., `progeny`, `epd`, `registration`). The UI renders them with a translation map that uses language a rancher would say out loud:
+
+| Canonical (internal) | Displayed label |
+|---|---|
+| `registration` | American Hereford papers |
+| `progeny` | Calves from this cow *(or "Calves sired"* for bulls) |
+| `epd` | Performance ratings |
+| `pedigree` | Parents and grandparents |
+| `sale` | Sale details |
+| `performance-data` | Weights and measurements |
+| `show-results` | Show records |
+
+The translation map lives in code as a single source of truth and is extensible. Phase 1 covers the sections present in the initial spec; new sections added later get added to the map.
+
+**Rule 2 — Empty-but-relevant sections use low-weight visual treatment.**
+
+A section with no data yet does NOT render as an empty form with prompts like "+ Add registration data" or "Fill in pedigree info." It renders as a quiet line in muted type near the bottom of the card back:
+
+> *American Hereford papers — not started*
+
+No border, no CTA button, no colored badge. Tappable. Tapping expands the section into its edit form. Not tapping costs nothing — the section has presence but no gravity.
+
+Sections with partial data render in normal type with their collapsed form showing the fields that do have values. Tapping expands to show all fields (filled and empty) so Marty can add more.
+
+**Rule 3 — Sections materialize only when relevant.**
+
+Sections that the animal has no structural use for don't render at all. A calf that has never produced offspring doesn't show `Calves from this cow` — not even as a muted empty line. Once the animal is old enough and has a progeny record entered, the section appears. This is the admin-side of "better empty than wrong" — absence is not a prompt to fill something in, it's information that the field doesn't apply.
+
+Section materialization rules (to be formalized per section):
+
+| Section | Appears when |
+|---|---|
+| Identity | Always — every animal |
+| Pedigree | Always for animals with a birth date; absent for reference-only entries |
+| Performance ratings | Appears for animals with any weight or measurement record, or bulls ≥12 months |
+| American Hereford papers | Appears for animals whose breed is registered and whose sire/dam are known |
+| Calves from this cow / Calves sired | Appears for cows ≥24 months OR any bull ≥12 months |
+| Sale details | Appears only when status is `Available` or `Sold` |
+| Show records | Appears only when a show entry has been added |
+| Notes | Always |
+
+---
+
+#### Part 5 — Completion-triggered nudges
+
+Nudges fire **near completion of a section**, not at zero. The design goal: reward the final push toward a useful milestone, never shame the empty state.
+
+**Trigger rule:**
+
+Each section defines a set of **required-for-completion** fields (the minimum fields needed to consider that section "done" for its purpose). A nudge fires when all required-for-completion fields are filled and ≤2 optional fields remain empty.
+
+**Examples:**
+
+- `American Hereford papers`: required are tag, sex, birth date, sire, dam, breeder, owner, tattoo location. Optional: birth weight, adjusted weaning weight, adjusted yearling weight. Nudge fires when all 8 required are filled and ≤2 optional remain → *"Almost ready to register #[tag]. Missing: birth weight, adjusted weaning weight."*
+- `Performance ratings`: required are birth weight, weaning weight, yearling weight (for animals in the appropriate life stage). Nudge fires when all 3 are filled with measurement dates → *"Full performance record for #[tag] — ready to submit for EPDs if you're pursuing that."*
+- `Sale details`: required are asking price, contact info if direct sale, availability date. Nudge fires when set is complete → *"Sale listing for #[tag] is complete — want to mark as Available on the public site?"*
+
+Nudges that never fire on empty or near-empty sections stay silent indefinitely. If Marty hasn't engaged with registration at all for a given animal, no nudge appears.
+
+**Nudge dismissal / snooze:**
+
+Every nudge has a `×` dismiss affordance. Dismissing snoozes that nudge for **30 days by default** (tunable per-nudge-type in future amendments). After snooze expiry, if the trigger condition still holds, the nudge surfaces again. If the underlying section has been completed or changed enough that the trigger no longer applies, the nudge quietly disappears.
+
+Snoozed nudges are visible in a "Snoozed" subtab of the animal's Needs Attention indicator, allowing Marty to manually un-snooze if he changes his mind.
+
+Per-user dismiss tracking: snoozes are stored per-user, not globally. If Marty snoozes a nudge on animal #840 and Roianne opens the same animal, she sees the nudge unless she's also snoozed it.
+
+---
+
+#### Part 6 — Tooltip layer for industry terminology
+
+Any field label that uses industry terminology (acronyms, technical terms, AHA-specific language) includes a small `(?)` affordance next to the label. Tapping reveals a 1-3 sentence plain-language explanation written in rancher-to-rancher voice, not textbook voice.
+
+**Example tooltips:**
+
+- *EPD*: *"Expected progeny differences. Numbers that predict what this animal's offspring will inherit — things like birth weight, growth rate, milk production. Buyers compare EPDs when picking bulls."*
+- *Tattoo location*: *"Where the animal's permanent ID tattoo is placed — usually left or right ear, inside. Required by AHA for registration."*
+- *Adjusted weaning weight*: *"Weaning weight normalized to a 205-day standard. Lets calves of different ages be compared fairly."*
+
+Tooltips may link to longer explanations in `/admin/documents/` (per A33). The tooltip is the starter dose; the doc is the deep dive.
+
+**Tooltip content is a Phase 1 content authoring task, not a coding agent task.** The infrastructure to render tooltips is built in Phase 1 by the coding agent. The content — the actual words in the tooltips — is written separately by Matt and Claude, reviewed by Roianne, in a targeted content pass. Initial Phase 1 scope: ~20-30 tooltips covering every field in the registration, performance, and pedigree sections.
+
+Tooltip content storage: a single structured file (e.g., `src/content/field-tooltips.ts` or a JSON file) as a key-value map from canonical field name to tooltip text. Extensible, version-controlled, translatable-in-principle.
+
+---
+
+#### Part 7 — "Stumble upon" discovery, not "complete your profile"
+
+Taken together, Parts 4-6 implement a **discovery-not-duty** pattern:
+
+- Marty opens an animal's detail page and sees only the sections with data, plus muted ghost-lines for relevant-but-empty sections
+- His eye may or may not catch a ghost line reading *"Performance ratings — not started"*. If it doesn't, nothing is lost. If it does, he taps and the section opens with plain-language labels and `(?)` tooltips
+- He fills what he knows, leaves the rest. No save button, no progress bar, no "complete your profile" pressure
+- If he happens to fill most of a section over time, a nudge eventually surfaces: *"Almost ready to register — missing X"*. He can act on it, snooze it, or ignore it
+- His engagement compounds over time without the system ever demanding it
+
+The difference from a traditional data-entry form: traditional forms treat empty as a problem to solve. This pattern treats empty as information — the animal's record is exactly as complete as Marty's engagement with that section has been, and growing the record is an invitation, not an assignment.
+
+**This pattern applies across the admin surface**, not only to animal detail pages. Documents section uses it (new categories appear as populated, not pre-stubbed). Settings uses it (Phase 2 features appear as they ship, not as "coming soon" ghost-items). The principle is general.
+
+---
+
+#### Part 8 — Schema additions and implementation notes
+
+**AnimalRecord schema extension** (extends main spec Section 14.1):
+
+```typescript
+interface AnimalRecord {
+  // ... existing fields
+  sectionsSnoozed: Record<string, { snoozedUntil: string, snoozedBy: string }>
+  // Key: section canonical name; Value: snooze expiry + user who snoozed.
+  // Only meaningful for nudges; does NOT affect section visibility.
+}
+```
+
+**FieldAuditEntry schema** (new):
+
+```typescript
+interface FieldAuditEntry {
+  id: string
+  animalId: string
+  fieldPath: string        // e.g., "registration.birthWeight"
+  previousValue: unknown | null
+  newValue: unknown
+  changedBy: string        // user ID
+  changedAt: string        // ISO timestamp
+}
+```
+
+Audit entries are append-only. Storage: keep last N (default 20) per field in the record itself for fast display; archive older entries to a separate store if retention is desired.
+
+**Implementation checklist for the coding agent:**
+
+1. Route structure per Part 1, with role-based gating
+2. Bottom-nav component for mobile, left-rail component for desktop, same item set
+3. Herd landing per Part 2: status strip, list controls, admin-mode card list, FAB
+4. Inline-edit pattern on card back per Part 3: per-type input components, auto-save-on-blur, inline save/error indicators
+5. Per-field audit trail UI, collapsed by default, expandable on tap
+6. Section translation map per Part 4 Rule 1 (file-based, extensible)
+7. Muted-empty-section rendering per Part 4 Rule 2 (visual weight spec to be tuned during style-preview integration)
+8. Section materialization logic per Part 4 Rule 3 (rules encoded per-section)
+9. Nudge trigger engine per Part 5 (required-fields-complete + N-optional rule, per-section config)
+10. Snooze data model and UI per Part 5
+11. Tooltip rendering infrastructure per Part 6 (content authored separately)
+12. Schema additions per Part 8
+
+---
+
+**Reasoning:**
+
+The dashboard-is-herd collapse is a scope reduction that makes the product better: one fewer surface to design, one fewer navigation hop, and the landing page is always the most operationally relevant view. The separate-dashboard pattern from generic admin template kits doesn't apply here because the "operational data" the dashboard would summarize is the herd list itself.
+
+Progressive disclosure is doing the heavy conceptual lifting. Data-entry overwhelm is the primary failure mode for an admin surface built for someone who doesn't love data entry. The plain-language labels + muted ghost lines + relevance-based materialization + completion-triggered nudges together form a UI that never demands, only invites. Marty's engagement compounds naturally without needing discipline to fight the UI.
+
+The inline-edit pattern with auto-save matches modern SaaS convention (Linear, Notion, Airtable) and is measurably faster than page-based edit forms for iterative, small edits — which is Marty's primary use case (updating a weight, changing a status, adding a sire reference).
+
+---
+
 ## Pending workshops (not yet locked)
 
 These items are flagged for future workshopping. None of them block the current spec's Phase 1 build order.
@@ -1986,9 +2258,9 @@ Resolved into amendments A10, A11, A12 (see below).
 
 Resolved into amendments A13-A19 (see below).
 
-### P3. Admin surface model — PARTIALLY RESOLVED 2026-04-17
+### P3. Admin surface model — RESOLVED 2026-04-19
 
-Admin architecture and authentication are locked in amendments A21-A22. The remaining work is detailing the *contents* of the admin surfaces themselves — what's on the Dashboard specifically, what Manage Herd shows beyond the herd view, what Media and Calendar and Settings contain. This is a workshop continuation, not a new workshop.
+Admin architecture and authentication locked in A21-A22. Surface contents (Dashboard folded into Herd landing, animal detail edit affordances, navigation pattern, progressive disclosure) locked in A38.
 
 ### P4. Share sheet mechanics — RESOLVED 2026-04-18
 
@@ -2116,16 +2388,16 @@ The classifier should detect the actual shot type of each photo based on its ang
 
 **To be workshopped. When we do, the specific decisions to lock are weighting ratios, shot-type angle boundaries, minimum-viable-score threshold, classifier infrastructure choice.**
 
-### P6. Admin surface contents (continuation of P3)
+### P6. Admin surface contents — PARTIALLY RESOLVED 2026-04-19
 
-P3's architecture and auth are resolved (A21-A25). What remains: designing the *contents* of each admin surface beyond the inquiries inbox.
+Dashboard, Herd landing, animal detail edit affordances, navigation pattern, and progressive-disclosure pattern resolved in A38. Inquiries inbox resolved in A24. Pending-tags and upload-issues queues resolved in A32. Documents section scaffolded in A33. Review queue resolved in A37.
 
-- **Dashboard (`/admin/`)** — landing view after login. Contents TBD. Possible collapse into admin herd view with "Needs Attention" sort.
-- **Media (`/admin/media/`)** — photo library, Prefer/Hide controls, upload, Gallery Wall candidate view. Phase 2+ but rough sketch during admin workshop.
-- **Calendar (`/admin/calendar/`)** — breeding/calving/events log. Phase 2+.
-- **Settings (`/admin/settings/`)** — personal (notification prefs, passkey devices, phone), user management (owner-only), site config, recovery.
+Still open:
 
-**To be workshopped.**
+- **Settings (`/admin/settings/`)** sub-structure — personal (notification prefs, passkey devices, phone), user management (Owner-only), site config, recovery. Next workshop target.
+- **Documents (`/admin/documents/`)** — final category contents and authoring workflow (A33 scaffolded, content pass pending).
+- **Media (`/admin/media/`)** — Phase 2+. Photo library, Prefer/Hide controls, Gallery Wall candidate view. Rough sketch during future admin workshop.
+- **Calendar (`/admin/calendar/`)** — Phase 2+. Breeding/calving/events log.
 
 ### P7. Compare view for cross-shopping buyers
 
