@@ -904,6 +904,53 @@ Throne changes propagate to card-front selection on next render
 
 The upload handler returns 202 before classification completes. The Shortcut doesn't wait. If classification fails, the photo is still uploaded and visible — just unclassified, which admin can manually classify later.
 
+### 14.7.2 🟧 Model lifecycle management — automated checks
+
+Two scheduled background checks keep the classifier's model selection healthy without requiring Matt to actively monitor Anthropic's documentation.
+
+**Weekly deprecation check** (`/functions/cron/weekly-deprecation-check.ts`):
+
+- Runs every Monday at 4am UTC via Cloudflare Cron Trigger (`0 4 * * 1`)
+- Fetches Anthropic's deprecation list (from the models API or the deprecations documentation URL)
+- For each currently-configured `CLAUDE_MODEL_*` env var, checks whether that model appears in the deprecation list
+- If yes:
+  - **If a clean successor is recommended by Anthropic** (same tier, same price or cheaper): logs the intent, sends an urgent email to the Owner, waits 7 days for response, then automatically updates the env var and sends a confirmation email. The 7-day window gives Matt a chance to object; the automatic update ensures the site never goes down due to an ignored email.
+  - **If no clean successor is recommended**: sends an urgent email flagging the situation and requires manual action. No automatic change.
+- Logs all activity to the audit log (per spec §17.4)
+
+**Quarterly model review** (separate, documented in `DEPLOYMENT-SECRETS.md`):
+
+- Runs every 90 days
+- Composes a human-readable email summarizing current model vs newer alternatives, including benchmark comparisons from public leaderboards (Artificial Analysis primary, Anthropic docs fallback)
+- **Never auto-upgrades.** Always requires human action via Cloudflare Pages env var change.
+- Rationale: generation upgrades (Haiku 4.5 → Haiku 5) carry real risk of behavior changes on cattle-specific photos; the value of Matt's human judgment here is high.
+
+**Request-level fallback** (runtime, not scheduled):
+
+Already specified in §14.7.1's error handling. If a classification call fails with "model not found" at runtime, the worker retries once with the hardcoded fallback default model and logs a loud warning. This is the last line of defense if both scheduled checks somehow fail.
+
+**Combined defense-in-depth:**
+
+- **Day-of-failure protection:** request-level fallback — site doesn't go down if the configured model evaporates mid-request
+- **Week-of-deprecation protection:** weekly check catches deprecation notices with 6-month runway plus an additional 7-day grace window for Matt to act, or automatic migration if he doesn't
+- **Quarterly improvement protection:** quarterly email nudges upgrades when newer models offer benchmark improvements at same or lower cost, but never takes action without explicit approval
+
+**Matt's total required effort:**
+
+- Opening the quarterly email once every 90 days (~30 seconds to read, 30 seconds to decide)
+- Responding to the urgent deprecation email within 7 days if one ever arrives (probably once every 18-24 months based on historical Anthropic deprecation cadence)
+- Zero ongoing monitoring effort
+
+**Shared implementation note:**
+
+Both scheduled checks can live in the same `/functions/cron/` directory and share utility modules for:
+- Fetching Anthropic models list
+- Parsing deprecation data
+- Composing and dispatching emails via the inquiry-notification email channel
+- Reading/writing Cloudflare Pages environment variables programmatically (requires an additional API token with Cloudflare API Settings:Edit permission, stored as `CF_API_TOKEN` env var)
+
+The "automatically update env var" path specifically requires the `CF_API_TOKEN` secret — it's the only way to change a Pages environment variable programmatically. If that token isn't configured, both scheduled checks degrade gracefully to email-only mode (no automatic updates, just notifications).
+
 ### 14.8 🟧 Throne mechanics — card front (side profile)
 
 The current `cardFrontThrone` for each animal is the highest-scoring eligible side-profile photo, where score is a **blended weighted sum** of prescription and aesthetic components.

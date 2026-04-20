@@ -51,19 +51,75 @@ Same Cloudflare Pages environment variables as secrets:
 
 Source code always reads `env.CLAUDE_MODEL_*` with a hardcoded fallback default in case the env var is unset. The fallback default is a known-good model ID so the site never fails just because an env var is missing.
 
-### Quarterly model review
+### Quarterly model review — automated email nudge
 
-Every three months, run this check:
+Every 90 days, a scheduled Cloudflare Worker (`/functions/cron/quarterly-model-review.ts`) fires and emails the Owner a model review summary. No documentation hunting; everything the Owner needs to decide is in the email.
 
-1. Visit https://docs.claude.com/en/api/models-list — Anthropic's current model documentation
-2. For each `CLAUDE_MODEL_*` environment variable in production, ask:
-   - Is the current model still the latest in its tier? (Haiku stays with Haiku, Sonnet with Sonnet, Opus with Opus)
-   - Has a newer generation shipped at the same price or cheaper?
-   - Are there benchmarks for this task showing the newer model is better?
-3. If yes to all three, update the env var in Cloudflare Pages. Preview-deploy first if you want to verify, then promote to production.
-4. Check https://docs.claude.com/en/api/deprecations for any deprecation notices on models you're using. Anthropic gives 6-month windows; don't miss one.
+**Trigger:** Cloudflare Cron Trigger, `0 10 */90 * *` (10am UTC every 90 days; align to Sunday by starting first run on a Sunday).
 
-**Put a calendar reminder on the Owner's phone for every three months.** This is the simplest discipline; don't over-engineer it.
+**What the worker does:**
+
+1. Reads currently-configured `CLAUDE_MODEL_*` environment variables
+2. Fetches Anthropic's current models list via API (`GET /v1/models`)
+3. Fetches comparative benchmark data from a public leaderboard source:
+   - **Primary:** Artificial Analysis API (`https://artificialanalysis.ai/api/v1/models`) — has vision-specific benchmark scores
+   - **Fallback:** parses the public Anthropic model list page for tier and release-date information only (no benchmarks)
+4. For each configured model, checks:
+   - Is there a newer model in the same tier (Haiku stays Haiku, Sonnet stays Sonnet)?
+   - Price comparison (same, cheaper, more expensive)
+   - Vision benchmark delta if available (MMMU, DocVQA are the relevant ones for photo classification)
+   - Is the current model in Anthropic's deprecation list?
+5. Composes a single email with recommendations
+6. Sends via the same email dispatch mechanism used for inquiries (spec §13.3)
+
+**Email format** (approximate):
+
+```
+Subject: Summers Ranch — Quarterly model review, [Month Year]
+
+Summers Ranch currently uses:
+- Classifier: Claude Haiku 4.5 (claude-haiku-4-5-20251001)
+
+Newer in same tier?
+- Yes: Claude Haiku 5.0 released [date]
+- Price: [comparison]
+- Vision benchmark (MMMU): [new score] vs [old score] — [delta interpretation]
+- Deprecation notice: [none / date]
+
+Recommendation: [upgrade / hold / urgent upgrade if deprecation]
+
+To upgrade:
+  Cloudflare Pages → summers-ranch → Settings → Environment variables 
+  → Production → change CLAUDE_MODEL_CLASSIFIER to [new model ID]
+  No deploy needed.
+
+To ignore: do nothing.
+
+Next review: [date + 90 days].
+```
+
+If nothing has changed (no new model in tier, no deprecation), the email is much shorter: *"No action needed. Current model remains the best choice. Next review: [date]."*
+
+**Rationale:**
+
+- Matt is not a daily web-developer user. Calendar-reminder-to-read-documentation doesn't match his ongoing involvement pattern.
+- Leaderboard data from Artificial Analysis is comparable across providers and tracks vision benchmarks that correlate with classification task quality, even though nobody benchmarks cattle conformation specifically.
+- The email arrives in the inbox Matt already checks for inquiry notifications — it's not a new channel requiring attention.
+- Approve/decline is a 30-second manual env var change; the worker does the hard work of determining whether a change is worth considering.
+
+**What the email will never say:**
+
+The email never says "upgrade automatically." It always requires human action. This is deliberate — model upgrades carry real risk of subtle behavior changes that could degrade classification on Summers Ranch's specific photos. Keeping the decision human prevents a silent regression.
+
+**Deprecation is handled separately.** A weekly deprecation check (not this quarterly review) runs much more frequently and handles urgent deprecation cases automatically — either by migrating to the successor Anthropic recommends or by sending an urgent email if no clean successor exists. See spec §14.7.2 for that mechanism.
+
+**Failure modes:**
+
+- If the Artificial Analysis API is unreachable, the email falls back to Anthropic-only data (model names, release dates) without benchmarks. Still useful; recommendation becomes more conservative without benchmark data.
+- If the email dispatch fails, the worker logs the error and retries on the next run in 90 days. Low-priority enough that a missed quarterly doesn't matter.
+- If a new model in the tier is detected but no benchmark data is available yet (brand new release), the email flags this and recommends waiting until the next quarterly when benchmarks have stabilized.
+
+**Implementation estimate:** ~200 lines of Cloudflare Worker TypeScript. Phase 1 is reasonable — implements alongside the classifier itself.
 
 ### Defensive fallbacks
 
@@ -89,6 +145,31 @@ The happy path when a new Haiku ships:
 No code change. No PR. No deploy. Just an env var flip.
 
 ---
+
+### `CF_API_TOKEN` — automated env var updates
+
+Used by the weekly deprecation check (spec §14.7.2) to automatically update `CLAUDE_MODEL_*` environment variables in Cloudflare Pages when a deprecation is detected and a clean successor is available.
+
+**Where to set:**
+
+Cloudflare Pages dashboard → Pages → summers-ranch → Settings → Environment variables → Production.
+
+- Variable name: `CF_API_TOKEN`
+- Type: Secret (encrypted)
+- Value: a Cloudflare API token with `Account Settings: Edit` permission scoped to the summers-ranch Pages project
+
+**How to create:**
+
+1. Log in to Cloudflare dashboard → User Profile → API Tokens
+2. Create Token → Custom token
+3. Permissions: `Account → Cloudflare Pages → Edit`
+4. Account Resources: Include → Summers Ranch account
+5. TTL: no expiry (or set one and rotate annually)
+6. Copy the token; add to Pages env vars as `CF_API_TOKEN`
+
+**If this token isn't configured:** the weekly deprecation check degrades to email-only mode. It'll still send Matt an urgent email if it detects a deprecation, but won't automatically update the env var after the 7-day grace window. Matt would need to update manually.
+
+**Security note:** this token can read and write environment variables, so treat it as sensitive. Rotate annually. Revoke immediately if ever exposed.
 
 ### `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — SMS notifications
 
