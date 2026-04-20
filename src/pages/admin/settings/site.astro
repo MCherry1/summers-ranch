@@ -5,13 +5,12 @@
  * Sections:
  *   1. Ranch metadata — inline-edit on name, tagline, contact fields
  *   2. Style tokens — display current palette/type for confidence
- *   3. Ownership transfer — two-step flow (§17.7) deferred to a
- *      follow-up; placeholder marker for now
+ *   3. Ownership transfer — two-step flow per §17.7
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
 import InlineField from "~/components/admin/InlineField.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
+import OwnershipTransferSection from "~/components/admin/OwnershipTransferSection.astro";
 import { requireCapability } from "~/lib/auth/guards";
 import { getSiteLive } from "~/lib/site-live";
 
@@ -119,10 +118,7 @@ const endpoint = "/api/admin/site/field";
   <section class="panel">
     <h2 class="panel-title">Ownership transfer</h2>
     <div class="panel-body">
-      <ComingSoon
-        milestone="ownership-transfer checkpoint"
-        detail="Two-step mutual acknowledgment per spec §17.7: you propose a transfer to an Admin, they accept (or decline) within 7 days. Both of you get audit log entries. This is a consequential one-way door; putting it behind its own focused review."
-      />
+      <OwnershipTransferSection user={user} />
     </div>
   </section>
 </AdminLayout>

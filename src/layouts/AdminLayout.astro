@@ -18,6 +18,7 @@
  */
 import "~/styles/global.css";
 import AdminNav from "~/components/admin/AdminNav.astro";
+import TransferBanner from "~/components/admin/TransferBanner.astro";
 import type { AdminUser } from "~/schemas";
 
 interface Props {
@@ -51,6 +52,7 @@ const accentStyle = user.adminAccentColor
     <div class="admin-chrome">
       <AdminNav user={user} currentPath={Astro.url.pathname} />
       <main class="admin-main">
+        <TransferBanner user={user} />
         <slot />
       </main>
     </div>

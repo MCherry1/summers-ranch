@@ -1,0 +1,216 @@
+---
+/**
+ * TransferBanner — spec §17.7 Step 2.
+ *
+ * Shows at the top of any admin surface when there's a pending
+ * ownership transfer for the current user. Inline Accept and Decline
+ * buttons. Dismissed visually once acted on (and the user's role
+ * overlay flips on accept).
+ *
+ * Returns null (no banner) when nothing is pending for this user.
+ * Safe to include on every admin page.
+ */
+import type { AdminUser } from "~/schemas";
+import { getTransferForTarget } from "~/lib/transfer";
+import { getAdminUserLive } from "~/lib/admin-users-live";
+
+interface Props {
+  user: AdminUser;
+}
+
+const { user } = Astro.props;
+const transfer = await getTransferForTarget(user.id);
+const fromUser = transfer ? await getAdminUserLive(transfer.fromUserId) : null;
+
+function fmtExpiry(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  const days = Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
+  const hours = Math.max(0, Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
+  if (days > 0) return `${days} day${days === 1 ? "" : "s"} ${hours}h`;
+  return `${hours}h`;
+}
+---
+
+{transfer && fromUser && (
+  <aside
+    class="transfer-banner"
+    role="alert"
+    aria-labelledby="transfer-banner-title"
+    data-transfer-id={transfer.id}
+  >
+    <div class="inner">
+      <p class="title" id="transfer-banner-title">
+        <strong>{fromUser.displayName}</strong> has proposed transferring ownership
+        of Summers Ranch to you.
+      </p>
+      <p class="sub">
+        Accept to become Owner and drop {fromUser.displayName} to Admin. Decline
+        to leave ownership unchanged. Either way, this is a logged decision.
+        Expires in {fmtExpiry(transfer.expiresAt)}.
+      </p>
+      <div class="actions">
+        <button type="button" class="primary" data-accept>Accept</button>
+        <button type="button" class="secondary" data-decline>Decline</button>
+        <p class="status" data-status aria-live="polite"></p>
+      </div>
+    </div>
+  </aside>
+)}
+
+<script>
+  const banner = document.querySelector<HTMLElement>(".transfer-banner");
+  if (banner) {
+    const transferId = banner.dataset.transferId!;
+    const statusEl = banner.querySelector("[data-status]") as HTMLElement;
+    const acceptBtn = banner.querySelector("[data-accept]") as HTMLButtonElement;
+    const declineBtn = banner.querySelector("[data-decline]") as HTMLButtonElement;
+
+    async function act(url: string, confirmText: string) {
+      if (!confirm(confirmText)) return;
+      acceptBtn.disabled = true;
+      declineBtn.disabled = true;
+      statusEl.textContent = "Working…";
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transferId }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !payload.ok) {
+          statusEl.textContent = payload.error ?? "Couldn't complete.";
+          statusEl.dataset.kind = "error";
+          acceptBtn.disabled = false;
+          declineBtn.disabled = false;
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        statusEl.textContent =
+          err instanceof Error ? err.message : "Network error.";
+        statusEl.dataset.kind = "error";
+        acceptBtn.disabled = false;
+        declineBtn.disabled = false;
+      }
+    }
+
+    acceptBtn.addEventListener("click", () => {
+      act(
+        "/api/admin/team/transfer/accept",
+        "Accept ownership? You will become the Owner and the current Owner will drop to Admin. This is logged."
+      );
+    });
+    declineBtn.addEventListener("click", () => {
+      act(
+        "/api/admin/team/transfer/decline",
+        "Decline this transfer? The current Owner keeps their role."
+      );
+    });
+  }
+</script>
+
+<style>
+  .transfer-banner {
+    background: color-mix(in srgb, var(--color-accent) 6%, var(--color-paper));
+    border-bottom: 1px solid var(--color-accent);
+  }
+
+  .inner {
+    padding: var(--space-5) var(--space-6);
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
+    color: var(--color-ink);
+    line-height: var(--line-height-tight);
+    margin: 0;
+  }
+
+  .title strong {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-normal);
+    font-style: italic;
+  }
+
+  .sub {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: 0;
+    max-width: 48rem;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  .primary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.75rem 1.4rem;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-deep);
+    border-color: var(--color-accent-deep);
+  }
+
+  .secondary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.75rem 1.4rem;
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .secondary:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .primary:disabled,
+  .secondary:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .status[data-kind="error"] {
+    color: var(--color-accent);
+  }
+</style>

@@ -1,4 +1,10 @@
-import type { AdminUser, AnimalRecord, CattleMediaLink, MediaAsset } from "~/schemas";
+import type {
+  AdminUser,
+  AnimalRecord,
+  CattleMediaLink,
+  MediaAsset,
+  PendingOwnershipTransfer,
+} from "~/schemas";
 
 /**
  * KV overlay pattern — spec §23.4.
@@ -264,6 +270,72 @@ export async function writeSiteOverride(
   const existing = (await getSiteOverride()) ?? {};
   const merged: Partial<SiteConfig> = { ...existing, ...patch };
   await env.OVERRIDES.put("site:config", JSON.stringify(merged));
+}
+
+// ── Ownership transfers (§17.7) ─────────────────────────────────────
+// Rare but consequential records stored in OVERRIDES under
+// `transfer:<id>`. KV TTL matches the 7-day expiry so abandoned
+// proposals auto-clean.
+
+const TRANSFER_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+export async function writeTransfer(
+  transfer: PendingOwnershipTransfer
+): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  const options =
+    transfer.status === "pending"
+      ? { expirationTtl: TRANSFER_TTL_SECONDS }
+      : undefined;
+  await env.OVERRIDES.put(
+    `transfer:${transfer.id}`,
+    JSON.stringify(transfer),
+    options
+  );
+}
+
+export async function readTransfer(
+  id: string
+): Promise<PendingOwnershipTransfer | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get(`transfer:${id}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PendingOwnershipTransfer;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllTransfers(): Promise<PendingOwnershipTransfer[]> {
+  const env = await getEnv();
+  const result: PendingOwnershipTransfer[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({
+      prefix: "transfer:",
+      cursor,
+    });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        result.push(JSON.parse(raw) as PendingOwnershipTransfer);
+      } catch {
+        // skip malformed
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  result.sort((a, b) => b.proposedAt.localeCompare(a.proposedAt));
+  return result;
 }
 
 // ── Media assets (new records, not overlays) ────────────────────────

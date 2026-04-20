@@ -1,0 +1,412 @@
+---
+/**
+ * OwnershipTransferSection — spec §17.7.
+ *
+ * Two states:
+ *   1. No active transfer → "Propose transfer" form
+ *   2. Active transfer → status + cancel button
+ *
+ * Used inside the Site page panel. Owner-only (caller gates).
+ */
+import { eligibleTransferTargets, getActiveTransfer } from "~/lib/transfer";
+import { getAdminUserLive } from "~/lib/admin-users-live";
+import type { AdminUser } from "~/schemas";
+
+interface Props {
+  user: AdminUser;
+}
+
+const { user } = Astro.props;
+
+const active = await getActiveTransfer();
+// Only show the active transfer to the proposing Owner here. Targets
+// see it via the TransferBanner.
+const activeForThisOwner =
+  active && active.fromUserId === user.id ? active : null;
+
+const targets = await eligibleTransferTargets();
+const activeTarget = activeForThisOwner
+  ? await getAdminUserLive(activeForThisOwner.toUserId)
+  : null;
+
+function fmt(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: user.timeZone,
+  });
+}
+---
+
+{activeForThisOwner && activeTarget ? (
+  <div class="active-panel">
+    <p class="active-label">Transfer pending</p>
+    <p class="active-prose">
+      You proposed transferring ownership to <strong>{activeTarget.displayName}</strong>.
+      They&rsquo;ll see a banner on their next admin login with Accept and Decline.
+    </p>
+    <dl class="meta">
+      <div><dt>Proposed</dt><dd>{fmt(activeForThisOwner.proposedAt)}</dd></div>
+      <div><dt>Expires</dt><dd>{fmt(activeForThisOwner.expiresAt)}</dd></div>
+      <div><dt>Status</dt><dd>{activeForThisOwner.status}</dd></div>
+    </dl>
+    <button
+      type="button"
+      class="danger"
+      data-cancel-transfer
+      data-transfer-id={activeForThisOwner.id}
+    >
+      Cancel transfer
+    </button>
+    <p class="status" data-cancel-status aria-live="polite"></p>
+  </div>
+) : (
+  <div class="propose-panel">
+    <p class="propose-prose">
+      Transferring ownership is rare and consequential. Marty or Roianne would use
+      this if you want one of them to fully own the site — Owner holds the
+      recovery codes, controls the Site page, and is the final arbiter of Team
+      changes.
+    </p>
+    <p class="propose-prose">
+      The target must already be an Admin. Only one transfer can be pending at a
+      time. The target has 7 days to accept or decline.
+    </p>
+
+    {targets.length === 0 ? (
+      <p class="empty">
+        No Admins on the team yet. Promote someone to Admin on the Team page
+        first, then come back here.
+      </p>
+    ) : (
+      <form id="transfer-form" class="form">
+        <div class="field">
+          <label for="transfer-target">Transfer to</label>
+          <select id="transfer-target" required>
+            <option value="">Choose an Admin…</option>
+            {targets.map((t) => (
+              <option value={t.id} data-display-name={t.displayName}>
+                {t.displayName} · {t.email}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div class="field">
+          <label for="transfer-confirm">
+            Type their display name exactly to confirm
+          </label>
+          <input
+            id="transfer-confirm"
+            type="text"
+            autocomplete="off"
+            placeholder=""
+            required
+          />
+          <p class="hint" id="transfer-confirm-hint"></p>
+        </div>
+        <div class="actions">
+          <button type="submit" class="danger-primary" id="transfer-submit">
+            Propose transfer
+          </button>
+          <p class="status" id="transfer-status" aria-live="polite"></p>
+        </div>
+      </form>
+    )}
+  </div>
+)}
+
+<script>
+  const form = document.querySelector("#transfer-form") as HTMLFormElement | null;
+  if (form) {
+    const targetSelect = document.querySelector("#transfer-target") as unknown as HTMLSelectElement;
+    const confirmInput = document.querySelector("#transfer-confirm") as HTMLInputElement;
+    const confirmHint = document.querySelector("#transfer-confirm-hint") as HTMLElement;
+    const submitBtn = document.querySelector("#transfer-submit") as HTMLButtonElement;
+    const statusEl = document.querySelector("#transfer-status") as HTMLElement;
+
+    function updateHint() {
+      const option = targetSelect.selectedOptions[0];
+      const name = option?.getAttribute("data-display-name") ?? "";
+      confirmHint.textContent = name
+        ? `Expected: ${name}`
+        : "";
+      confirmInput.placeholder = name;
+    }
+    targetSelect.addEventListener("change", updateHint);
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const toUserId = targetSelect.value;
+      const confirmDisplayName = confirmInput.value.trim();
+      if (!toUserId) {
+        statusEl.textContent = "Choose an Admin.";
+        statusEl.dataset.kind = "error";
+        return;
+      }
+      if (!confirm(
+        "Propose ownership transfer? This is a real change — the target can accept " +
+        "within 7 days and you'll drop to Admin. You can cancel any time before they accept."
+      )) {
+        return;
+      }
+      submitBtn.disabled = true;
+      statusEl.textContent = "Proposing…";
+      statusEl.dataset.kind = "info";
+      try {
+        const res = await fetch("/api/admin/team/transfer/propose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ toUserId, confirmDisplayName }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !payload.ok) {
+          statusEl.textContent = payload.error ?? "Couldn't propose.";
+          statusEl.dataset.kind = "error";
+          submitBtn.disabled = false;
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        statusEl.textContent =
+          err instanceof Error ? err.message : "Network error.";
+        statusEl.dataset.kind = "error";
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  const cancelBtn = document.querySelector("[data-cancel-transfer]") as HTMLButtonElement | null;
+  if (cancelBtn) {
+    const transferId = cancelBtn.getAttribute("data-transfer-id")!;
+    const statusEl = document.querySelector("[data-cancel-status]") as HTMLElement;
+    cancelBtn.addEventListener("click", async () => {
+      if (!confirm("Cancel the pending transfer? The target won't be notified.")) {
+        return;
+      }
+      cancelBtn.disabled = true;
+      statusEl.textContent = "Cancelling…";
+      try {
+        const res = await fetch("/api/admin/team/transfer/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transferId }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !payload.ok) {
+          statusEl.textContent = payload.error ?? "Couldn't cancel.";
+          cancelBtn.disabled = false;
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        statusEl.textContent =
+          err instanceof Error ? err.message : "Network error.";
+        cancelBtn.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .propose-panel,
+  .active-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .propose-prose {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    max-width: var(--max-width-prose);
+  }
+
+  .empty {
+    padding: var(--space-4);
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-cream-deep);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: 32rem;
+    margin-top: var(--space-3);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .field label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .field input,
+  .field select {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: 0;
+    border-color: var(--color-accent);
+  }
+
+  .hint {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    font-style: italic;
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .danger-primary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.85rem 1.8rem;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .danger-primary:hover:not(:disabled) {
+    background: var(--color-accent-deep);
+    border-color: var(--color-accent-deep);
+  }
+
+  .danger-primary:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .danger {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.75rem 1.4rem;
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    align-self: flex-start;
+    transition: var(--transition-default);
+  }
+
+  .danger:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .status[data-kind="error"] {
+    color: var(--color-accent);
+  }
+
+  .active-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0;
+  }
+
+  .active-prose {
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    line-height: var(--line-height-relaxed);
+    margin: 0;
+    max-width: var(--max-width-prose);
+  }
+
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    margin: 0;
+    max-width: 28rem;
+  }
+
+  .meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .meta dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .meta dd {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    margin: 0;
+    text-align: right;
+  }
+</style>
