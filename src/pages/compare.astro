@@ -11,8 +11,7 @@
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
 import CardFront from "~/components/cattle/CardFront.astro";
-import { getAnimalByTagLive } from "~/lib/cattle-live";
-import { getPrimaryPhoto } from "~/lib/cattle";
+import { getAnimalByTagLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
 import { displayName } from "~/lib/derive/naming";
 
 const rawTags = Astro.url.searchParams.get("animals") ?? "";
@@ -27,6 +26,12 @@ const resolved = (
 
 const resolvedTags = new Set(resolved.map((a) => a.tag));
 const unresolved = tags.filter((tag) => !resolvedTags.has(tag));
+
+const photoMap = new Map(
+  await Promise.all(
+    resolved.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
 ---
 
 <BaseLayout
@@ -45,7 +50,7 @@ const unresolved = tags.filter((tag) => !resolvedTags.has(tag));
           <div class="stack-item">
             <CardFront
               animal={animal}
-              primaryPhoto={getPrimaryPhoto(animal.id)}
+              primaryPhoto={photoMap.get(animal.id) ?? null}
               detailsHref={`/herd/${animal.id}`}
             />
             <p class="label">{displayName(animal)}</p>

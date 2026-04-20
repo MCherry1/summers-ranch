@@ -10,8 +10,7 @@
  */
 import PageSection from "~/layouts/PageSection.astro";
 import Cta from "~/components/ui/Cta.astro";
-import { getAllAnimalsLive } from "~/lib/cattle-live";
-import { getPrimaryPhoto } from "~/lib/cattle";
+import { getAllAnimalsLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
 import { displayName } from "~/lib/derive/naming";
 import { silhouetteFor } from "~/lib/display/silhouette";
 
@@ -37,6 +36,12 @@ for (const pool of [available, distinguished, byDobDesc]) {
     featured.push(animal);
   }
 }
+
+const featuredPhotos = new Map(
+  await Promise.all(
+    featured.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
 ---
 
 <PageSection
@@ -48,7 +53,7 @@ for (const pool of [available, distinguished, byDobDesc]) {
   {featured.length > 0 && (
     <div class="teaser-row">
       {featured.map((animal) => {
-        const photo = getPrimaryPhoto(animal.id);
+        const photo = featuredPhotos.get(animal.id) ?? null;
         const photoUrl = photo?.uri ?? silhouetteFor(animal.sex);
         return (
           <a href={`/herd/${animal.id}`} class="teaser">

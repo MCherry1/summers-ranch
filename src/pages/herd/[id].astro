@@ -16,8 +16,9 @@ import {
   getSireLive,
   getDamLive,
   getCalvesOfLive,
+  getPrimaryPhotoLive,
+  getThumbnailPhotoLive,
 } from "~/lib/cattle-live";
-import { getPrimaryPhoto, getThumbnailPhoto } from "~/lib/cattle";
 import { displayName } from "~/lib/derive/naming";
 
 const { id } = Astro.params;
@@ -27,8 +28,8 @@ if (!animal) {
   return Astro.redirect("/herd");
 }
 
-const primaryPhoto = getPrimaryPhoto(animal.id);
-const thumbnailPhoto = getThumbnailPhoto(animal.id);
+const primaryPhoto = await getPrimaryPhotoLive(animal.id);
+const thumbnailPhoto = await getThumbnailPhotoLive(animal.id);
 const sire = await getSireLive(animal);
 const dam = await getDamLive(animal);
 const calves = await getCalvesOfLive(animal);

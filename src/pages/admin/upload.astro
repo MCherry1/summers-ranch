@@ -1,0 +1,539 @@
+---
+/**
+ * Web upload fallback — spec §14.4.
+ *
+ * For admins without the Shortcut installed, or laptop batch
+ * uploads. Same endpoints as the Shortcut (/api/resolve-tag and
+ * /api/upload), just session-authenticated instead of token-authed.
+ *
+ * Flow:
+ *   1. Type a tag → picker resolves matches
+ *   2. Select match (or "Add new tag" — Phase 2, pending-tag graduation)
+ *   3. Drag files or click to browse
+ *   4. Each file uploads with a per-session batch id
+ *   5. Live progress per file; classifier runs server-side after 202
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const guard = await requireCapability(Astro, "upload-photos");
+if (guard instanceof Response) return guard;
+const user = guard;
+---
+
+<AdminLayout title="Upload" user={user}>
+  <AdminPageHeader
+    kicker="Admin · Upload"
+    title={`Upload <em>photos.</em>`}
+    lead="Drop photos here with a tag to add them to an animal's record. Classification and throne selection happen automatically after upload."
+  />
+
+  <section class="panel" aria-labelledby="step-tag">
+    <h2 id="step-tag" class="panel-title">1. Which animal?</h2>
+    <div class="panel-body">
+      <div class="tag-lookup">
+        <label for="tag-input" class="field-label">Tag number or name</label>
+        <input
+          id="tag-input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          placeholder="e.g. 840 or Sweetheart"
+          data-tag-input
+        />
+        <button type="button" class="secondary" data-tag-search>Look up</button>
+      </div>
+
+      <div class="matches" data-matches-container hidden>
+        <p class="matches-label">Matches</p>
+        <ul class="matches-list" data-matches-list></ul>
+      </div>
+
+      <div class="current-selection" data-selection-container hidden>
+        <p>
+          <span class="selection-label">Selected:</span>
+          <strong data-selection-name></strong>
+        </p>
+        <button type="button" class="link" data-clear-selection>Change</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="step-upload">
+    <h2 id="step-upload" class="panel-title">2. Drop or choose files</h2>
+    <div class="panel-body">
+      <div
+        class="dropzone"
+        data-dropzone
+        aria-describedby="dropzone-hint"
+      >
+        <p class="dropzone-headline">
+          Drop photos here
+        </p>
+        <p class="dropzone-sub" id="dropzone-hint">
+          JPG, PNG, WebP, HEIC. Up to 25 MB each.
+        </p>
+        <label class="file-input-wrap">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif"
+            multiple
+            data-file-input
+          />
+          <span class="secondary">Choose files…</span>
+        </label>
+      </div>
+
+      <ul class="upload-log" data-upload-log></ul>
+    </div>
+  </section>
+</AdminLayout>
+
+<script>
+  interface Match {
+    animalId: string;
+    label: string;
+  }
+
+  const batchId = crypto.randomUUID();
+
+  const tagInput = document.querySelector<HTMLInputElement>("[data-tag-input]")!;
+  const tagSearch = document.querySelector<HTMLButtonElement>("[data-tag-search]")!;
+  const matchesContainer = document.querySelector<HTMLElement>(
+    "[data-matches-container]"
+  )!;
+  const matchesList = document.querySelector<HTMLUListElement>(
+    "[data-matches-list]"
+  )!;
+  const selectionContainer = document.querySelector<HTMLElement>(
+    "[data-selection-container]"
+  )!;
+  const selectionName = document.querySelector<HTMLElement>(
+    "[data-selection-name]"
+  )!;
+  const clearSelection = document.querySelector<HTMLButtonElement>(
+    "[data-clear-selection]"
+  )!;
+  const dropzone = document.querySelector<HTMLElement>("[data-dropzone]")!;
+  const fileInput = document.querySelector<HTMLInputElement>("[data-file-input]")!;
+  const uploadLog = document.querySelector<HTMLUListElement>(
+    "[data-upload-log]"
+  )!;
+
+  let selectedAnimalId: string | null = null;
+
+  async function lookupTag() {
+    const value = tagInput.value.trim();
+    if (!value) return;
+    tagSearch.disabled = true;
+    try {
+      const res = await fetch(
+        `/api/resolve-tag?tag=${encodeURIComponent(value)}`
+      );
+      if (!res.ok) {
+        alert("Couldn't look up that tag. Check your permissions.");
+        return;
+      }
+      const payload = (await res.json()) as {
+        matches: Match[];
+        canAddNew: boolean;
+      };
+      renderMatches(payload.matches, value);
+    } finally {
+      tagSearch.disabled = false;
+    }
+  }
+
+  function renderMatches(matches: Match[], query: string) {
+    matchesList.innerHTML = "";
+    if (matches.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = `No match for "${query}". Add-new-tag arrives in a follow-up checkpoint.`;
+      matchesList.appendChild(li);
+    } else {
+      for (const match of matches) {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = match.label;
+        btn.addEventListener("click", () => selectMatch(match));
+        li.appendChild(btn);
+        matchesList.appendChild(li);
+      }
+    }
+    matchesContainer.removeAttribute("hidden");
+  }
+
+  function selectMatch(match: Match) {
+    selectedAnimalId = match.animalId;
+    selectionName.textContent = match.label;
+    selectionContainer.removeAttribute("hidden");
+    matchesContainer.setAttribute("hidden", "");
+    dropzone.dataset.enabled = "true";
+  }
+
+  clearSelection.addEventListener("click", () => {
+    selectedAnimalId = null;
+    selectionContainer.setAttribute("hidden", "");
+    delete dropzone.dataset.enabled;
+  });
+
+  tagSearch.addEventListener("click", lookupTag);
+  tagInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      lookupTag();
+    }
+  });
+
+  function appendLogEntry(label: string): HTMLLIElement {
+    const li = document.createElement("li");
+    li.className = "log-entry";
+    const labelEl = document.createElement("span");
+    labelEl.className = "log-label";
+    labelEl.textContent = label;
+    const statusEl = document.createElement("span");
+    statusEl.className = "log-status";
+    statusEl.textContent = "Uploading…";
+    li.appendChild(labelEl);
+    li.appendChild(statusEl);
+    uploadLog.insertBefore(li, uploadLog.firstChild);
+    return li;
+  }
+
+  async function uploadFile(file: File) {
+    if (!selectedAnimalId) {
+      alert("Pick an animal first.");
+      return;
+    }
+    const entry = appendLogEntry(file.name);
+    const statusEl = entry.querySelector<HTMLElement>(".log-status")!;
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "Content-Type": file.type || "image/jpeg",
+          "X-Animal-Id": selectedAnimalId,
+          "X-Batch-Id": batchId,
+          "X-Original-Filename": file.name,
+        },
+        body: file,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        statusEl.textContent = err.error ?? `Failed (${res.status})`;
+        entry.classList.add("failed");
+        return;
+      }
+      statusEl.textContent = "Sent";
+      entry.classList.add("success");
+    } catch (err) {
+      statusEl.textContent = err instanceof Error ? err.message : "Network error";
+      entry.classList.add("failed");
+    }
+  }
+
+  async function handleFiles(files: FileList | File[]) {
+    for (const file of Array.from(files)) {
+      await uploadFile(file);
+    }
+  }
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      void handleFiles(fileInput.files);
+      fileInput.value = "";
+    }
+  });
+
+  dropzone.addEventListener("dragover", (ev) => {
+    ev.preventDefault();
+    dropzone.classList.add("dragging");
+  });
+  dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("dragging");
+  });
+  dropzone.addEventListener("drop", (ev) => {
+    ev.preventDefault();
+    dropzone.classList.remove("dragging");
+    const files = ev.dataTransfer?.files;
+    if (files) void handleFiles(files);
+  });
+</script>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 48rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .panel-body {
+    padding: var(--space-5);
+  }
+
+  .field-label {
+    display: block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-bottom: var(--space-2);
+  }
+
+  .tag-lookup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: flex-end;
+  }
+
+  .tag-lookup input {
+    flex: 1 1 180px;
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .tag-lookup input:focus {
+    outline: 0;
+    border-color: var(--color-accent);
+  }
+
+  .secondary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.75rem 1.4rem;
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .secondary:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .matches {
+    margin-top: var(--space-5);
+  }
+
+  .matches-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0 0 var(--space-2);
+  }
+
+  .matches-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .matches-list .empty {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  .matches-list button {
+    width: 100%;
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .matches-list button:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .current-selection {
+    margin-top: var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .current-selection p {
+    margin: 0;
+  }
+
+  .selection-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-right: var(--space-2);
+  }
+
+  .link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .link:hover {
+    color: var(--color-accent);
+  }
+
+  .dropzone {
+    border: 1px dashed var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    padding: var(--space-10) var(--space-6);
+    text-align: center;
+    background: var(--color-bg);
+    opacity: 0.5;
+    transition: var(--transition-default);
+  }
+
+  .dropzone[data-enabled="true"] {
+    opacity: 1;
+    border-color: var(--color-cream-deep);
+  }
+
+  .dropzone.dragging {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg));
+  }
+
+  .dropzone-headline {
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-2);
+  }
+
+  .dropzone-sub {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0 0 var(--space-5);
+  }
+
+  .file-input-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .file-input-wrap input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0; left: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .file-input-wrap .secondary {
+    display: inline-block;
+  }
+
+  .upload-log {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-6) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg);
+    border-left: 2px solid var(--color-cream-deep);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+  }
+
+  .log-entry.success {
+    border-left-color: var(--color-accent);
+  }
+
+  .log-entry.failed {
+    border-left-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg));
+  }
+
+  .log-label {
+    color: var(--color-ink);
+    word-break: break-all;
+  }
+
+  .log-status {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    white-space: nowrap;
+  }
+
+  .log-entry.success .log-status {
+    color: var(--color-accent);
+  }
+</style>

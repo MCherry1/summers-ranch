@@ -1,27 +1,238 @@
 ---
 /**
- * Upload issues — spec §14.6. System anomalies from the upload
- * pipeline.
+ * Upload issues — spec §14.6. Reads from the OVERRIDES KV (issue:*
+ * keys) and lists anomalies from the upload pipeline. Each row has a
+ * resolve action; resolution flips the `resolved` flag but keeps the
+ * row visible under "Recently resolved" until manually cleared.
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
 import { requireCapability } from "~/lib/auth/guards";
+import { getAllUploadIssues } from "~/lib/overrides";
+import { getAnimal } from "~/lib/cattle";
+import { getAdminUser } from "~/lib/admin-users";
 
-const result = await requireCapability(Astro, "resolve-pending-tags");
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireCapability(Astro, "resolve-pending-tags");
+if (guard instanceof Response) return guard;
+const user = guard;
+
+const issues = await getAllUploadIssues();
+const unresolved = issues.filter((i) => !i.resolved);
+const resolved = issues.filter((i) => i.resolved).slice(0, 20);
+
+const ISSUE_LABELS: Record<string, string> = {
+  "invalid-tag": "Invalid tag",
+  "classification-failed": "Classification failed",
+  "not-cattle": "Not cattle?",
+  "duplicate": "Duplicate",
+  "corrupt-file": "Corrupt file",
+};
+
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: user.timeZone,
+  });
+}
 ---
 
 <AdminLayout title="Upload issues" user={user}>
   <AdminPageHeader
     kicker="Admin"
     title="Upload issues"
-    lead="Photos uploaded against deleted tags, corrupted files, classifier flags, duplicates."
+    lead={
+      unresolved.length === 0
+        ? "Nothing flagged. The upload pipeline is clear."
+        : `${unresolved.length} issue${unresolved.length === 1 ? "" : "s"} to review.`
+    }
   />
 
-  <ComingSoon
-    milestone="photo pipeline checkpoint"
-    detail="List of issues with suggested resolution and manual override per entry. Non-blocking — the upload pipeline keeps running while issues accumulate."
-  />
+  {unresolved.length > 0 && (
+    <section class="panel">
+      <h2 class="panel-title">Open</h2>
+      <ul class="issue-list">
+        {unresolved.map((issue) => {
+          const animal = issue.animalId ? getAnimal(issue.animalId) : null;
+          const uploader = getAdminUser(issue.uploaderUserId);
+          return (
+            <li class="issue">
+              <div class="meta">
+                <span class="type">{ISSUE_LABELS[issue.type] ?? issue.type}</span>
+                <span class="time">{fmtTime(issue.uploadedAt)}</span>
+              </div>
+              <p class="message">{issue.message}</p>
+              <div class="details">
+                {animal && (
+                  <p>
+                    Animal:
+                    <a href={`/admin/herd/${animal.id}`}>
+                      #{animal.tag}
+                      {animal.name ? ` · ${animal.name}` : ""}
+                    </a>
+                  </p>
+                )}
+                {uploader && (
+                  <p>Uploader: <span>{uploader.displayName}</span></p>
+                )}
+                {issue.mediaAssetId && (
+                  <p>Media: <code>{issue.mediaAssetId.slice(0, 8)}…</code></p>
+                )}
+              </div>
+              <form
+                method="POST"
+                action={`/api/admin/upload-issues/${issue.id}/resolve`}
+                class="actions"
+              >
+                <button type="submit" class="secondary">Mark resolved</button>
+              </form>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )}
+
+  {resolved.length > 0 && (
+    <section class="panel muted">
+      <h2 class="panel-title">Recently resolved</h2>
+      <ul class="issue-list">
+        {resolved.map((issue) => (
+          <li class="issue resolved">
+            <div class="meta">
+              <span class="type">{ISSUE_LABELS[issue.type] ?? issue.type}</span>
+              <span class="time">{fmtTime(issue.uploadedAt)}</span>
+            </div>
+            <p class="message">{issue.message}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 </AdminLayout>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 52rem;
+  }
+
+  .panel.muted .issue {
+    opacity: 0.7;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .issue-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .issue {
+    padding: var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .issue:last-child {
+    border-bottom: 0;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+  }
+
+  .type {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .time {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .message {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+  }
+
+  .details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+  }
+
+  .details p {
+    margin: 0;
+  }
+
+  .details a {
+    color: var(--color-accent);
+  }
+
+  .details code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-1);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  .secondary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .secondary:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+</style>

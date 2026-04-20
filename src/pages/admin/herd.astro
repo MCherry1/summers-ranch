@@ -19,8 +19,7 @@ import AdminLayout from "~/layouts/AdminLayout.astro";
 import CardFront from "~/components/cattle/CardFront.astro";
 import { requireAdmin } from "~/lib/auth/guards";
 import { can } from "~/lib/auth/rbac";
-import { getAllAnimalsLive, groupByBinderLive } from "~/lib/cattle-live";
-import { getPrimaryPhoto } from "~/lib/cattle";
+import { getAllAnimalsLive, groupByBinderLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
 
 const result = await requireAdmin(Astro);
 if (result instanceof Response) return result;
@@ -29,6 +28,12 @@ const user = result;
 const animals = await getAllAnimalsLive();
 const sections = await groupByBinderLive();
 const isEmpty = animals.length === 0;
+
+const primaryPhotos = new Map(
+  await Promise.all(
+    animals.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
 
 // Status strip counts (stubs until the admin operational queues land)
 const statusStrip = {
@@ -85,7 +90,7 @@ const fabVisible = can(user.role, "edit-animals");
             {section.animals.map((animal) => (
               <CardFront
                 animal={animal}
-                primaryPhoto={getPrimaryPhoto(animal.id)}
+                primaryPhoto={primaryPhotos.get(animal.id) ?? null}
                 detailsHref={`/admin/herd/${animal.id}`}
               />
             ))}

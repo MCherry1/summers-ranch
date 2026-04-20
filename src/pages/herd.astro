@@ -13,12 +13,18 @@
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
 import CardFront from "~/components/cattle/CardFront.astro";
-import { getAllAnimalsLive, groupByBinderLive } from "~/lib/cattle-live";
-import { getPrimaryPhoto } from "~/lib/cattle";
+import { getAllAnimalsLive, groupByBinderLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
 
 const allAnimals = await getAllAnimalsLive();
 const sections = await groupByBinderLive();
 const isEmpty = allAnimals.length === 0;
+
+// Resolve primary photos in parallel for all animals
+const primaryPhotos = new Map(
+  await Promise.all(
+    allAnimals.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
 
 Astro.response.headers.set(
   "Cache-Control",
@@ -49,7 +55,7 @@ Astro.response.headers.set(
               {section.animals.map((animal) => (
                 <CardFront
                   animal={animal}
-                  primaryPhoto={getPrimaryPhoto(animal.id)}
+                  primaryPhoto={primaryPhotos.get(animal.id) ?? null}
                   detailsHref={`/herd/${animal.id}`}
                 />
               ))}

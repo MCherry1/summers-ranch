@@ -11,8 +11,7 @@
  */
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
-import { getAnimalLive } from "~/lib/cattle-live";
-import { getAllPhotosFor } from "~/lib/cattle";
+import { getAnimalLive, getAllPhotosForLive } from "~/lib/cattle-live";
 import { galleryTitle, displayName } from "~/lib/derive/naming";
 
 const { id } = Astro.params;
@@ -22,7 +21,7 @@ if (!animal) {
   return Astro.redirect("/herd");
 }
 
-const photos = getAllPhotosFor(animal.id, "newest-first");
+const photos = await getAllPhotosForLive(animal.id, "newest-first");
 const title = galleryTitle(animal);
 const name = displayName(animal);
 
