@@ -11,7 +11,8 @@
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
 import CardFront from "~/components/cattle/CardFront.astro";
-import { getAnimalByTag, getPrimaryPhoto } from "~/lib/cattle";
+import { getAnimalByTagLive } from "~/lib/cattle-live";
+import { getPrimaryPhoto } from "~/lib/cattle";
 import { displayName } from "~/lib/derive/naming";
 
 const rawTags = Astro.url.searchParams.get("animals") ?? "";
@@ -20,11 +21,12 @@ const tags = rawTags
   .map((t) => t.trim())
   .filter(Boolean);
 
-const resolved = tags
-  .map((tag) => getAnimalByTag(tag))
-  .filter((a): a is NonNullable<typeof a> => a !== null);
+const resolved = (
+  await Promise.all(tags.map((tag) => getAnimalByTagLive(tag)))
+).filter((a): a is NonNullable<typeof a> => a !== null);
 
-const unresolved = tags.filter((tag) => !getAnimalByTag(tag));
+const resolvedTags = new Set(resolved.map((a) => a.tag));
+const unresolved = tags.filter((tag) => !resolvedTags.has(tag));
 ---
 
 <BaseLayout

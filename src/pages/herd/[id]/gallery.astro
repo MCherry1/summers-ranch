@@ -1,5 +1,4 @@
 ---
-export const prerender = true;
 /**
  * Per-animal gallery — spec §5. Chronological grid of all photos for
  * one animal, tapping opens a lightbox (Phase 2 for the lightbox —
@@ -12,19 +11,12 @@ export const prerender = true;
  */
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
-import {
-  animals,
-  getAnimal,
-  getAllPhotosFor,
-} from "~/lib/cattle";
+import { getAnimalLive } from "~/lib/cattle-live";
+import { getAllPhotosFor } from "~/lib/cattle";
 import { galleryTitle, displayName } from "~/lib/derive/naming";
 
-export function getStaticPaths() {
-  return animals.map((animal) => ({ params: { id: animal.id } }));
-}
-
 const { id } = Astro.params;
-const animal = id ? getAnimal(id) : null;
+const animal = id ? await getAnimalLive(id) : null;
 
 if (!animal) {
   return Astro.redirect("/herd");
@@ -33,6 +25,11 @@ if (!animal) {
 const photos = getAllPhotosFor(animal.id, "newest-first");
 const title = galleryTitle(animal);
 const name = displayName(animal);
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
 ---
 
 <BaseLayout

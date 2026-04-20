@@ -1,5 +1,4 @@
 ---
-export const prerender = true;
 /**
  * Home — spec §8. Five sections top to bottom: hero, meet-the-herd,
  * about, looking-to-buy (hidden when 0 available per §8.2), contact.
@@ -18,9 +17,16 @@ import AboutRanch from "~/components/home/AboutRanch.astro";
 import LookingToBuy from "~/components/home/LookingToBuy.astro";
 import GetInTouch from "~/components/home/GetInTouch.astro";
 import { site } from "~/lib/site";
-import { availableCount } from "~/lib/cattle";
+import { availableCountLive } from "~/lib/cattle-live";
 
-const available = availableCount();
+const available = await availableCountLive();
+
+// Short CDN cache so public home reflects admin edits within a minute
+// without making every request hit the origin.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
 ---
 
 <BaseLayout

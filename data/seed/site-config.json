@@ -4,7 +4,9 @@
   "contactPhone": "209-555-5555",
   "contactEmail": "info@mrsummersranch.com",
   "contactAddress": "Sutter Creek, California",
-  "publicSurfaceToggles": {},
+  "publicSurfaceToggles": {
+    "usePlaceholderSeed": true
+  },
   "newUserNotificationDefaults": {
     "new-inquiry-received": { "email": true, "sms": true },
     "contributor-uploaded": { "email": false, "sms": false },

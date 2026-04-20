@@ -1,5 +1,4 @@
 ---
-export const prerender = true;
 /**
  * Animal detail — spec §3 + §4. Full-width Card composing front and
  * back with slide transition. Static generation: getStaticPaths builds
@@ -13,22 +12,16 @@ export const prerender = true;
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import Card from "~/components/cattle/Card.astro";
 import {
-  animals,
-  getAnimal,
-  getPrimaryPhoto,
-  getThumbnailPhoto,
-  getSire,
-  getDam,
-  getCalvesOf,
-} from "~/lib/cattle";
+  getAnimalLive,
+  getSireLive,
+  getDamLive,
+  getCalvesOfLive,
+} from "~/lib/cattle-live";
+import { getPrimaryPhoto, getThumbnailPhoto } from "~/lib/cattle";
 import { displayName } from "~/lib/derive/naming";
 
-export function getStaticPaths() {
-  return animals.map((animal) => ({ params: { id: animal.id } }));
-}
-
 const { id } = Astro.params;
-const animal = id ? getAnimal(id) : null;
+const animal = id ? await getAnimalLive(id) : null;
 
 if (!animal) {
   return Astro.redirect("/herd");
@@ -36,12 +29,17 @@ if (!animal) {
 
 const primaryPhoto = getPrimaryPhoto(animal.id);
 const thumbnailPhoto = getThumbnailPhoto(animal.id);
-const sire = getSire(animal);
-const dam = getDam(animal);
-const calves = getCalvesOf(animal);
+const sire = await getSireLive(animal);
+const dam = await getDamLive(animal);
+const calves = await getCalvesOfLive(animal);
 
 const name = displayName(animal);
 const pageTitle = `${name} — Summers Ranch`;
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
 ---
 
 <BaseLayout
