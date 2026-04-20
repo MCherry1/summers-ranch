@@ -1871,6 +1871,23 @@ The following are intentionally deferred beyond Phase 1:
 - Tooltip content pass (infrastructure Phase 1, content late Phase 1 / post-launch)
 - Documents section content pass
 
+**Phase 3+ concepts (not committed, captured for future consideration):**
+
+- **AI-assisted structural evaluation.** Extend the existing photo classification pipeline (§14.7.1) to also produce 2-3 sentences of structural observations per side-profile photo — muscle pattern, top-line, leg set, balance, breed character. Admin-facing only at minimum; Marty decides whether any observation becomes public.
+
+  Rationale: the site already has the vision pipeline in place. Adding structural commentary is a small extension of the existing classification prompt. Value is as internal record-keeping for Marty, not an automated public claim about any animal. Respects that Marty is the authority on his own herd.
+
+  Explicitly **not** proposed: a public-facing "AI comparison engine" that buyers use to rank animals against their breeding goals. That flashy version fights against the seedstock business model — the buyer-breeder relationship and ranch visit are core to selling registered Herefords, and an automated comparison risks short-circuiting that relationship, as well as introducing reputation risk if AI confidently misreads an animal. If a comparison tool ever happens, it would only be a small enhancement to compare view (§6) and only with human-edited outputs.
+
+  Constraints for any implementation:
+  - Always admin-reviewed before publishing
+  - Never surfaces temperament judgments (AI cannot read temperament from photos)
+  - Never verifies seller-supplied claims (AI can summarize but not authenticate)
+  - Bounded compute: admin-invoked only, not runnable by unauthenticated visitors
+  - Clear labeling as "AI observations, reviewed by [ranch]" to prevent misrepresentation
+
+  Dependencies on Phase 1 work: requires classification pipeline (§14.7.1) to be working and well-calibrated first. Any confidence in structural evaluation is downstream of the classifier producing reliable shot-type detection and quality scoring.
+
 ---
 
 ## 25. 🟧 Coding agent kickoff instructions
