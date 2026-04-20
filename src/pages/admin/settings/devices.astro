@@ -1,28 +1,533 @@
 ---
 /**
  * Devices — spec §17.3. Passkey devices + upload token + recovery.
+ *
+ * Passkey list reads from the PASSKEYS KV namespace at request time.
+ * Add-a-device triggers the WebAuthn registration flow for the
+ * already-signed-in user via /api/admin/passkey/add-start and
+ * /api/admin/passkey/add-finish.
+ *
+ * Upload token section shows status (active with masked preview, or
+ * placeholder sentinel for the baseline seed). Rotate generates a
+ * new plaintext token and displays it once so the user can
+ * reinstall the Shortcut.
  */
+import { env as cfEnv } from "cloudflare:workers";
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
 import ComingSoon from "~/components/admin/ComingSoon.astro";
 import { requireAdmin } from "~/lib/auth/guards";
+import { readCredentials } from "~/lib/auth/webauthn";
 
-const result = await requireAdmin(Astro);
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireAdmin(Astro);
+if (guard instanceof Response) return guard;
+const user = guard;
 
-const deviceCount = user.passkeyDevices.length;
+const env = cfEnv as unknown as Env;
+const credentials = await readCredentials(env, user.id);
+
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: user.timeZone,
+  });
+}
+
+const tokenLabel =
+  user.uploadToken && user.uploadToken !== "TO-BE-ROTATED-ON-FIRST-LOGIN"
+    ? `••••••••••••${user.uploadToken.slice(-4)}`
+    : "Not yet installed";
+const isOwner = user.role === "owner";
 ---
 
 <AdminLayout title="Devices" user={user}>
   <AdminPageHeader
     kicker="Settings"
     title="Devices"
-    lead={`You have ${deviceCount} passkey device${deviceCount === 1 ? "" : "s"} registered. Add more for convenient login across phone, laptop, tablet.`}
+    lead="Manage the devices you use to sign in and upload photos from."
   />
 
-  <ComingSoon
-    milestone="inline-edit checkpoint"
-    detail="Passkey list with per-device nicknames and last-used timestamps, add-device flow, and upload-token management (rotate, reinstall on phone). Recovery codes for the Owner."
-  />
+  <section class="panel">
+    <h2 class="panel-title">Passkey devices</h2>
+    <div class="panel-body">
+      {credentials.length === 0 ? (
+        <p class="muted">
+          You haven&rsquo;t registered any passkeys for this account yet.
+          Add one below.
+        </p>
+      ) : (
+        <ul class="device-list">
+          {credentials.map((cred) => (
+            <li class="device">
+              <div class="device-head">
+                <div>
+                  <input
+                    type="text"
+                    class="nickname-input"
+                    value={cred.nickname}
+                    data-credential-id={cred.credentialID}
+                    data-rename
+                    maxlength="80"
+                  />
+                  <span class="device-type">{cred.deviceType}</span>
+                </div>
+                <button
+                  type="button"
+                  class="remove"
+                  data-credential-id={cred.credentialID}
+                  data-remove
+                  disabled={credentials.length === 1}
+                >
+                  Remove
+                </button>
+              </div>
+              <div class="device-meta">
+                <span>Added {fmtDate(cred.addedAt)}</span>
+                <span>Last used {fmtDate(cred.lastUsedAt)}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {credentials.length === 1 && (
+        <p class="warning">
+          This is your only registered device. If you lose access, you&rsquo;ll
+          need recovery — see below.
+        </p>
+      )}
+
+      <div class="add-row">
+        <button type="button" class="secondary" id="add-passkey-btn">
+          + Add a new device
+        </button>
+        <p class="status" id="passkey-status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Upload token</h2>
+    <div class="panel-body">
+      <dl class="rows">
+        <div class="row">
+          <dt>Status</dt>
+          <dd>
+            <code class="token-preview">{tokenLabel}</code>
+          </dd>
+        </div>
+      </dl>
+      <div class="token-actions">
+        <button type="button" class="secondary" id="rotate-btn">
+          Rotate token
+        </button>
+      </div>
+      <div class="token-reveal" id="token-reveal" hidden>
+        <p class="reveal-label">New token — copy this now. It won&rsquo;t be shown again.</p>
+        <code class="token-value" id="token-value"></code>
+        <button type="button" class="link" id="copy-token">Copy to clipboard</button>
+        <p class="status" id="token-status" aria-live="polite"></p>
+      </div>
+      <p class="help">
+        The upload token is embedded in your personalized iOS Shortcut. Rotating
+        it invalidates the old one immediately — you&rsquo;ll need to reinstall
+        the Shortcut with the new token before the next upload will work.
+      </p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Recovery</h2>
+    <div class="panel-body">
+      {isOwner ? (
+        <ComingSoon
+          milestone="recovery-codes checkpoint"
+          detail="Ten single-use recovery codes generated at Owner setup. Regenerating invalidates all previous codes. Used when you've lost access to every registered passkey — each code can authenticate you once and grants the ability to register a new device."
+        />
+      ) : (
+        <p class="muted">
+          If you lose access to your devices, contact Matt to reset your
+          passkey registration. He can clear your credentials and send a
+          one-time registration link to your email.
+        </p>
+      )}
+    </div>
+  </section>
 </AdminLayout>
+
+<script>
+  import {
+    startRegistration,
+  } from "@simplewebauthn/browser";
+
+  const addBtn = document.getElementById("add-passkey-btn") as HTMLButtonElement;
+  const statusEl = document.getElementById("passkey-status") as HTMLElement;
+
+  function setStatus(message: string, kind: "info" | "error" = "info") {
+    statusEl.textContent = message;
+    statusEl.dataset.kind = kind;
+  }
+
+  addBtn?.addEventListener("click", async () => {
+    addBtn.disabled = true;
+    setStatus("Requesting device…");
+    try {
+      const startRes = await fetch("/api/admin/passkey/add-start", {
+        method: "POST",
+      });
+      if (!startRes.ok) {
+        const err = (await startRes.json().catch(() => ({}))) as { error?: string };
+        setStatus(err.error ?? "Couldn't start registration.", "error");
+        addBtn.disabled = false;
+        return;
+      }
+      const startPayload = (await startRes.json()) as { options: unknown };
+
+      setStatus("Confirm with Face ID / Touch ID / your key…");
+      const attResp = await startRegistration({ optionsJSON: startPayload.options as any });
+
+      const finishRes = await fetch("/api/admin/passkey/add-finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attResp }),
+      });
+      if (!finishRes.ok) {
+        const err = (await finishRes.json().catch(() => ({}))) as { error?: string };
+        setStatus(err.error ?? "Registration failed.", "error");
+        addBtn.disabled = false;
+        return;
+      }
+      setStatus("Device added. Refreshing…");
+      window.location.reload();
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Something went wrong.", "error");
+      addBtn.disabled = false;
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>("[data-remove]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const credentialID = btn.dataset.credentialId!;
+      if (!confirm("Remove this device? You'll need another registered device to sign in.")) {
+        return;
+      }
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/passkey/remove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credentialID }),
+        });
+        if (!res.ok) {
+          const err = (await res.json().catch(() => ({}))) as { error?: string };
+          alert(err.error ?? "Couldn't remove.");
+          btn.disabled = false;
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Network error.");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll<HTMLInputElement>("[data-rename]").forEach((input) => {
+    input.addEventListener("blur", async () => {
+      const credentialID = input.dataset.credentialId!;
+      const nickname = input.value.trim();
+      if (!nickname) return;
+      try {
+        await fetch("/api/admin/passkey/rename", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credentialID, nickname }),
+        });
+      } catch {
+        // best-effort; no user-visible error
+      }
+    });
+  });
+
+  const rotateBtn = document.getElementById("rotate-btn") as HTMLButtonElement;
+  const reveal = document.getElementById("token-reveal") as HTMLElement;
+  const tokenValue = document.getElementById("token-value") as HTMLElement;
+  const copyBtn = document.getElementById("copy-token") as HTMLButtonElement;
+  const tokenStatus = document.getElementById("token-status") as HTMLElement;
+
+  rotateBtn?.addEventListener("click", async () => {
+    if (!confirm("Rotating will invalidate your current token immediately. Reinstalling the Shortcut takes a few seconds. Continue?")) {
+      return;
+    }
+    rotateBtn.disabled = true;
+    try {
+      const res = await fetch("/api/admin/upload-token/rotate", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(err.error ?? "Couldn't rotate.");
+        rotateBtn.disabled = false;
+        return;
+      }
+      const payload = (await res.json()) as { token: string };
+      tokenValue.textContent = payload.token;
+      reveal.removeAttribute("hidden");
+      rotateBtn.disabled = false;
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Network error.");
+      rotateBtn.disabled = false;
+    }
+  });
+
+  copyBtn?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(tokenValue.textContent ?? "");
+      tokenStatus.textContent = "Copied";
+      setTimeout(() => { tokenStatus.textContent = ""; }, 2000);
+    } catch {
+      tokenStatus.textContent = "Couldn't copy — select and copy manually.";
+    }
+  });
+</script>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 52rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .panel-body { padding: var(--space-5); }
+
+  .muted {
+    color: var(--color-muted);
+    margin: 0 0 var(--space-4);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .device-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-5);
+  }
+
+  .device {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .device:first-child { padding-top: 0; }
+  .device:last-child { border-bottom: 0; padding-bottom: 0; }
+
+  .device-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+  }
+
+  .nickname-input {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    background: none;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0;
+    min-width: 200px;
+    transition: var(--transition-default);
+  }
+
+  .nickname-input:hover,
+  .nickname-input:focus {
+    border-bottom-color: var(--color-accent);
+    outline: 0;
+  }
+
+  .device-type {
+    margin-left: var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .device-meta {
+    display: flex;
+    gap: var(--space-6);
+    margin-top: var(--space-2);
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .remove {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .remove:hover:not(:disabled) { color: var(--color-accent); }
+  .remove:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .warning {
+    padding: var(--space-3) var(--space-4);
+    background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+    border-left: 3px solid var(--color-accent);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    margin: var(--space-4) 0;
+  }
+
+  .add-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .status[data-kind="error"] { color: var(--color-accent); }
+
+  .secondary {
+    align-self: flex-start;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.75rem 1.4rem;
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .secondary:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .secondary:disabled { opacity: 0.5; cursor: wait; }
+
+  .rows {
+    margin: 0;
+    padding: 0;
+  }
+
+  .row { display: flex; justify-content: space-between; padding: var(--space-3) 0; border-top: 1px solid var(--color-cream-deep); }
+  .row:first-child { border-top: 0; padding-top: 0; }
+
+  .row dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .row dd { margin: 0; }
+
+  .token-preview {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+  }
+
+  .token-actions { margin-top: var(--space-4); }
+
+  .token-reveal {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-3);
+  }
+
+  .reveal-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-3);
+  }
+
+  .token-value {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    word-break: break-all;
+    padding: var(--space-3);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    margin: 0 0 var(--space-3);
+  }
+
+  .link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .link:hover { color: var(--color-accent-deep); }
+
+  .help {
+    margin-top: var(--space-5);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+  }
+</style>
