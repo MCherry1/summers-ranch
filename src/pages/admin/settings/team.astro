@@ -138,6 +138,8 @@ const errorMsg = Astro.url.searchParams.get("error");
             const canToggleTrust =
               u.role === "contributor" &&
               (user.role === "owner" || user.role === "admin");
+            const canResetPasskey =
+              user.role === "owner" && !isSelf && u.role !== "owner";
             return (
               <tr>
                 <td>
@@ -190,16 +192,29 @@ const errorMsg = Astro.url.searchParams.get("error");
                   <span class="muted-text">{fmtDate(u.createdAt)}</span>
                 </td>
                 <td class="actions-cell">
-                  {canRemove && (
-                    <form
-                      method="POST"
-                      action={`/api/admin/team/${u.id}/remove`}
-                      class="inline-form"
-                      onsubmit="return confirm('Remove this team member? Their passkeys will be cleared.');"
-                    >
-                      <button type="submit" class="link-danger">Remove</button>
-                    </form>
-                  )}
+                  <div class="row-actions">
+                    {canResetPasskey && (
+                      <button
+                        type="button"
+                        class="link-action"
+                        data-reset-passkey
+                        data-user-id={u.id}
+                        data-user-name={u.displayName}
+                      >
+                        Reset passkey
+                      </button>
+                    )}
+                    {canRemove && (
+                      <form
+                        method="POST"
+                        action={`/api/admin/team/${u.id}/remove`}
+                        class="inline-form"
+                        onsubmit="return confirm('Remove this team member? Their passkeys will be cleared.');"
+                      >
+                        <button type="submit" class="link-danger">Remove</button>
+                      </form>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
@@ -429,6 +444,50 @@ const errorMsg = Astro.url.searchParams.get("error");
       }
     });
   });
+
+  document.querySelectorAll<HTMLButtonElement>("[data-reset-passkey]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.userId!;
+      const name = btn.dataset.userName ?? "this user";
+      if (!confirm(
+        `Reset passkeys for ${name}? All of their registered devices will be cleared immediately. ` +
+        `You'll get a single-use 48-hour invite link to send them so they can register a fresh passkey.`
+      )) {
+        return;
+      }
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/admin/team/${id}/reset-passkey`, {
+          method: "POST",
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          inviteUrl?: string;
+          inviteHint?: string;
+        };
+        if (!res.ok || !payload.ok || !payload.inviteUrl) {
+          alert(payload.error ?? "Couldn't reset.");
+          btn.disabled = false;
+          return;
+        }
+        // Reuse the add-team reveal panel to display the invite URL.
+        const revealLabel = document.querySelector("#reveal-label") as HTMLElement | null;
+        const revealValue = document.querySelector("#reveal-value") as HTMLElement | null;
+        const revealHint = document.querySelector("#reveal-hint") as HTMLElement | null;
+        const reveal = document.querySelector("#reveal") as HTMLElement | null;
+        if (revealLabel) revealLabel.textContent = `Reset invite for ${name}`;
+        if (revealValue) revealValue.textContent = payload.inviteUrl;
+        if (revealHint) revealHint.textContent = payload.inviteHint ?? "";
+        reveal?.removeAttribute("hidden");
+        reveal?.scrollIntoView({ behavior: "smooth", block: "center" });
+        btn.disabled = false;
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Network error.");
+        btn.disabled = false;
+      }
+    });
+  });
 </script>
 
 <style>
@@ -523,8 +582,16 @@ const errorMsg = Astro.url.searchParams.get("error");
 
   .actions-cell { text-align: right; }
 
+  .row-actions {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
   .inline-form { display: inline; margin: 0; }
 
+  .link-action,
   .link-danger {
     background: none;
     border: 0;
@@ -539,7 +606,11 @@ const errorMsg = Astro.url.searchParams.get("error");
     transition: var(--transition-default);
   }
 
+  .link-action:hover,
   .link-danger:hover { color: var(--color-accent); }
+
+  .link-action:disabled,
+  .link-danger:disabled { opacity: 0.5; cursor: wait; }
 
   .add-form {
     display: grid;

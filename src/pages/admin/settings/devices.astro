@@ -15,7 +15,6 @@
 import { env as cfEnv } from "cloudflare:workers";
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
 import { requireAdmin } from "~/lib/auth/guards";
 import { readCredentials } from "~/lib/auth/webauthn";
 
@@ -41,6 +40,12 @@ const tokenLabel =
     ? `••••••••••••${user.uploadToken.slice(-4)}`
     : "Not yet installed";
 const isOwner = user.role === "owner";
+
+const hasRecoveryCodes =
+  Array.isArray(user.recoveryCodes) && user.recoveryCodes.length > 0;
+const remainingCodes = hasRecoveryCodes
+  ? user.recoveryCodes!.filter((c) => !c.used).length
+  : 0;
 ---
 
 <AdminLayout title="Devices" user={user}>
@@ -143,15 +148,54 @@ const isOwner = user.role === "owner";
     <h2 class="panel-title">Recovery</h2>
     <div class="panel-body">
       {isOwner ? (
-        <ComingSoon
-          milestone="recovery-codes checkpoint"
-          detail="Ten single-use recovery codes generated at Owner setup. Regenerating invalidates all previous codes. Used when you've lost access to every registered passkey — each code can authenticate you once and grants the ability to register a new device."
-        />
+        <div class="recovery-owner">
+          <p class="help">
+            Ten single-use recovery codes are your fallback when every
+            registered passkey is gone. Each code can authenticate once
+            and lets you register a fresh device. Store them somewhere
+            safe — 1Password, a paper in a drawer, wherever you keep
+            irreplaceable things.
+          </p>
+
+          <dl class="rows">
+            <div class="row">
+              <dt>Status</dt>
+              <dd>
+                {hasRecoveryCodes
+                  ? `${remainingCodes} of ${user.recoveryCodes!.length} unused`
+                  : "None generated yet"}
+              </dd>
+            </div>
+          </dl>
+
+          <div class="recovery-actions">
+            <button type="button" class="secondary" id="recovery-generate">
+              {hasRecoveryCodes ? "Regenerate codes" : "Generate codes"}
+            </button>
+            <p class="status" id="recovery-status" aria-live="polite"></p>
+          </div>
+
+          <div class="recovery-reveal" id="recovery-reveal" hidden>
+            <p class="reveal-label">
+              Your 10 recovery codes — shown once. Copy and store them
+              now. Previous codes (if any) have been invalidated.
+            </p>
+            <ol class="codes" id="recovery-codes"></ol>
+            <div class="reveal-actions">
+              <button type="button" class="link" id="recovery-copy-all">
+                Copy all
+              </button>
+              <button type="button" class="link" id="recovery-dismiss">
+                I&rsquo;ve saved them
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         <p class="muted">
-          If you lose access to your devices, contact Matt to reset your
-          passkey registration. He can clear your credentials and send a
-          one-time registration link to your email.
+          If you lose access to your devices, ask the Owner to reset
+          your passkey registration from the Team page. They can clear
+          your credentials and send you a one-time invite link.
         </p>
       )}
     </div>
@@ -291,6 +335,75 @@ const isOwner = user.role === "owner";
     } catch {
       tokenStatus.textContent = "Couldn't copy — select and copy manually.";
     }
+  });
+
+  // Recovery codes (Owner only — buttons only exist when rendered).
+  const recoveryGenBtn = document.getElementById("recovery-generate") as HTMLButtonElement | null;
+  const recoveryStatus = document.getElementById("recovery-status") as HTMLElement | null;
+  const recoveryReveal = document.getElementById("recovery-reveal") as HTMLElement | null;
+  const recoveryList = document.getElementById("recovery-codes") as HTMLOListElement | null;
+  const recoveryCopyAll = document.getElementById("recovery-copy-all") as HTMLButtonElement | null;
+  const recoveryDismiss = document.getElementById("recovery-dismiss") as HTMLButtonElement | null;
+
+  recoveryGenBtn?.addEventListener("click", async () => {
+    if (!confirm("Generate a new set of 10 recovery codes? Any previous codes will stop working immediately, even if unused.")) {
+      return;
+    }
+    recoveryGenBtn.disabled = true;
+    if (recoveryStatus) recoveryStatus.textContent = "Generating…";
+    try {
+      const res = await fetch("/api/admin/recovery/generate", {
+        method: "POST",
+      });
+      const payload = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        codes?: string[];
+      };
+      if (!res.ok || !payload.ok || !payload.codes) {
+        if (recoveryStatus) recoveryStatus.textContent = payload.error ?? "Couldn't generate.";
+        recoveryGenBtn.disabled = false;
+        return;
+      }
+      if (recoveryStatus) recoveryStatus.textContent = "";
+      if (recoveryList) {
+        recoveryList.innerHTML = "";
+        for (const code of payload.codes) {
+          const li = document.createElement("li");
+          const codeEl = document.createElement("code");
+          codeEl.textContent = code;
+          li.appendChild(codeEl);
+          recoveryList.appendChild(li);
+        }
+      }
+      recoveryReveal?.removeAttribute("hidden");
+      recoveryGenBtn.disabled = false;
+    } catch (err) {
+      if (recoveryStatus) {
+        recoveryStatus.textContent =
+          err instanceof Error ? err.message : "Network error.";
+      }
+      recoveryGenBtn.disabled = false;
+    }
+  });
+
+  recoveryCopyAll?.addEventListener("click", async () => {
+    if (!recoveryList) return;
+    const codes = Array.from(recoveryList.querySelectorAll("code"))
+      .map((el) => el.textContent ?? "")
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(codes);
+      recoveryCopyAll.textContent = "Copied";
+      setTimeout(() => { if (recoveryCopyAll) recoveryCopyAll.textContent = "Copy all"; }, 2000);
+    } catch {
+      recoveryCopyAll.textContent = "Select and copy manually";
+    }
+  });
+
+  recoveryDismiss?.addEventListener("click", () => {
+    recoveryReveal?.setAttribute("hidden", "");
+    window.location.reload();
   });
 </script>
 
@@ -529,5 +642,62 @@ const isOwner = user.role === "owner";
     font-size: var(--font-size-sm);
     color: var(--color-muted);
     line-height: var(--line-height-relaxed);
+  }
+
+  .recovery-owner .help {
+    margin-top: 0;
+    max-width: var(--max-width-prose);
+  }
+
+  .recovery-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  .recovery-reveal {
+    margin-top: var(--space-6);
+    padding: var(--space-5);
+    background: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-3);
+  }
+
+  .reveal-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-4);
+  }
+
+  .codes {
+    list-style: decimal;
+    padding-left: var(--space-6);
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    line-height: 1.9;
+    columns: 2;
+    column-gap: var(--space-8);
+  }
+
+  .codes code {
+    font-family: var(--font-mono);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    padding: 0.1em 0.5em;
+    letter-spacing: 0.05em;
+  }
+
+  .reveal-actions {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
   }
 </style>
