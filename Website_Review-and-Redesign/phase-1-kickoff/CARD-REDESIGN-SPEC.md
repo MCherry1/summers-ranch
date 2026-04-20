@@ -203,6 +203,10 @@ For a 9-year-old cow, theoretical maximum is ~23 photos; in practice far fewer s
 
 **Selection within each slice:** the best side-profile photo by the §14 scoring formula, evaluated at the time of the slice. Non-winners do not appear in the carousel but remain in the per-animal gallery (§6).
 
+**Slice scoring is consistent across the carousel.** Every slice uses the same §14 blended formula — the current throne blend (0.9/0.1 prescription-weighted for available animals, 0.7/0.3 for not-available) applies to every slice selection. The blend does not relax for older slices or for not-available animals' historical slices. A cow transitioning from available to not-available does not cause her carousel to re-rank; her historical slice winners remain stable unless photos are added, removed, or admin-overridden.
+
+This means the growth story reads as a consistent evaluation across her life, not a "here's the most charming photo from each era" retrospective. A Phase 2+ refinement could introduce relaxed scoring for historical slices of not-available animals (treating old carousel slots as "story" rather than "evaluation"), but Phase 1 applies consistent scoring throughout.
+
 **Autoplay behavior:**
 
 1. Expansion triggers autoplay
