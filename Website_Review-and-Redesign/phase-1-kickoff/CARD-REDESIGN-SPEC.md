@@ -47,6 +47,17 @@ Each animal has a "card." Cards have a front and a back:
 
 The card shape is consistent; what differs is commercial status. An available animal's card front displays their side profile (evaluation shot). A not-available animal's card front displays a beauty or action shot (gallery entry). The card adapts to the buyer's likely mindset.
 
+**Front/back photo relationship:**
+
+The back of the card always features the side-profile throne-holder as a corner thumbnail (§4.2), regardless of availability. This is invariant — the back is the evaluation surface for any buyer curious enough to flip it.
+
+What varies by availability is whether the front *aligns with* or *complements* the back:
+
+- **Available animals:** front and back align on the same side profile. Both the browsing audience and the evaluating audience want the same shot — front and back are the same photo with different interaction (front static, back expandable to the chronological carousel).
+- **Not-available animals:** front and back complement. The front invites with a beauty/action shot; the back evaluates with the side profile. Different photos, different purposes, unified animal.
+
+Neither treatment is "correct" — they serve different buyer intent states. The card expresses the animal's commercial role through its front/back relationship.
+
 **Interaction:**
 
 - Swipe horizontally to move between animals
@@ -994,7 +1005,9 @@ Separate throne slot: `cardFrontBeautyThrone`. Used when the animal is not-avail
 
 **Phase 1 fallback:** most-recent photo classified as `action`, `scenic`, `three-quarter`, `head`, `with-dam`, or `other` by aesthetic score alone. No dedicated rubric.
 
-**Side profiles are also eligible** but with a 15-20% aesthetic score penalty (exact value Phase 2 rubric decision). Rationale: the back of the card already features the side profile prominently (§4.2). If the front also leads with a side profile, the two surfaces lose their complementary distinction. The penalty biases toward visual variety in the common case while still letting a dramatically superior side profile win the front when the beauty pool is weak or empty.
+**Side profiles are also eligible** but with a 15-20% aesthetic score penalty (exact value Phase 2 rubric decision). Rationale: for not-available animals, the front's job is to *invite* while the back's job is to *evaluate*. If the front happens to lead with a side profile too, the front and back become visually redundant (same photo content, same purpose), diluting both surfaces' intent. The penalty biases toward visual variety between front and back for not-available animals. It does not apply to available animals — for them, front and back intentionally align on the same side profile throne-holder because both audiences (buyer-evaluating on the front, buyer-studying on the back) want the same evaluation shot.
+
+When the beauty pool is weak or empty (e.g., reference animals documented almost entirely via side profiles), a dramatically superior side profile can still win the front despite the penalty. The 15-20% is calibrated to maintain variety by default, not to exclude.
 
 **Empty-throne fallback** (per §3.5): if no photo scores high enough to win the beauty throne — including after the side-profile penalty — the card front displays the best-available photo by raw aesthetic score regardless of shot type. A coverage nudge fires to admin. For not-available animals with only side profiles in their photo history (e.g., some reference animals), this fallback ensures the best side profile appears on the front without an explicit beauty-type candidate.
 
