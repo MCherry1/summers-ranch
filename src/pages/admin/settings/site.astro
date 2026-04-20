@@ -1,27 +1,204 @@
 ---
 /**
- * Site — spec §17.8. Owner only. Ranch metadata, style tokens
- * (regenerate), notification defaults, ownership transfer.
+ * Site — spec §17.8. Owner only.
+ *
+ * Sections:
+ *   1. Ranch metadata — inline-edit on name, tagline, contact fields
+ *   2. Style tokens — display current palette/type for confidence
+ *   3. Ownership transfer — two-step flow (§17.7) deferred to a
+ *      follow-up; placeholder marker for now
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import InlineField from "~/components/admin/InlineField.astro";
 import ComingSoon from "~/components/admin/ComingSoon.astro";
 import { requireCapability } from "~/lib/auth/guards";
+import { getSiteLive } from "~/lib/site-live";
 
-const result = await requireCapability(Astro, "site-config");
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireCapability(Astro, "site-config");
+if (guard instanceof Response) return guard;
+const user = guard;
+
+const site = await getSiteLive();
+const endpoint = "/api/admin/site/field";
 ---
 
 <AdminLayout title="Site" user={user}>
   <AdminPageHeader
     kicker="Settings · Owner"
     title="Site"
-    lead="Ranch name, tagline, contact info, default notification settings for new users, ownership transfer."
+    lead="Ranch metadata visible to the public. Changes save as you move off the field and surface on the public site within a minute."
   />
 
-  <ComingSoon
-    milestone="inline-edit checkpoint"
-    detail="Inline-edit site metadata. Token regeneration button. Two-step ownership transfer flow per §17.7 (propose → target accepts or declines within 7 days)."
-  />
+  <section class="panel">
+    <h2 class="panel-title">Ranch metadata</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Ranch name"
+        endpoint={endpoint}
+        field="ranchName"
+        value={site.ranchName}
+        tooltip="Shows everywhere the site refers to itself by name — nav, footer, hero, OpenGraph previews."
+      />
+      <InlineField
+        label="Tagline"
+        endpoint={endpoint}
+        field="tagline"
+        value={site.tagline}
+        placeholder="e.g. A family tradition, honestly kept."
+        tooltip="Appears under the ranch name on the home hero."
+      />
+      <InlineField
+        label="Public phone"
+        endpoint={endpoint}
+        field="contactPhone"
+        value={site.contactPhone}
+        nullable={true}
+        placeholder="Not published"
+        tooltip="Rendered in the footer, home contact section, and /contact. Leave blank to not publish a number."
+      />
+      <InlineField
+        label="Public email"
+        endpoint={endpoint}
+        field="contactEmail"
+        value={site.contactEmail}
+        nullable={true}
+        placeholder="Not published"
+        tooltip="Rendered in the footer, home contact section, and /contact. Leave blank to not publish an address."
+      />
+      <InlineField
+        label="Public address"
+        endpoint={endpoint}
+        field="contactAddress"
+        value={site.contactAddress}
+        nullable={true}
+        placeholder="Not published"
+        tooltip="Usually a town and state, not a street address. Appears in the footer and /contact."
+      />
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Style tokens</h2>
+    <div class="panel-body">
+      <p class="help">
+        Locked 2026-04-19 by Marty and Roianne (v4 style preview). These
+        values drive the whole public site and every admin surface.
+        Regenerate is a Phase 2 UI — for now, the tokens are edited
+        directly in <code>src/styles/tokens.css</code>.
+      </p>
+      <div class="token-grid">
+        <div class="token">
+          <span class="swatch" style="background: #f7f0e3"></span>
+          <div><strong>Cream</strong><small>page background</small></div>
+        </div>
+        <div class="token">
+          <span class="swatch" style="background: #ffffff; border: 1px solid #e8d9bd"></span>
+          <div><strong>Paper</strong><small>card surfaces</small></div>
+        </div>
+        <div class="token">
+          <span class="swatch" style="background: #14100e"></span>
+          <div><strong>Ink</strong><small>body text</small></div>
+        </div>
+        <div class="token">
+          <span class="swatch" style="background: #5a5046"></span>
+          <div><strong>Muted</strong><small>secondary text, labels</small></div>
+        </div>
+        <div class="token">
+          <span class="swatch" style="background: #8b1e3a"></span>
+          <div><strong>Accent</strong><small>burgundy — used sparingly</small></div>
+        </div>
+        <div class="token">
+          <span class="swatch" style="background: #e8d9bd"></span>
+          <div><strong>Cream deep</strong><small>1px dividers</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Ownership transfer</h2>
+    <div class="panel-body">
+      <ComingSoon
+        milestone="ownership-transfer checkpoint"
+        detail="Two-step mutual acknowledgment per spec §17.7: you propose a transfer to an Admin, they accept (or decline) within 7 days. Both of you get audit log entries. This is a consequential one-way door; putting it behind its own focused review."
+      />
+    </div>
+  </section>
 </AdminLayout>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 52rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .panel-body {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .help {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: 0 0 var(--space-5);
+    max-width: var(--max-width-prose);
+  }
+
+  .help code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-1);
+  }
+
+  .token-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .token {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-3);
+    flex-shrink: 0;
+  }
+
+  .token strong {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+  }
+
+  .token small {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+</style>
