@@ -128,7 +128,7 @@ The front photo depends on availability status:
 
 The two throne slots (`cardFrontThrone` for side profile, `cardFrontBeautyThrone` for beauty/action) persist independently, so a status transition swaps the displayed photo instantly without recomputation.
 
-The side-profile scoring rubric is fully specified in §14. The beauty/action scoring rubric is deferred — Phase 1 uses a fallback: most-recent photo among eligible shot types (`action`, `scenic`, `three-quarter`, `head`, `with-dam`, `other`) by aesthetic score alone.
+The side-profile scoring rubric is fully specified in §14. The beauty/action scoring rubric is deferred — Phase 1 uses a fallback: most-recent photo among eligible shot types (`action`, `scenic`, `three-quarter`, `head`, `with-dam`, `other`) by aesthetic score alone. Side profiles are also eligible for the beauty throne with a 15-20% score penalty (see §14.9) — the penalty biases toward visual variety between front and back surfaces, while still letting a dramatically superior side profile win when the beauty pool is weak.
 
 ### 3.6 🟧 Orientation handling
 
@@ -994,7 +994,11 @@ Separate throne slot: `cardFrontBeautyThrone`. Used when the animal is not-avail
 
 **Phase 1 fallback:** most-recent photo classified as `action`, `scenic`, `three-quarter`, `head`, `with-dam`, or `other` by aesthetic score alone. No dedicated rubric.
 
-**Phase 2:** dedicated beauty/action rubric with its own subscores — deferred.
+**Side profiles are also eligible** but with a 15-20% aesthetic score penalty (exact value Phase 2 rubric decision). Rationale: the back of the card already features the side profile prominently (§4.2). If the front also leads with a side profile, the two surfaces lose their complementary distinction. The penalty biases toward visual variety in the common case while still letting a dramatically superior side profile win the front when the beauty pool is weak or empty.
+
+**Empty-throne fallback** (per §3.5): if no photo scores high enough to win the beauty throne — including after the side-profile penalty — the card front displays the best-available photo by raw aesthetic score regardless of shot type. A coverage nudge fires to admin. For not-available animals with only side profiles in their photo history (e.g., some reference animals), this fallback ensures the best side profile appears on the front without an explicit beauty-type candidate.
+
+**Phase 2:** dedicated beauty/action rubric with its own subscores — deferred. Will formalize the side-profile penalty value, define beauty-specific scoring dimensions, and handle edge cases (cow-and-calf shots, seasonal mood shots, action sequences).
 
 ### 14.10 🟧 Life stages
 
