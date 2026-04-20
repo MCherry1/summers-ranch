@@ -760,6 +760,32 @@ Every uploaded photo is classified. Classification produces:
 
 Classification runs once per upload, asynchronously, after R2 persistence. Results write back to the MediaAsset record. See §14.7.1 for the implementation.
 
+**Why classify so granularly when Phase 1 only uses `side-profile` vs not?**
+
+The sub-categorization of non-side-profile shots into `head`, `three-quarter`, `action`, `scenic`, `with-dam`, `detail`, `landscape`, `other` may feel over-engineered given that Phase 1 only gates on `side-profile`-ness for card-front eligibility. Three reasons the granularity is preserved:
+
+1. **Same cost.** The Claude vision API call costs the same whether it outputs `"side-profile"` or `"three-quarter"`. Asking for granular classification costs no more than asking for a binary.
+
+2. **Phase 2 rubrics differentiate meaningfully.** The deferred beauty, editorial, and gallery rubrics (§24) will weigh shot types differently. A beauty rubric might prefer `action` and `three-quarter` over `head`. A gallery curator might want variety across types to avoid five similar headshots in a row. An editorial rubric might penalize `detail` shots as not story-telling. Collapsing to binary now means reclassifying the entire library when those rubrics land, which is thousands of API calls paid again.
+
+3. **Coverage nudges work better with specificity.** "No action shots of Sweetheart in the last 12 months" tells admin what kind of photo to capture next. "No non-side-profile shots" tells them nothing actionable.
+
+**Shot-type usage map** (documents what each type is actually *for* in the system):
+
+| Shot type | Phase 1 use | Phase 2+ use |
+|---|---|---|
+| `side-profile` | Card front (available animals), back thumbnail, timeline carousel, per-animal gallery | Same + potential scoring refinements |
+| `three-quarter` | Beauty throne pool (card front for not-available animals) | Dedicated beauty rubric weighting |
+| `action` | Beauty throne pool | Beauty rubric, editorial rubric (likely high weight) |
+| `head` | Beauty throne pool | Beauty rubric (likely lower weight than action/three-quarter) |
+| `with-dam` | Beauty throne pool | Dedicated "family/pedigree" section if added |
+| `scenic` | Gallery-Ranch candidate, beauty throne pool | Atmospheric gallery curation |
+| `detail` | Gallery eligibility, generally low priority | Low-priority fallback |
+| `landscape` | Gallery-Ranch candidate | Primary source for Ranch gallery |
+| `other` | Beauty throne pool fallback | Admin review flag if too many land here |
+
+If a future rubric turns out to not differentiate by a particular shot type, the enum can stay — unused values cost nothing. If a missing shot type becomes useful, it can be added as a prompt/schema change without back-filling existing photos (the classifier can re-run on demand).
+
 ### 14.7.1 🟧 Classification implementation — Claude vision pipeline
 
 **Architecture:**
