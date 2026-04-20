@@ -20,6 +20,7 @@ import CardFront from "~/components/cattle/CardFront.astro";
 import { requireAdmin } from "~/lib/auth/guards";
 import { can } from "~/lib/auth/rbac";
 import { getAllAnimalsLive, groupByBinderLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
+import { getAllInquiries } from "~/lib/overrides";
 
 const result = await requireAdmin(Astro);
 if (result instanceof Response) return result;
@@ -35,9 +36,14 @@ const primaryPhotos = new Map(
   )
 );
 
-// Status strip counts (stubs until the admin operational queues land)
+// Status strip counts — unread inquiries wired live from KV; other
+// counts are stubs until their queues are populated.
+const unreadInquiries = can(user.role, "view-inquiries")
+  ? (await getAllInquiries()).filter((i) => i.status === "unread").length
+  : 0;
+
 const statusStrip = {
-  inquiriesWaiting: 0,       // wired when /admin/inquiries KV lands
+  inquiriesWaiting: unreadInquiries,
   toReview: 0,                // wired when Contributor uploads land
   needingAttention: 0,        // wired when nudge generation lands
   totalAnimals: animals.length,

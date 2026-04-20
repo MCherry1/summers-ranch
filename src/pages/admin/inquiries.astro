@@ -1,26 +1,277 @@
 ---
 /**
- * Inquiries inbox — spec §13. Owner/Admin only.
+ * Inquiries inbox — spec §13.
+ *
+ * List view with filter chips (All / Unread / Archived). Per-row
+ * preview showing sender / timestamp / subject / first line of the
+ * message / unread indicator. Clicking a row navigates to the detail
+ * page where mark-read happens on load and archive is an action.
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
 import { requireCapability } from "~/lib/auth/guards";
+import { getAllInquiries } from "~/lib/overrides";
 
-const result = await requireCapability(Astro, "view-inquiries");
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireCapability(Astro, "view-inquiries");
+if (guard instanceof Response) return guard;
+const user = guard;
+
+const inquiries = await getAllInquiries();
+const filter = (Astro.url.searchParams.get("filter") ?? "all") as
+  | "all"
+  | "unread"
+  | "archived";
+
+const visible = inquiries.filter((i) => {
+  if (filter === "unread") return i.status === "unread";
+  if (filter === "archived") return i.status === "archived";
+  return i.status !== "archived";
+});
+
+const unreadCount = inquiries.filter((i) => i.status === "unread").length;
+const archivedCount = inquiries.filter((i) => i.status === "archived").length;
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) {
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: user.timeZone,
+    });
+  }
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: sameYear ? undefined : "numeric",
+    timeZone: user.timeZone,
+  });
+}
+
+function preview(message: string, limit = 120): string {
+  const collapsed = message.replace(/\s+/g, " ").trim();
+  if (collapsed.length <= limit) return collapsed;
+  return collapsed.slice(0, limit - 1) + "…";
+}
 ---
 
 <AdminLayout title="Inquiries" user={user}>
   <AdminPageHeader
     kicker="Admin"
-    title={`Inquiries`}
-    lead="Messages from the public contact form and Ask-about-this-animal CTAs land here."
+    title="Inquiries"
+    lead={
+      inquiries.length === 0
+        ? "Nothing yet. When someone uses the contact form or an Ask-about CTA, their message lands here."
+        : "Messages from the public contact form and Ask-about-this-animal CTAs."
+    }
   />
 
-  <ComingSoon
-    milestone="admin operational checkpoint"
-    detail="List view (sender / timestamp / subject / preview / unread indicator), detail view with reply-via-default-mail-client action, email + SMS notifications on new inquiry."
-  />
+  {inquiries.length > 0 && (
+    <nav class="filter-bar" aria-label="Filter inquiries">
+      <a
+        href="/admin/inquiries"
+        class:list={["chip", { active: filter === "all" }]}
+      >
+        All
+        <span class="count">{inquiries.filter((i) => i.status !== "archived").length}</span>
+      </a>
+      <a
+        href="/admin/inquiries?filter=unread"
+        class:list={["chip", { active: filter === "unread" }]}
+      >
+        Unread
+        {unreadCount > 0 && <span class="count accent">{unreadCount}</span>}
+      </a>
+      <a
+        href="/admin/inquiries?filter=archived"
+        class:list={["chip", { active: filter === "archived" }]}
+      >
+        Archived
+        <span class="count">{archivedCount}</span>
+      </a>
+    </nav>
+  )}
+
+  {visible.length === 0 ? (
+    <p class="empty">
+      {filter === "unread"
+        ? "Nothing unread."
+        : filter === "archived"
+          ? "Nothing archived yet."
+          : "No messages to show."}
+    </p>
+  ) : (
+    <ul class="inbox">
+      {visible.map((inquiry) => (
+        <li class:list={["row", { unread: inquiry.status === "unread" }]}>
+          <a href={`/admin/inquiries/${inquiry.id}`} class="row-link">
+            <div class="row-head">
+              <span class="sender">{inquiry.senderName}</span>
+              <span class="time">{fmtTime(inquiry.receivedAt)}</span>
+            </div>
+            <p class="subject">{inquiry.subject}</p>
+            <p class="preview">{preview(inquiry.message)}</p>
+          </a>
+          {inquiry.status === "unread" && (
+            <span class="unread-dot" aria-label="Unread"></span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
 </AdminLayout>
+
+<style>
+  .filter-bar {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-decoration: none;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    background: var(--color-paper);
+    transition: var(--transition-default);
+  }
+
+  .chip:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .chip.active {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 8%, var(--color-paper));
+  }
+
+  .count {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    background: var(--color-cream-deep);
+    padding: 0.15em 0.5em;
+    border-radius: 999px;
+    min-width: 1.5em;
+    text-align: center;
+  }
+
+  .chip.active .count { background: var(--color-paper); }
+
+  .count.accent {
+    color: var(--color-paper);
+    background: var(--color-accent);
+  }
+
+  .empty {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    font-style: italic;
+    padding: var(--space-6) 0;
+  }
+
+  .inbox {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-width: 62rem;
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    overflow: hidden;
+  }
+
+  .row {
+    position: relative;
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .row:last-child { border-bottom: 0; }
+
+  .row-link {
+    display: block;
+    padding: var(--space-5) var(--space-6);
+    text-decoration: none;
+    color: var(--color-ink);
+    transition: var(--transition-default);
+  }
+
+  .row.unread .row-link {
+    background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+  }
+
+  .row-link:hover {
+    background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+    text-decoration: none;
+  }
+
+  .row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin-bottom: var(--space-1);
+  }
+
+  .sender {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+  }
+
+  .time {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .subject {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-1);
+  }
+
+  .row.unread .subject { color: var(--color-accent); }
+
+  .preview {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: 0;
+  }
+
+  .unread-dot {
+    position: absolute;
+    top: calc(var(--space-5) + 4px);
+    right: var(--space-5);
+    width: 10px;
+    height: 10px;
+    background: var(--color-accent);
+    border-radius: 50%;
+  }
+</style>
