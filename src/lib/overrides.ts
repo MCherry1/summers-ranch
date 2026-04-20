@@ -2,6 +2,7 @@ import type {
   AdminUser,
   AnimalRecord,
   CattleMediaLink,
+  Inquiry,
   MediaAsset,
   PendingOwnershipTransfer,
 } from "~/schemas";
@@ -309,6 +310,54 @@ export async function readTransfer(
   } catch {
     return null;
   }
+}
+
+// ── Inquiries (§13) ─────────────────────────────────────────────────
+// Public submissions land here. Status transitions (unread → read →
+// replied → archived) rewrite the same record in place.
+
+export async function writeInquiry(inquiry: Inquiry): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  await env.OVERRIDES.put(`inquiry:${inquiry.id}`, JSON.stringify(inquiry));
+}
+
+export async function readInquiry(id: string): Promise<Inquiry | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get(`inquiry:${id}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Inquiry;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllInquiries(): Promise<Inquiry[]> {
+  const env = await getEnv();
+  const result: Inquiry[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({ prefix: "inquiry:", cursor });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        result.push(JSON.parse(raw) as Inquiry);
+      } catch {
+        // skip malformed
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  result.sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+  return result;
 }
 
 export async function getAllTransfers(): Promise<PendingOwnershipTransfer[]> {

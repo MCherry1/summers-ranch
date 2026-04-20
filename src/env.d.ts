@@ -31,4 +31,14 @@ interface Env {
   // Model selection — env-driven per spec §14.7.1 (never hardcode).
   // Source-level fallback lives in lib/classifier.ts.
   CLAUDE_MODEL_CLASSIFIER?: string;
+
+  // Notification dispatch (spec §13.3). When any of these are absent,
+  // the corresponding channel skips gracefully — inquiries still land
+  // in /admin/inquiries regardless.
+  MAILCHANNELS_FROM_EMAIL?: string;   // e.g. "info@mrsummersranch.com"
+  MAILCHANNELS_FROM_NAME?: string;    // e.g. "Summers Ranch"
+
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_FROM_NUMBER?: string;        // E.164, e.g. "+15551234567"
 }
