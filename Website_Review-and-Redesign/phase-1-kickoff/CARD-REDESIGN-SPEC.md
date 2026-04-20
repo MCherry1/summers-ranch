@@ -699,10 +699,196 @@ Every uploaded photo is classified. Classification produces:
   - `prescriptionScore` + subscores: angle, legs, full-body, height, head, cleanliness, background, lighting
   - `aestheticScore` + subscores: technical, composition, lighting character, color/tonal
   - `timelineScore`, `galleryScore`, `editorialScore` — null in Phase 1 (rubrics deferred)
-- **Orientation** — `portrait` / `landscape` / `square`
-- **Aspect ratio** — exact decimal
+- **Orientation** — `portrait` / `landscape` / `square` (computed from image dimensions, not Claude)
+- **Aspect ratio** — exact decimal (computed from image dimensions, not Claude)
 
-Classification infrastructure ships Phase 1. The classifier itself (Phase 1) uses a small set of heuristics + admin manual overrides. ML-based classification is Phase 2+.
+Classification runs once per upload, asynchronously, after R2 persistence. Results write back to the MediaAsset record. See §14.7.1 for the implementation.
+
+### 14.7.1 🟧 Classification implementation — Claude vision pipeline
+
+**Architecture:**
+
+After `/api/upload` writes an image to R2 and returns 202 to the Shortcut, a follow-up classification job runs asynchronously:
+
+1. Upload handler enqueues a classification task (Cloudflare Queues or a scheduled worker — Phase 1 can use a simple immediate-fire-and-forget within the upload handler)
+2. Classifier worker reads the image from R2, computes dimensions (for orientation and aspect ratio)
+3. Classifier worker calls Claude API with the image and a structured prompt
+4. Claude returns JSON with `detectedShotType`, subscores, eligibility reasoning
+5. Worker parses, writes to MediaAsset record, triggers throne recomputation for the animal
+
+**Model:** `claude-haiku-4-5-20251001`. Haiku is vision-capable, fast, and cheap enough that even classifying thousands of photos costs pennies. Sonnet or Opus would be overkill for this bounded task — Haiku is the right tier.
+
+**API endpoint:** `POST https://api.anthropic.com/v1/messages`
+
+**Auth:** the `ANTHROPIC_API_KEY` environment variable. Set this in Cloudflare Pages settings → Environment variables → Production. Never commit the key to the repo.
+
+**Input shape** — base64 encoded image in a messages.create() call:
+
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+const imageBase64 = await readImageFromR2AsBase64(mediaAsset.uri);
+const mediaType = mediaAsset.uri.endsWith('.heic') ? 'image/heic' : 'image/jpeg';
+
+const response = await client.messages.create({
+  model: 'claude-haiku-4-5-20251001',
+  max_tokens: 1024,
+  messages: [{
+    role: 'user',
+    content: [
+      {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: imageBase64,
+        },
+      },
+      {
+        type: 'text',
+        text: CLASSIFICATION_PROMPT,
+      },
+    ],
+  }],
+});
+```
+
+**The classification prompt** (roughly; refine during implementation):
+
+```
+You are classifying a photograph of cattle for a registered Hereford ranch 
+catalog site. Analyze the image and return JSON only (no prose, no markdown 
+fences, just raw JSON parseable by JSON.parse).
+
+Classify the shot type, then score on the two rubrics below.
+
+Schema:
+{
+  "detectedShotType": "side-profile" | "head" | "three-quarter" | "action" 
+    | "scenic" | "with-dam" | "detail" | "landscape" | "other",
+  "subjectPresent": boolean,  // is there a Hereford cow/bull in the photo at all
+  "prescriptionSubscores": {
+    // 0.0 to 1.0 each. Only populate when detectedShotType is "side-profile".
+    // Return null for other shot types.
+    "angle": number,           // how straight-on is the side profile (1.0 = perfect)
+    "legs": number,            // are all four legs visible and clear
+    "fullBody": number,        // is the full body in frame
+    "height": number,          // is camera height appropriate (roughly eye-level of cow)
+    "head": number,            // is head visible and not obscured
+    "cleanliness": number,     // is the animal clean (not muddy, matted, etc.)
+    "background": number,      // is the background clean and not distracting
+    "lighting": number         // is lighting adequate to evaluate conformation
+  } | null,
+  "aestheticSubscores": {
+    // 0.0 to 1.0 each. Evaluate craft only — no emotional judgment.
+    "technical": number,            // focus, exposure, noise
+    "composition": number,          // framing, rule of thirds, balance
+    "lightingCharacter": number,    // quality of light (golden hour, flat noon, etc.)
+    "colorTonal": number            // color harmony, tonal range
+  },
+  "eligibility": {
+    "cardFrontEligible": boolean,       // usable as a primary identifier shot
+    "timelineEligible": boolean,        // usable in a growth timeline (usually = side-profile shots with subject)
+    "galleryHerdCandidate": boolean,    // atmospheric shot of cattle in environment
+    "galleryRanchCandidate": boolean,   // ranch atmosphere, cattle optional
+    "editorialCandidate": boolean       // distinctive, story-telling shot
+  },
+  "notes": string  // 1-2 sentences on why these classifications (for debugging)
+}
+
+Important:
+- If subjectPresent is false, set detectedShotType to "landscape" or "other" 
+  as appropriate, and set most eligibility flags to false except possibly 
+  galleryRanchCandidate.
+- Return JSON only. No prose, no markdown, no code fences.
+```
+
+**Response handling:**
+
+```typescript
+// Parse the JSON from response.content[0].text
+const raw = response.content.find(b => b.type === 'text')?.text ?? '';
+const parsed = JSON.parse(raw);
+
+// Compute blended scores from subscores using the weights in §14.8
+const prescriptionScore = parsed.prescriptionSubscores
+  ? computePrescriptionScore(parsed.prescriptionSubscores) * 100
+  : null;
+const aestheticScore = computeAestheticScore(parsed.aestheticSubscores) * 100;
+
+// Write back to MediaAsset
+await updateMediaAsset(mediaAsset.id, {
+  detectedShotType: parsed.detectedShotType,
+  prescriptionScore,
+  prescriptionSubscores: parsed.prescriptionSubscores,
+  aestheticScore,
+  aestheticSubscores: parsed.aestheticSubscores,
+  cardFrontEligible: parsed.eligibility.cardFrontEligible,
+  timelineEligible: parsed.eligibility.timelineEligible,
+  galleryHerdCandidate: parsed.eligibility.galleryHerdCandidate,
+  galleryRanchCandidate: parsed.eligibility.galleryRanchCandidate,
+  editorialCandidate: parsed.eligibility.editorialCandidate,
+});
+
+// Trigger throne recomputation for the animal
+await recomputeThrones(animalId);
+```
+
+**Cost estimation:**
+
+Typical HEIC photo resized to long-edge 1568px yields ~1600 image tokens at Claude vision rates. With ~300 tokens of prompt plus ~400 tokens output, a classification runs ~2300 total tokens.
+
+At Haiku 4.5 rates ($1 input / $5 output per million):
+- Input: 1900 tokens × $1/M = $0.0019
+- Output: 400 tokens × $5/M = $0.0020
+- **Per-photo cost: ~$0.004** (four-tenths of a cent)
+
+Classifying 10,000 photos costs ~$40. Summers Ranch will upload a few hundred photos per year. Classification is effectively free.
+
+**Error handling:**
+
+- If the Claude API call fails (timeout, rate limit, 5xx): retry once with exponential backoff; if still failing, write `classificationStatus: 'failed'` to the MediaAsset and enqueue for manual admin review in `/admin/upload-issues/`
+- If the returned JSON is malformed (invalid, missing fields): same failure path — flag for manual review, don't guess
+- If `subjectPresent: false` for a photo uploaded to a specific animal: flag in upload-issues as "likely not cattle" — admin decides whether to keep or delete
+
+**Admin override:**
+
+Any classification field is editable by admin from the photo's detail row on `/admin/herd/[id]`. Manual overrides carry a flag `classificationManuallyOverridden: true` so a future reclassification pass doesn't clobber admin judgment.
+
+**Reclassification:**
+
+Phase 1 doesn't reclassify. Each photo is classified once on upload.
+
+Phase 2+ may add a reclassification mechanism (e.g., when the rubric is refined or a better model is available) that respects `classificationManuallyOverridden`.
+
+**What Claude vision gets right and wrong:**
+
+Based on experience with similar image-classification tasks, expect:
+- **Reliably correct:** distinguishing cattle from non-cattle, identifying obvious side-profile vs headshot vs action, recognizing cleanliness and lighting quality, detecting full-body framing
+- **Mostly correct but occasionally wrong:** subtle angle judgments ("is this 3/4 turned or fully side?"), scoring composition on atmospheric shots, detecting subject being with dam vs just adjacent
+- **Not reliable alone:** final prescription judgments ("is this angle acceptable for evaluation?") — we use the scores as inputs to the throne algorithm (§14.8), not as final decisions. Admin Prefer/Hide overrides per §14.12 exist precisely because automated scoring isn't authoritative.
+
+**Concrete integration with the upload flow:**
+
+```
+Shortcut POST /api/upload → Worker writes to R2, returns 202
+    ↓
+Worker enqueues classification job (or fires directly in Phase 1)
+    ↓
+Classifier reads image, gets dimensions, calls Claude
+    ↓
+Claude returns JSON classification
+    ↓
+Worker writes scores/flags to MediaAsset record
+    ↓
+Worker calls recomputeThrones(animalId)
+    ↓
+Throne changes propagate to card-front selection on next render
+```
+
+The upload handler returns 202 before classification completes. The Shortcut doesn't wait. If classification fails, the photo is still uploaded and visible — just unclassified, which admin can manually classify later.
 
 ### 14.8 🟧 Throne mechanics — card front (side profile)
 
