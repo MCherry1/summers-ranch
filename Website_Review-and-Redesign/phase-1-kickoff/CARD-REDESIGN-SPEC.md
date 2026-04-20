@@ -1873,20 +1873,36 @@ The following are intentionally deferred beyond Phase 1:
 
 **Phase 3+ concepts (not committed, captured for future consideration):**
 
-- **AI-assisted structural evaluation.** Extend the existing photo classification pipeline (§14.7.1) to also produce 2-3 sentences of structural observations per side-profile photo — muscle pattern, top-line, leg set, balance, breed character. Admin-facing only at minimum; Marty decides whether any observation becomes public.
+- **AI-assisted buyer evaluation tool (`/admin/evaluate/`).** Admin-only private tool for Marty to evaluate *other* ranchers' animals during purchase or breeding decisions. Not a public feature. Not a tool for evaluating his own herd.
 
-  Rationale: the site already has the vision pipeline in place. Adding structural commentary is a small extension of the existing classification prompt. Value is as internal record-keeping for Marty, not an automated public claim about any animal. Respects that Marty is the authority on his own herd.
+  **User flow:** Marty uploads 1-5 photos of a candidate animal (from a sale catalog, a private seller, or anywhere else), pastes or types whatever metadata he has (EPDs, registration number, seller claims, asking price), optionally states his current breeding goal. System produces a structured evaluation report including conformation observations, EPD interpretation, fit-to-goal analysis, questions to ask the seller, and red flags if any.
 
-  Explicitly **not** proposed: a public-facing "AI comparison engine" that buyers use to rank animals against their breeding goals. That flashy version fights against the seedstock business model — the buyer-breeder relationship and ranch visit are core to selling registered Herefords, and an automated comparison risks short-circuiting that relationship, as well as introducing reputation risk if AI confidently misreads an animal. If a comparison tool ever happens, it would only be a small enhancement to compare view (§6) and only with human-edited outputs.
+  **Why admin-only, never public:**
+  - Uses the same Claude vision pipeline as classification, but for a completely different purpose — the buyer's side of the transaction, not the seller's
+  - Output is advice to Marty, not content about any animal
+  - Avoids reputation risks associated with public AI commentary on specific animals
+  - Treats Marty's buyer-evaluation workflow as what it is: a private competitive advantage, appropriately kept private
+  - Respects copyright — catalog photos uploaded for private evaluation are fair use; publishing AI critiques of them would not be
 
-  Constraints for any implementation:
-  - Always admin-reviewed before publishing
-  - Never surfaces temperament judgments (AI cannot read temperament from photos)
-  - Never verifies seller-supplied claims (AI can summarize but not authenticate)
-  - Bounded compute: admin-invoked only, not runnable by unauthenticated visitors
-  - Clear labeling as "AI observations, reviewed by [ranch]" to prevent misrepresentation
+  **Use cases this serves:**
+  - AHA sale catalog triage (narrowing hundreds of candidates to ones worth deeper investigation)
+  - Out-of-state purchase decisions where physical visit isn't feasible before commitment
+  - Pairing decisions within his own herd (which cow × which bull for which breeding goal)
+  - Sanity-checking gut reactions to specific animals
 
-  Dependencies on Phase 1 work: requires classification pipeline (§14.7.1) to be working and well-calibrated first. Any confidence in structural evaluation is downstream of the classifier producing reliable shot-type detection and quality scoring.
+  **Output delivery:** structured reports saved to Marty's admin space, viewable only by Owner and optionally Admin. Never by Editor or Contributor. Never leaves the admin surface.
+
+  **Constraints:**
+  - Never surface temperament judgments (AI cannot read temperament from photos)
+  - Never verify seller-supplied claims as authoritative — reports note what AI observed, what AI couldn't determine, and what Marty should confirm independently
+  - Bounded compute (admin-invoked, hard-capped at reasonable per-evaluation cost)
+  - Clear labeling as "AI observations for your decision-making — not a verified assessment"
+  - Input photos and generated reports stored privately; never aggregated, never published
+  - Copyright treated carefully — uploaded catalog photos must not be republished anywhere
+
+  **Dependencies on Phase 1 work:** requires the Phase 1 classification pipeline (§14.7.1) to be mature and well-calibrated. Any confidence in structural evaluation of arbitrary animals is downstream of reliable shot-type detection and scoring on Marty's own herd first.
+
+  **Explicitly not proposed:** a public-facing "AI comparison engine" that lets buyers evaluate Marty's animals against their own criteria. That version would fight the seedstock business model — the buyer-breeder relationship is core to selling registered Herefords, automated scoring creates reputation risk, and unbounded public compute is budget-dangerous.
 
 ---
 
