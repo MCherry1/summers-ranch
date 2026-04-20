@@ -646,14 +646,19 @@ Matt builds the master Shortcut once in the iOS Shortcuts app. Its actions:
 
 1. Receive images from share sheet (accepts photos, Live Photos including MOV component)
 2. "Ask When Import" variable `upload_token` — pre-filled during install via byte substitution
-3. **Always-confirm picker** prompts for numeric tag input (a single numpad session, no alphabetic keyboard)
+3. **Tag prompt** — numeric numpad input. Header reads `"Tag number (leave blank for ranch-general)"`. Three outcomes based on input:
+   - **Numeric value entered:** proceed to step 4 (tag resolution)
+   - **Empty input + submit:** skip to step 7 as a ranch-general upload (no `X-Animal-Id` header)
+   - **Letter-containing tag:** submit opens the text-input fallback (same as step 6's "No" branch) to capture tags like "109A"
 4. API call: `GET /api/resolve-tag?tag=<input>` with `Authorization: Bearer <upload_token>` — returns `{ matches: [{ animalId, label }, ...] }`
 5. Picker shown **always** (never auto-proceeds, even with a single match), header `"Matches for <n>:"`, items are identity-labeled strings (e.g., "Sweetheart (Cow, 9yr)"), plus a final "Add new tag" entry
 6. If user chooses "Add new tag": `"Use tag <n>?"` Yes/No prompt. Yes → commits as new animal placeholder with the typed tag. No → opens text input for letter tags (escape hatch for "109A" style tags).
-7. For each image: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>`, `X-Animal-Id: <resolved>`, `X-Batch-Id: <session-generated-uuid>` headers
+7. For each image: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>`, `X-Batch-Id: <session-generated-uuid>` headers. If an animal was resolved, additionally include `X-Animal-Id: <resolved>`. If no tag was entered (ranch-general), omit the `X-Animal-Id` header entirely — the server treats this as a ranch-general upload.
 8. On all-202 success: brief visual "✓ Sent!" toast. **No audio confirmation** (cow moo scrapped).
 
 **Full-file preservation to R2.** No client compression. HEIC, Live Photo MOV pairs, ProRAW all preserved intact. Post-processing (HEIC → WebP/AVIF, EXIF strip, GPS removal) happens server-side in Phase 2.
+
+**Single pipeline for both animal-attached and ranch-general photos.** The tag is optional metadata, not a gate. Ranch-general photos (landscapes, atmospheric shots, herd-group photos) upload through the same Shortcut without a tag, are classified by the same classifier (§14.7.1), and are eligible for gallery surfaces (The Herd, The Ranch) but **not** eligible for card-front slots (card-front eligibility requires an attached animal).
 
 ### 14.3 🟦 Incoming share sheet
 
