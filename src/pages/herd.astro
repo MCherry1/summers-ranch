@@ -1,0 +1,124 @@
+---
+/**
+ * Herd page — spec §7.
+ *
+ * Primary browse surface. Binder order (Bulls / Cows / Heifers /
+ * Calves / Reference) per §7.1. Cards view ships now; compact view,
+ * sort/filter controls, and compare mode land in follow-ups.
+ *
+ * Empty state: warm copy when the seed has no animals yet, with a
+ * pointer to /about for context. "Better empty than wrong" — no fake
+ * placeholder cards, nothing to mis-represent.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+import CardFront from "~/components/cattle/CardFront.astro";
+import { getAllAnimalsLive, groupByBinderLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
+
+const allAnimals = await getAllAnimalsLive();
+const sections = await groupByBinderLive();
+const isEmpty = allAnimals.length === 0;
+
+// Resolve primary photos in parallel for all animals
+const primaryPhotos = new Map(
+  await Promise.all(
+    allAnimals.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
+---
+
+<BaseLayout
+  title="The herd — Summers Ranch"
+  description="Registered Hereford cattle at Summers Ranch, Sutter Creek, California."
+  canonicalPath="/herd"
+>
+  <PageSection
+    kicker="Meet the herd"
+    title={`Every cow has a name. <em>Every name has a story.</em>`}
+    lead={
+      isEmpty
+        ? "The herd is being catalogued. Marty and Roianne are gathering photos and details for each animal — they'll appear here as they're ready."
+        : "Each animal has a card — the front shows who they are at a glance, the back opens the details."
+    }
+  >
+    {!isEmpty && (
+      <div class="binder">
+        {sections.map((section) => (
+          <section class="binder-section">
+            <h3 class="binder-label">{section.label}</h3>
+            <div class="card-grid">
+              {section.animals.map((animal) => (
+                <CardFront
+                  animal={animal}
+                  primaryPhoto={primaryPhotos.get(animal.id) ?? null}
+                  detailsHref={`/herd/${animal.id}`}
+                  static
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+        <p class="end-of-list">That&rsquo;s the whole herd.</p>
+      </div>
+    )}
+  </PageSection>
+</BaseLayout>
+
+<style>
+  .binder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+  }
+
+  .binder-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .binder-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  @media (min-width: 640px) {
+    .card-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .card-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+    }
+  }
+
+  .end-of-list {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--font-size-md);
+    color: var(--color-muted);
+    text-align: center;
+    margin: var(--space-12) 0 0;
+  }
+</style>

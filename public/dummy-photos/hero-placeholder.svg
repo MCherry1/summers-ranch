@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder landscape — Sierra foothills at golden hour">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7f0e3"/>
+      <stop offset="0.55" stop-color="#f4e4c7"/>
+      <stop offset="0.85" stop-color="#eacb9f"/>
+      <stop offset="1" stop-color="#d8a474"/>
+    </linearGradient>
+    <linearGradient id="farHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9a8673"/>
+      <stop offset="1" stop-color="#7d6a5a"/>
+    </linearGradient>
+    <linearGradient id="midHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7d6a5a"/>
+      <stop offset="1" stop-color="#5d4e41"/>
+    </linearGradient>
+    <linearGradient id="nearHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d4e41"/>
+      <stop offset="1" stop-color="#3c302a"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0.7" cy="0.68" r="0.35">
+      <stop offset="0" stop-color="#fff4e0" stop-opacity="0.6"/>
+      <stop offset="0.5" stop-color="#f4e4c7" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#f4e4c7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- sky -->
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+
+  <!-- diffused sun glow -->
+  <rect width="1920" height="1080" fill="url(#sunGlow)"/>
+
+  <!-- far hills — soft rolling -->
+  <path d="M0,720
+           C 180,680 360,700 540,690
+           C 720,680 900,720 1080,700
+           C 1260,680 1440,710 1620,690
+           C 1800,670 1920,700 1920,700
+           L 1920,1080 L 0,1080 Z"
+        fill="url(#farHills)" opacity="0.82"/>
+
+  <!-- mid hills — a touch more defined -->
+  <path d="M0,820
+           C 160,790 320,830 480,800
+           C 640,770 800,810 960,790
+           C 1120,770 1280,820 1440,800
+           C 1600,780 1760,810 1920,790
+           L 1920,1080 L 0,1080 Z"
+        fill="url(#midHills)"/>
+
+  <!-- single oak silhouette — anchors place without inventing cattle -->
+  <g transform="translate(1240,845)" fill="#3c302a" opacity="0.92">
+    <rect x="-3" y="-8" width="6" height="40"/>
+    <ellipse cx="0" cy="-20" rx="38" ry="26"/>
+    <ellipse cx="-22" cy="-8" rx="24" ry="18"/>
+    <ellipse cx="22" cy="-8" rx="24" ry="18"/>
+    <ellipse cx="-8" cy="-32" rx="20" ry="14"/>
+    <ellipse cx="12" cy="-34" rx="18" ry="14"/>
+  </g>
+
+  <!-- near slope — warmest foreground -->
+  <path d="M0,900
+           C 240,880 480,920 720,900
+           C 960,880 1200,920 1440,900
+           C 1680,880 1920,910 1920,910
+           L 1920,1080 L 0,1080 Z"
+        fill="url(#nearHills)"/>
+
+  <!-- subtle texture lines on foreground — suggests dry grass without
+       over-committing -->
+  <g stroke="#2a211c" stroke-width="1" opacity="0.12">
+    <line x1="0" y1="960" x2="1920" y2="955"/>
+    <line x1="0" y1="988" x2="1920" y2="995"/>
+    <line x1="0" y1="1020" x2="1920" y2="1015"/>
+  </g>
+
+  <!-- deliberate placeholder marker — visible only at very close
+       inspection so reviewers know this isn't a real photo -->
+  <text x="36" y="1056" font-family="Georgia, serif" font-size="14"
+        fill="#3c302a" opacity="0.35" font-style="italic">
+    placeholder landscape · swap with real ranch photography
+  </text>
+</svg>

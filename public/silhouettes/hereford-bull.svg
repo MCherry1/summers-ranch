@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hereford bull silhouette placeholder">
+  <rect width="300" height="400" fill="#f7f0e3"/>
+  <g fill="#c9b79a" opacity="0.85">
+    <!-- body: heavier, thicker neck and shoulders than cow -->
+    <path d="M 50 190
+             C 45 168, 52 155, 72 152
+             L 228 152
+             C 252 152, 264 168, 262 195
+             L 262 258
+             C 262 272, 256 280, 242 282
+             L 232 282
+             L 230 324
+             C 230 332, 226 336, 220 336
+             L 210 336
+             C 204 336, 200 332, 200 324
+             L 200 282
+             L 105 282
+             L 105 324
+             C 105 332, 101 336, 95 336
+             L 85 336
+             C 79 336, 75 332, 75 324
+             L 73 282
+             L 68 282
+             C 56 280, 48 270, 46 258
+             Z"/>
+    <!-- head: broader, more masculine -->
+    <path d="M 240 165
+             C 262 160, 282 164, 290 176
+             C 296 184, 298 192, 294 202
+             C 290 212, 278 216, 268 214
+             L 262 214
+             L 262 188
+             Z"/>
+    <!-- shoulder hump (bull trait) -->
+    <path d="M 140 152 C 145 140, 160 138, 170 150 L 170 158 L 138 158 Z"/>
+    <!-- ear -->
+    <path d="M 258 162 C 262 155, 270 156, 272 163 L 270 175 L 260 172 Z"/>
+    <!-- tail -->
+    <path d="M 46 190 C 38 193, 34 200, 36 210 L 41 222 L 48 212 L 46 200 Z"/>
+  </g>
+  <text x="150" y="380" text-anchor="middle" font-family="Georgia, serif"
+        font-size="9" fill="#7d6a5a" opacity="0.4" font-style="italic">
+    photo coming soon
+  </text>
+</svg>

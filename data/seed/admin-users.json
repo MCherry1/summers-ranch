@@ -1,0 +1,25 @@
+[
+  {
+    "id": "owner-matt",
+    "role": "owner",
+    "displayName": "Matt Cherry",
+    "email": "matt@mrsummersranch.com",
+    "phone": null,
+    "timeZone": "America/Los_Angeles",
+    "adminAccentColor": null,
+    "passkeyDevices": [],
+    "recoveryCodes": null,
+    "activationStatus": "not-yet-activated",
+    "uploadToken": "TO-BE-ROTATED-ON-FIRST-LOGIN",
+    "trustState": "default",
+    "notificationPrefs": {
+      "new-inquiry-received": { "email": true, "sms": true },
+      "contributor-uploaded": { "email": false, "sms": false },
+      "pending-tag-requires-resolution": { "email": true, "sms": false },
+      "upload-issue-detected": { "email": true, "sms": false },
+      "nudge-surfaced": { "email": false, "sms": false }
+    },
+    "createdAt": "2026-04-19T00:00:00Z",
+    "createdByUserId": "owner-matt"
+  }
+]

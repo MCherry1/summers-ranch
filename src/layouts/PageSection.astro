@@ -1,0 +1,127 @@
+---
+/**
+ * PageSection — common wrapper for the standard kicker + title + body
+ * vocabulary (§8.1 and repeated across the site). Kicker tracked
+ * uppercase burgundy, Playfair title with optional italic emphasis,
+ * generous section padding per POLISH §4.1.
+ *
+ * Use inside a page body. Children render below the header block.
+ */
+
+interface Props {
+  kicker?: string;
+  title?: string;
+  lead?: string;         // short prose below the title
+  align?: "left" | "center";
+  tone?: "default" | "muted";
+  id?: string;
+}
+
+const {
+  kicker,
+  title,
+  lead,
+  align = "left",
+  tone = "default",
+  id,
+} = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={["page-section", `align-${align}`, `tone-${tone}`]}
+>
+  <div class="inner">
+    {(kicker || title || lead) && (
+      <header class="section-header">
+        {kicker && <p class="kicker">{kicker}</p>}
+        {title && <h2 class="title" set:html={title} />}
+        {lead && <p class="lead">{lead}</p>}
+      </header>
+    )}
+    <slot />
+  </div>
+</section>
+
+<style>
+  .page-section {
+    padding: var(--space-10) var(--space-6);
+  }
+
+  @media (min-width: 640px) {
+    .page-section {
+      padding: var(--space-12) var(--space-6);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .page-section {
+      padding: var(--space-16) var(--space-6);
+    }
+  }
+
+  .tone-muted {
+    background: var(--color-paper);
+    border-top: 1px solid var(--color-cream-deep);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .inner {
+    max-width: var(--max-width-page);
+    margin: 0 auto;
+  }
+
+  .align-center .inner {
+    text-align: center;
+  }
+
+  .align-center .section-header .lead,
+  .align-center .section-header .title {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .section-header {
+    margin-bottom: var(--space-8);
+    max-width: var(--max-width-prose);
+  }
+
+  .align-center .section-header {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-4);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .title {
+      font-size: var(--font-size-3xl);
+    }
+  }
+
+  .lead {
+    font-family: var(--font-body);
+    font-size: var(--font-size-md);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: var(--space-4) 0 0;
+    max-width: var(--max-width-prose);
+  }
+</style>

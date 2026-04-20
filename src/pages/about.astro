@@ -1,0 +1,22 @@
+---
+export const prerender = true;
+/**
+ * About page — spec §9.1. Simple long-form prose. Real copy lands
+ * when Matt and Roianne provide ranch history, operating philosophy,
+ * family background. For now: routable stub with structural scaffold.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+---
+
+<BaseLayout
+  title="About — Summers Ranch"
+  description="Marty and Roianne Summers have run the herd since 1998."
+  canonicalPath="/about"
+>
+  <PageSection
+    kicker="About the ranch"
+    title={`A family tradition, <em>honestly kept.</em>`}
+    lead="Marty and Roianne Summers have run the herd in Sutter Creek since 1998. More of the ranch's story is coming soon."
+  />
+</BaseLayout>

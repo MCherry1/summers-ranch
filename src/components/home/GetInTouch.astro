@@ -1,0 +1,104 @@
+---
+/**
+ * Get-in-touch home section — spec §8.1 item 5. Phone, email,
+ * location, hours — inline on the home page; no form (§8.1 "no form
+ * on home"). Inquiry form lives on /contact per §9.2.
+ *
+ * Fields that are null (phone/email not yet configured) hide per
+ * "better empty than wrong." If all contact fields are null, the
+ * section still renders — the CTA to /contact stands alone.
+ */
+import PageSection from "~/layouts/PageSection.astro";
+import Cta from "~/components/ui/Cta.astro";
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
+const hasPhone = Boolean(site.contactPhone);
+const hasEmail = Boolean(site.contactEmail);
+const hasLocation = Boolean(site.contactAddress);
+---
+
+<PageSection
+  kicker="Get in touch"
+  title={`Questions? <em>Come say hello.</em>`}
+  align="center"
+>
+  <dl class="contact-grid">
+    {hasPhone && (
+      <div class="cell">
+        <dt>Phone</dt>
+        <dd>
+          <a href={`tel:${site.contactPhone!.replace(/\s+/g, "")}`}>
+            {site.contactPhone}
+          </a>
+        </dd>
+      </div>
+    )}
+    {hasEmail && (
+      <div class="cell">
+        <dt>Email</dt>
+        <dd>
+          <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>
+        </dd>
+      </div>
+    )}
+    {hasLocation && (
+      <div class="cell">
+        <dt>Location</dt>
+        <dd>{site.contactAddress}</dd>
+      </div>
+    )}
+  </dl>
+
+  <div class="cta-row">
+    <Cta href="/contact" variant="secondary">Send a message</Cta>
+  </div>
+</PageSection>
+
+<style>
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    margin: var(--space-8) 0;
+    max-width: var(--max-width-data);
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0;
+    text-align: left;
+  }
+
+  @media (min-width: 640px) {
+    .contact-grid {
+      grid-template-columns: repeat(3, 1fr);
+      text-align: center;
+    }
+  }
+
+  .cell {
+    border-top: 1px solid var(--color-cream-deep);
+    padding-top: var(--space-4);
+  }
+
+  dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-bottom: var(--space-2);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+  }
+
+  .cta-row {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: center;
+  }
+</style>

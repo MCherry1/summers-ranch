@@ -1,0 +1,123 @@
+---
+/**
+ * Per-animal gallery — spec §5. Chronological grid of all photos for
+ * one animal, tapping opens a lightbox (Phase 2 for the lightbox —
+ * this checkpoint ships the grid layout and empty state).
+ *
+ * Sort toggle (Newest first / Oldest first) — infrastructure in place,
+ * defaults to newest first per §5.1. Toggle UI ships when photos do.
+ *
+ * No classification filters per §5.1 — all shot types interleave.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+import { getAnimalLive, getAllPhotosForLive } from "~/lib/cattle-live";
+import { galleryTitle, displayName } from "~/lib/derive/naming";
+
+const { id } = Astro.params;
+const animal = id ? await getAnimalLive(id) : null;
+
+if (!animal) {
+  return Astro.redirect("/herd");
+}
+
+const photos = await getAllPhotosForLive(animal.id, "newest-first");
+const title = galleryTitle(animal);
+const name = displayName(animal);
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
+---
+
+<BaseLayout
+  title={`${title} — Summers Ranch`}
+  description={`All photos of ${name} from Summers Ranch.`}
+  canonicalPath={`/herd/${animal.id}/gallery`}
+>
+  <PageSection
+    kicker={name}
+    title={title}
+    lead={
+      photos.length === 0
+        ? "No photos yet. As photos are uploaded, they'll appear here chronologically."
+        : undefined
+    }
+  >
+    <nav class="back-link">
+      <a href={`/herd/${animal.id}`}>&lsaquo; Back to {name}&rsquo;s card</a>
+    </nav>
+
+    {photos.length > 0 && (
+      <div class="photo-grid">
+        {photos.map((photo) => (
+          <figure class="photo-tile">
+            <img
+              src={photo.uri}
+              alt={`${name} — ${new Date(photo.capturedAt).toLocaleDateString("en-US", {
+                month: "long",
+                year: "numeric",
+              })}`}
+              loading="lazy"
+            />
+            <figcaption>
+              {new Date(photo.capturedAt).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    )}
+  </PageSection>
+</BaseLayout>
+
+<style>
+  .back-link {
+    margin-bottom: var(--space-6);
+  }
+
+  .back-link a {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-muted);
+  }
+
+  .back-link a:hover {
+    color: var(--color-accent);
+  }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+  }
+
+  .photo-tile {
+    margin: 0;
+  }
+
+  .photo-tile img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    background: var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    display: block;
+  }
+
+  .photo-tile figcaption {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin-top: var(--space-2);
+  }
+</style>

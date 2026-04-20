@@ -1,0 +1,115 @@
+---
+/**
+ * BaseFooter — spec §10 minimum: ranch name, contact brief, privacy
+ * link, copyright line. Restrained — a single thin rule above, muted
+ * text, left-aligned. Contact fields hide when null per "better empty
+ * than wrong."
+ */
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="identity">
+      <p class="name">{site.ranchName}</p>
+      {site.contactAddress && (
+        <p class="location">{site.contactAddress}</p>
+      )}
+    </div>
+
+    {(site.contactPhone || site.contactEmail) && (
+      <div class="contact">
+        {site.contactPhone && (
+          <a href={`tel:${site.contactPhone.replace(/\s+/g, "")}`}>
+            {site.contactPhone}
+          </a>
+        )}
+        {site.contactEmail && (
+          <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>
+        )}
+      </div>
+    )}
+
+    <p class="copyright">
+      &copy; 1998&ndash;{currentYear} {site.ranchName}. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--color-cream-deep);
+    margin-top: var(--space-20);
+    padding: var(--space-10) 0 var(--space-8);
+    background: var(--color-bg);
+  }
+
+  .site-footer-inner {
+    max-width: var(--max-width-page);
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .location {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: var(--space-1) 0 0;
+  }
+
+  .contact {
+    display: flex;
+    gap: var(--space-6);
+    font-size: var(--font-size-sm);
+    flex-wrap: wrap;
+  }
+
+  .contact a {
+    color: var(--color-muted);
+  }
+
+  .contact a:hover {
+    color: var(--color-accent-deep);
+  }
+
+  .copyright {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  @media (min-width: 640px) {
+    .site-footer-inner {
+      flex-direction: row;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: var(--space-8);
+    }
+
+    .identity {
+      flex: 1 1 auto;
+    }
+
+    .copyright {
+      flex: 1 0 100%;
+      padding-top: var(--space-6);
+    }
+  }
+</style>

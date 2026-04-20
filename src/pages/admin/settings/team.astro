@@ -1,0 +1,809 @@
+---
+/**
+ * Team — spec §17.4 / §17.5.
+ *
+ * Roster of all users with per-row actions gated by the viewer's role.
+ *   Owner:  may add any role (except Owner), change roles, toggle
+ *           trust state, remove anyone except self, view audit log
+ *   Admin:  may add and manage Contributors only; no role changes
+ *   Editor/Contributor: redirected away by requireCapability guard
+ *
+ * Audit log (Owner only) lives at the bottom, reading the last 30
+ * sensitive events from AUDIT_LOG KV.
+ *
+ * Invite flow displays the invite link on-screen after creation.
+ * Owner/Admin copies and hands it off via iMessage/email/in-person —
+ * server-side email dispatch arrives with the inquiries inbox.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+import { can } from "~/lib/auth/rbac";
+import { getAllAdminUsersLive } from "~/lib/admin-users-live";
+import { env as cfEnv } from "cloudflare:workers";
+
+const guard = await requireAdmin(Astro);
+if (guard instanceof Response) return guard;
+const user = guard;
+
+if (!can(user.role, "manage-team-contributors")) {
+  return Astro.redirect("/admin/herd", 302);
+}
+
+const env = cfEnv as unknown as Env;
+const allUsers = await getAllAdminUsersLive();
+
+// Sort: Owner → Admins → Editors → Contributors, each group alpha.
+const roleOrder: Record<string, number> = {
+  owner: 0,
+  admin: 1,
+  editor: 2,
+  contributor: 3,
+};
+allUsers.sort((a, b) => {
+  const r = (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99);
+  if (r !== 0) return r;
+  return a.displayName.localeCompare(b.displayName);
+});
+
+// Read recent audit events for Owner view.
+interface AuditEntry {
+  target: string;
+  targetId: string;
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
+  actorUserId: string;
+  timestamp: string;
+}
+const recentAudit: AuditEntry[] = [];
+if (user.role === "owner" && env.AUDIT_LOG) {
+  let cursor: string | undefined;
+  const limit = 30;
+  do {
+    const listing = await env.AUDIT_LOG.list({ prefix: "edit:", cursor, limit: 100 });
+    for (const key of listing.keys) {
+      const raw = await env.AUDIT_LOG.get(key.name);
+      if (!raw) continue;
+      try {
+        recentAudit.push(JSON.parse(raw) as AuditEntry);
+      } catch {
+        // skip
+      }
+      if (recentAudit.length >= limit * 2) break;
+    }
+    if (recentAudit.length >= limit * 2 || listing.list_complete) break;
+    cursor = listing.cursor;
+  } while (cursor);
+  recentAudit.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  recentAudit.splice(limit);
+}
+
+function byIdMap() {
+  return new Map(allUsers.map((u) => [u.id, u]));
+}
+const userMap = byIdMap();
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: user.timeZone,
+  });
+}
+
+const errorMsg = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Team" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Team"
+    lead={
+      user.role === "owner"
+        ? "Manage everyone who has access. You can add any role, change roles, toggle Contributor trust, and remove team members."
+        : "Add and manage Contributors. Owner handles Admin and Editor roles."
+    }
+  />
+
+  {errorMsg && (
+    <div class="banner error">{errorMsg}</div>
+  )}
+
+  <section class="panel">
+    <h2 class="panel-title">Current team</h2>
+    <div class="panel-body no-pad">
+      <table class="roster">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col">Added</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {allUsers.map((u) => {
+            const isSelf = u.id === user.id;
+            const canRemove =
+              !isSelf &&
+              u.role !== "owner" &&
+              (user.role === "owner" ||
+                (user.role === "admin" && u.role === "contributor"));
+            const canChangeRole =
+              user.role === "owner" && !isSelf && u.role !== "owner";
+            const canToggleTrust =
+              u.role === "contributor" &&
+              (user.role === "owner" || user.role === "admin");
+            const canResetPasskey =
+              user.role === "owner" && !isSelf && u.role !== "owner";
+            return (
+              <tr>
+                <td>
+                  <div class="name">{u.displayName}</div>
+                  {u.email && !u.email.endsWith(".invalid") && (
+                    <div class="email">{u.email}</div>
+                  )}
+                </td>
+                <td>
+                  {canChangeRole ? (
+                    <select
+                      data-role-select
+                      data-user-id={u.id}
+                      class="role-select"
+                    >
+                      <option value="admin" selected={u.role === "admin"}>Admin</option>
+                      <option value="editor" selected={u.role === "editor"}>Editor</option>
+                      <option value="contributor" selected={u.role === "contributor"}>Contributor</option>
+                    </select>
+                  ) : (
+                    <span class={`role role-${u.role}`}>{u.role}</span>
+                  )}
+                </td>
+                <td>
+                  {canToggleTrust ? (
+                    <select
+                      data-trust-select
+                      data-user-id={u.id}
+                      class="trust-select"
+                    >
+                      <option value="default" selected={u.trustState === "default"}>Default</option>
+                      <option value="review-required" selected={u.trustState === "review-required"}>Review required</option>
+                      <option value="revoked" selected={u.trustState === "revoked"}>Revoked</option>
+                    </select>
+                  ) : (
+                    <span class="status">
+                      {u.activationStatus === "not-yet-activated"
+                        ? "Not yet activated"
+                        : u.role === "contributor"
+                          ? u.trustState === "default"
+                            ? "Active"
+                            : u.trustState === "review-required"
+                              ? "Review required"
+                              : "Revoked"
+                          : "Active"}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  <span class="muted-text">{fmtDate(u.createdAt)}</span>
+                </td>
+                <td class="actions-cell">
+                  <div class="row-actions">
+                    {canResetPasskey && (
+                      <button
+                        type="button"
+                        class="link-action"
+                        data-reset-passkey
+                        data-user-id={u.id}
+                        data-user-name={u.displayName}
+                      >
+                        Reset passkey
+                      </button>
+                    )}
+                    {canRemove && (
+                      <form
+                        method="POST"
+                        action={`/api/admin/team/${u.id}/remove`}
+                        class="inline-form"
+                        onsubmit="return confirm('Remove this team member? Their passkeys will be cleared.');"
+                      >
+                        <button type="submit" class="link-danger">Remove</button>
+                      </form>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Add a team member</h2>
+    <div class="panel-body">
+      <form id="add-form" class="add-form">
+        <div class="field">
+          <label for="add-name">Display name</label>
+          <input id="add-name" type="text" required autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="add-email">
+            Email <span class="opt">required for Admin / Editor</span>
+          </label>
+          <input id="add-email" type="email" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="add-phone">Phone <span class="opt">optional</span></label>
+          <input id="add-phone" type="tel" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="add-role">Role</label>
+          <select id="add-role" required>
+            {user.role === "owner" && <option value="admin">Admin</option>}
+            {user.role === "owner" && <option value="editor">Editor</option>}
+            <option value="contributor" selected>Contributor</option>
+          </select>
+        </div>
+        <div class="field" id="trust-field">
+          <label for="add-trust">Trust state <span class="opt">Contributor only</span></label>
+          <select id="add-trust">
+            <option value="default" selected>Default — uploads publish immediately</option>
+            <option value="review-required">Review required — uploads queue for admin</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary" id="add-submit">
+            Create team member
+          </button>
+          <p class="status" id="add-status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <div class="reveal" id="reveal" hidden>
+        <p class="reveal-label" id="reveal-label"></p>
+        <code class="reveal-value" id="reveal-value"></code>
+        <div class="reveal-actions">
+          <button type="button" class="link" id="reveal-copy">Copy</button>
+          <button type="button" class="link" id="reveal-dismiss">Done</button>
+        </div>
+        <p class="reveal-hint" id="reveal-hint"></p>
+      </div>
+    </div>
+  </section>
+
+  {user.role === "owner" && (
+    <section class="panel">
+      <h2 class="panel-title">Audit log</h2>
+      <div class="panel-body no-pad">
+        {recentAudit.length === 0 ? (
+          <p class="empty">Nothing yet. Edits across Profile, animals, and team management will appear here.</p>
+        ) : (
+          <ul class="audit-list">
+            {recentAudit.map((entry) => {
+              const actor = userMap.get(entry.actorUserId);
+              const tgt = entry.target === "user"
+                ? userMap.get(entry.targetId)?.displayName ?? entry.targetId
+                : entry.target === "animal"
+                  ? `animal ${entry.targetId.slice(0, 8)}`
+                  : entry.target;
+              return (
+                <li class="audit-entry">
+                  <div class="audit-head">
+                    <span class="audit-field">{entry.field}</span>
+                    <span class="audit-time">{new Date(entry.timestamp).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      timeZone: user.timeZone,
+                    })}</span>
+                  </div>
+                  <div class="audit-body">
+                    <span class="audit-actor">{actor?.displayName ?? "unknown"}</span>
+                    {" → "}
+                    <span class="audit-target">{tgt}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </section>
+  )}
+</AdminLayout>
+
+<script>
+  const form = document.querySelector("#add-form") as HTMLFormElement;
+  const nameInput = document.querySelector("#add-name") as HTMLInputElement;
+  const emailInput = document.querySelector("#add-email") as HTMLInputElement;
+  const phoneInput = document.querySelector("#add-phone") as HTMLInputElement;
+  const roleSelect = document.querySelector("#add-role") as unknown as HTMLSelectElement;
+  const trustSelect = document.querySelector("#add-trust") as unknown as HTMLSelectElement;
+  const trustField = document.querySelector("#trust-field") as HTMLElement;
+  const submitBtn = document.querySelector("#add-submit") as HTMLButtonElement;
+  const statusEl = document.querySelector("#add-status") as HTMLElement;
+
+  const reveal = document.querySelector("#reveal") as HTMLElement;
+  const revealLabel = document.querySelector("#reveal-label") as HTMLElement;
+  const revealValue = document.querySelector("#reveal-value") as HTMLElement;
+  const revealHint = document.querySelector("#reveal-hint") as HTMLElement;
+  const copyBtn = document.querySelector("#reveal-copy") as HTMLButtonElement;
+  const dismissBtn = document.querySelector("#reveal-dismiss") as HTMLButtonElement;
+
+  function updateTrustVisibility() {
+    trustField.style.display = roleSelect.value === "contributor" ? "" : "none";
+  }
+  roleSelect.addEventListener("change", updateTrustVisibility);
+  updateTrustVisibility();
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    submitBtn.disabled = true;
+    statusEl.textContent = "Creating…";
+    statusEl.dataset.kind = "info";
+    try {
+      const body = {
+        displayName: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        phone: phoneInput.value.trim() || null,
+        role: roleSelect.value,
+        trustState: roleSelect.value === "contributor" ? trustSelect.value : undefined,
+      };
+      const res = await fetch("/api/admin/team/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        statusEl.textContent = err.error ?? "Couldn't create.";
+        statusEl.dataset.kind = "error";
+        submitBtn.disabled = false;
+        return;
+      }
+      const payload = (await res.json()) as {
+        inviteUrl?: string;
+        uploadToken?: string;
+        inviteHint?: string;
+      };
+      statusEl.textContent = "";
+      form.reset();
+      updateTrustVisibility();
+      submitBtn.disabled = false;
+
+      if (payload.uploadToken) {
+        revealLabel.textContent = "Upload token — shown once";
+        revealValue.textContent = payload.uploadToken;
+      } else if (payload.inviteUrl) {
+        revealLabel.textContent = "Invite link — 48-hour single-use";
+        revealValue.textContent = payload.inviteUrl;
+      }
+      revealHint.textContent = payload.inviteHint ?? "";
+      reveal.removeAttribute("hidden");
+    } catch (err) {
+      statusEl.textContent = err instanceof Error ? err.message : "Network error.";
+      statusEl.dataset.kind = "error";
+      submitBtn.disabled = false;
+    }
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(revealValue.textContent ?? "");
+      copyBtn.textContent = "Copied";
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 2000);
+    } catch {
+      copyBtn.textContent = "Select and copy manually";
+    }
+  });
+
+  dismissBtn.addEventListener("click", () => {
+    reveal.setAttribute("hidden", "");
+    window.location.reload();
+  });
+
+  (document.querySelectorAll("[data-role-select]") as unknown as NodeListOf<HTMLSelectElement>).forEach((sel) => {
+    const original = sel.value;
+    sel.addEventListener("change", async () => {
+      const id = sel.dataset.userId!;
+      const role = sel.value;
+      const res = await fetch(`/api/admin/team/${id}/role`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(err.error ?? "Couldn't change role.");
+        sel.value = original;
+      }
+    });
+  });
+
+  (document.querySelectorAll("[data-trust-select]") as unknown as NodeListOf<HTMLSelectElement>).forEach((sel) => {
+    const original = sel.value;
+    sel.addEventListener("change", async () => {
+      const id = sel.dataset.userId!;
+      const trustState = sel.value;
+      const res = await fetch(`/api/admin/team/${id}/trust`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trustState }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(err.error ?? "Couldn't change trust state.");
+        sel.value = original;
+      }
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>("[data-reset-passkey]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.userId!;
+      const name = btn.dataset.userName ?? "this user";
+      if (!confirm(
+        `Reset passkeys for ${name}? All of their registered devices will be cleared immediately. ` +
+        `You'll get a single-use 48-hour invite link to send them so they can register a fresh passkey.`
+      )) {
+        return;
+      }
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/admin/team/${id}/reset-passkey`, {
+          method: "POST",
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          inviteUrl?: string;
+          inviteHint?: string;
+        };
+        if (!res.ok || !payload.ok || !payload.inviteUrl) {
+          alert(payload.error ?? "Couldn't reset.");
+          btn.disabled = false;
+          return;
+        }
+        // Reuse the add-team reveal panel to display the invite URL.
+        const revealLabel = document.querySelector("#reveal-label") as HTMLElement | null;
+        const revealValue = document.querySelector("#reveal-value") as HTMLElement | null;
+        const revealHint = document.querySelector("#reveal-hint") as HTMLElement | null;
+        const reveal = document.querySelector("#reveal") as HTMLElement | null;
+        if (revealLabel) revealLabel.textContent = `Reset invite for ${name}`;
+        if (revealValue) revealValue.textContent = payload.inviteUrl;
+        if (revealHint) revealHint.textContent = payload.inviteHint ?? "";
+        reveal?.removeAttribute("hidden");
+        reveal?.scrollIntoView({ behavior: "smooth", block: "center" });
+        btn.disabled = false;
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Network error.");
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 62rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .panel-body { padding: var(--space-5); }
+  .panel-body.no-pad { padding: 0; }
+
+  .banner {
+    padding: var(--space-3) var(--space-4);
+    background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg));
+    border-left: 3px solid var(--color-accent);
+    margin-bottom: var(--space-5);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+  }
+
+  .roster {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .roster thead th {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-align: left;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .roster tbody tr { border-bottom: 1px solid var(--color-cream-deep); }
+  .roster tbody tr:last-child { border-bottom: 0; }
+
+  .roster td {
+    padding: var(--space-4) var(--space-5);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    vertical-align: middle;
+  }
+
+  .name { font-weight: var(--font-weight-medium); }
+  .email { font-size: var(--font-size-xs); color: var(--color-muted); margin-top: 2px; }
+
+  .role {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .role-owner { color: var(--color-accent); }
+
+  .role-select, .trust-select {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .muted-text { color: var(--color-muted); font-size: var(--font-size-xs); }
+
+  .actions-cell { text-align: right; }
+
+  .row-actions {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .inline-form { display: inline; margin: 0; }
+
+  .link-action,
+  .link-danger {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .link-action:hover,
+  .link-danger:hover { color: var(--color-accent); }
+
+  .link-action:disabled,
+  .link-danger:disabled { opacity: 0.5; cursor: wait; }
+
+  .add-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .field:has(#add-name), .field:has(#add-email), .field:has(#trust-field), .add-form .actions {
+    grid-column: 1 / -1;
+  }
+
+  .field label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .field .opt {
+    font-weight: var(--font-weight-normal);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--color-muted);
+    margin-left: 0.5em;
+    font-style: italic;
+  }
+
+  .field input,
+  .field select {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .field input:focus, .field select:focus {
+    outline: 0;
+    border-color: var(--color-accent);
+  }
+
+  .add-form .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .primary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.85rem 1.8rem;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-deep);
+    border-color: var(--color-accent-deep);
+  }
+
+  .primary:disabled { opacity: 0.6; cursor: wait; }
+
+  .add-form .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .add-form .status[data-kind="error"] { color: var(--color-accent); }
+
+  .reveal {
+    margin-top: var(--space-6);
+    padding: var(--space-5);
+    background: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-3);
+  }
+
+  .reveal-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-3);
+  }
+
+  .reveal-value {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    word-break: break-all;
+    padding: var(--space-3);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    margin: 0 0 var(--space-3);
+  }
+
+  .reveal-actions {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .reveal-hint {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    line-height: var(--line-height-relaxed);
+    margin: 0;
+  }
+
+  .audit-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .audit-entry {
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .audit-entry:last-child { border-bottom: 0; }
+
+  .audit-head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: 2px;
+  }
+
+  .audit-field {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-accent);
+  }
+
+  .audit-time {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .audit-body {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+  }
+
+  .audit-actor { font-weight: var(--font-weight-medium); }
+  .audit-target { color: var(--color-muted); }
+
+  .empty {
+    padding: var(--space-5);
+    color: var(--color-muted);
+    font-style: italic;
+    margin: 0;
+  }
+</style>

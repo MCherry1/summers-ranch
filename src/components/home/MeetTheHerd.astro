@@ -1,0 +1,137 @@
+---
+/**
+ * Meet-the-herd home section — spec §8.1 item 2. Kicker + Playfair
+ * title with italic emphasis + short prose + "See the Herd" CTA.
+ *
+ * Below the header: a teaser row with 3 featured animals (photos +
+ * names/labels) linking to their cards. Teaser row renders data-
+ * driven; when no animals exist yet, the row hides (better empty than
+ * wrong, §1 principle 2) and only the header + CTA render.
+ */
+import PageSection from "~/layouts/PageSection.astro";
+import Cta from "~/components/ui/Cta.astro";
+import { getAllAnimalsLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
+import { displayName } from "~/lib/derive/naming";
+import { silhouetteFor } from "~/lib/display/silhouette";
+
+// Pick 3 featured animals for the home teaser. Preference order:
+// available → distinction → newest DOB. Fallback: first 3 in seed.
+const animals = await getAllAnimalsLive();
+const available = animals.filter((a) => a.currentStatus === "available");
+const distinguished = animals.filter((a) => a.distinction !== null);
+const byDobDesc = [...animals].sort((a, b) => {
+  const aDob = a.dateOfBirth ?? "";
+  const bDob = b.dateOfBirth ?? "";
+  return bDob.localeCompare(aDob);
+});
+
+const seen = new Set<string>();
+const featured: typeof animals = [];
+for (const pool of [available, distinguished, byDobDesc]) {
+  for (const animal of pool) {
+    if (featured.length >= 3) break;
+    if (seen.has(animal.id)) continue;
+    if (animal.isReference) continue;
+    seen.add(animal.id);
+    featured.push(animal);
+  }
+}
+
+const featuredPhotos = new Map(
+  await Promise.all(
+    featured.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
+---
+
+<PageSection
+  kicker="Meet the herd"
+  title={`Every cow has a name. <em>Every name has a story.</em>`}
+  lead="Each animal in the herd has a card — the front shows who they are at a glance, the back opens the details: pedigree, history, stats, and photos across their life."
+  align="center"
+>
+  {featured.length > 0 && (
+    <div class="teaser-row">
+      {featured.map((animal) => {
+        const photo = featuredPhotos.get(animal.id) ?? null;
+        const photoUrl = photo?.uri ?? silhouetteFor(animal.sex);
+        return (
+          <a href={`/herd/${animal.id}`} class="teaser">
+            <div class="photo-slot">
+              <img
+                src={photoUrl}
+                alt={displayName(animal)}
+                loading="lazy"
+                class:list={["photo", { placeholder: photo === null }]}
+              />
+            </div>
+            <p class="name">{displayName(animal)}</p>
+          </a>
+        );
+      })}
+    </div>
+  )}
+
+  <div class="cta-row">
+    <Cta href="/herd">See the herd</Cta>
+  </div>
+</PageSection>
+
+<style>
+  .teaser-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    margin: var(--space-8) 0;
+  }
+
+  @media (min-width: 640px) {
+    .teaser-row {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+    }
+  }
+
+  .teaser {
+    text-decoration: none;
+    color: var(--color-ink);
+    transition: var(--transition-default);
+  }
+
+  .teaser:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .photo-slot {
+    aspect-ratio: 3 / 4;
+    background: var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    margin-bottom: var(--space-3);
+    overflow: hidden;
+  }
+
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .photo-slot img.placeholder {
+    object-fit: contain;
+    padding: 8%;
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    margin: 0;
+  }
+
+  .cta-row {
+    margin-top: var(--space-8);
+    display: flex;
+    justify-content: center;
+  }
+</style>

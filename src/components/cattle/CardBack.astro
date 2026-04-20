@@ -1,0 +1,319 @@
+---
+/**
+ * CardBack — spec §4.
+ *
+ * Evaluation surface. Sections render only when they have content
+ * (empty sections hide entirely on public surfaces per §4.1).
+ *
+ *   1. Header strip — name · #tag in Playfair
+ *   2. Corner thumbnail — current king-of-the-hill, expandable to a
+ *      chronological growth carousel (§4.2-§4.3)
+ *   3. Identity — sex, breed, DOB, age, status
+ *   4. Pedigree — sire (linked if in herd), dam (linked if in herd)
+ *   5. Registration — AHA number as external link with ↗
+ *   6. Performance — weaning weight, yearling weight, EPDs when set
+ *   7. Sale details — asking price, terms, inquiry CTA (available only)
+ *   8. Progeny — "Calves from this cow" linked list (for cows)
+ *   9. History — significant dates
+ *  10. Gallery link — "[Name]'s gallery"
+ *  11. Inquiry CTA — "Ask About [Name]" (available only)
+ *
+ * Plain-language labels throughout (§12.8). "American Hereford papers"
+ * not "Registration." "Calves from this cow" not "Progeny."
+ */
+import type { AnimalRecord, MediaAsset } from "~/schemas";
+import { formatAge } from "~/lib/derive/age";
+import { displayName, headerStrip, possessive, sexLabel } from "~/lib/derive/naming";
+import { silhouetteFor } from "~/lib/display/silhouette";
+import { STATUS_LABEL } from "~/lib/display/status";
+import Cta from "~/components/ui/Cta.astro";
+import GrowthCarousel from "~/components/cattle/GrowthCarousel.astro";
+
+interface Props {
+  animal: AnimalRecord;
+  thumbnailPhoto: MediaAsset | null;
+  timelinePhotos?: MediaAsset[];  // chronological growth story per §4.3
+  sire: AnimalRecord | null;      // only set when sire is in the herd
+  dam: AnimalRecord | null;
+  calves: AnimalRecord[];         // in-herd progeny (for cows)
+}
+
+const {
+  animal,
+  thumbnailPhoto,
+  timelinePhotos = [],
+  sire,
+  dam,
+  calves,
+} = Astro.props;
+
+const ageString = formatAge(animal.dateOfBirth);
+const dobLabel = animal.dateOfBirth
+  ? new Date(animal.dateOfBirth + "T00:00:00Z").toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    })
+  : null;
+
+const showPerformance =
+  animal.performanceData !== null &&
+  (animal.performanceData.weaningWeight !== null ||
+    animal.performanceData.yearlingWeight !== null ||
+    (animal.performanceData.epd !== null &&
+      Object.keys(animal.performanceData.epd).length > 0));
+
+const showProgeny = animal.sex === "cow" && calves.length > 0;
+const showInquiry = animal.currentStatus === "available";
+
+const thumbUrl = thumbnailPhoto?.uri ?? silhouetteFor(animal.sex);
+const isPlaceholderThumb = thumbnailPhoto === null;
+
+const name = displayName(animal);
+---
+
+<article class="card-back">
+  <div class="header">
+    <h2 class="title">{headerStrip(animal)}</h2>
+    <GrowthCarousel
+      thumbnailSrc={thumbUrl}
+      placeholderThumb={isPlaceholderThumb}
+      photos={timelinePhotos}
+      animalName={name}
+    />
+  </div>
+
+  {/* Identity */}
+  <section class="section">
+    <h3 class="section-title">Identity</h3>
+    <dl class="rows">
+      <div class="row"><dt>Sex</dt><dd>{sexLabel(animal.sex)}</dd></div>
+      <div class="row"><dt>Breed</dt><dd>{animal.breed}</dd></div>
+      {dobLabel && (
+        <div class="row"><dt>Born</dt><dd>{dobLabel}</dd></div>
+      )}
+      {ageString && (
+        <div class="row"><dt>Age</dt><dd>{ageString}</dd></div>
+      )}
+      <div class="row">
+        <dt>Status</dt><dd>{STATUS_LABEL[animal.currentStatus]}</dd>
+      </div>
+    </dl>
+  </section>
+
+  {/* Pedigree */}
+  {(sire || dam) && (
+    <section class="section">
+      <h3 class="section-title">Sire and dam</h3>
+      <dl class="rows">
+        {sire && (
+          <div class="row">
+            <dt>Sire</dt>
+            <dd><a href={`/herd/${sire.id}`}>{displayName(sire)}</a></dd>
+          </div>
+        )}
+        {dam && (
+          <div class="row">
+            <dt>Dam</dt>
+            <dd><a href={`/herd/${dam.id}`}>{displayName(dam)}</a></dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  )}
+
+  {/* Registration — plain-language label per §12.8 */}
+  {animal.registrationNumber && (
+    <section class="section">
+      <h3 class="section-title">American Hereford papers</h3>
+      <p class="paragraph">
+        <a
+          href={`https://www.hereford.org/genetics/animal-search/?RegNum=${animal.registrationNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          AHA #{animal.registrationNumber} <span aria-hidden="true">&nearr;</span>
+        </a>
+      </p>
+    </section>
+  )}
+
+  {/* Performance data */}
+  {showPerformance && (
+    <section class="section">
+      <h3 class="section-title">Performance</h3>
+      <dl class="rows">
+        {animal.performanceData!.weaningWeight !== null && (
+          <div class="row">
+            <dt>Weaning weight</dt>
+            <dd>{animal.performanceData!.weaningWeight} lbs</dd>
+          </div>
+        )}
+        {animal.performanceData!.yearlingWeight !== null && (
+          <div class="row">
+            <dt>Yearling weight</dt>
+            <dd>{animal.performanceData!.yearlingWeight} lbs</dd>
+          </div>
+        )}
+        {animal.performanceData!.epd &&
+          Object.entries(animal.performanceData!.epd).map(([key, value]) => (
+            <div class="row">
+              <dt>{key.toUpperCase()}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+      </dl>
+    </section>
+  )}
+
+  {/* Progeny (cows only, when in-herd calves exist) */}
+  {showProgeny && (
+    <section class="section">
+      <h3 class="section-title">Calves from this cow</h3>
+      <ul class="progeny-list">
+        {calves.map((calf) => (
+          <li>
+            <a href={`/herd/${calf.id}`}>{displayName(calf)}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {/* Gallery link — rendered for every animal, even zero-photo, so
+      admin and returning users know the gallery surface exists. */}
+  <section class="section gallery-link">
+    <a href={`/herd/${animal.id}/gallery`}>
+      {possessive(animal)} gallery <span aria-hidden="true">&rsaquo;</span>
+    </a>
+  </section>
+
+  {/* Inquiry CTA — available animals only per §4.1 */}
+  {showInquiry && (
+    <section class="section section-cta">
+      <Cta href={`/contact?animal=${animal.id}`}>
+        Ask about {animal.name ? animal.name : "this animal"}
+      </Cta>
+    </section>
+  )}
+</article>
+
+<style>
+  .card-back {
+    background: var(--color-paper);
+    border-radius: var(--radius-3);
+    padding: var(--space-6) var(--space-6) var(--space-4);
+    box-shadow: var(--shadow-resting);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-4);
+    align-items: flex-start;
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-tight);
+    margin: 0;
+    padding-top: 6px;  /* optical alignment with thumbnail top */
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .section-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0 0 var(--space-2);
+  }
+
+  .paragraph {
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .rows {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    column-gap: var(--space-4);
+    row-gap: 0;
+  }
+
+  .row {
+    display: contents;
+  }
+
+  .rows dt {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .rows dd {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .row:first-child dt,
+  .row:first-child dd {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .progeny-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .gallery-link a {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+  }
+
+  .gallery-link a:hover {
+    color: var(--color-accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  .section-cta {
+    align-items: flex-start;
+    margin-top: var(--space-2);
+  }
+</style>

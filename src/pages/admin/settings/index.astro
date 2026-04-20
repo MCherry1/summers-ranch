@@ -1,0 +1,312 @@
+---
+/**
+ * Profile — spec §17.1. Inline-edit on displayName, email, phone,
+ * timeZone, adminAccentColor. Every user manages their own.
+ *
+ * The adminAccentColor picker (§17.1.1) is a curated palette of
+ * preset swatches rendered as radio-style chips. Selecting a swatch
+ * POSTs the hex value; the admin chrome rerenders with the new
+ * accent on the next page load.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import InlineField from "~/components/admin/InlineField.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+
+const guard = await requireAdmin(Astro);
+if (guard instanceof Response) return guard;
+const user = guard;
+
+const endpoint = `/api/admin/user/${user.id}/field`;
+
+// IANA timezone common-ranch-America set; a full picker arrives later
+const tzOptions = [
+  { value: "America/Los_Angeles", label: "Pacific (Los Angeles)" },
+  { value: "America/Denver", label: "Mountain (Denver)" },
+  { value: "America/Chicago", label: "Central (Chicago)" },
+  { value: "America/New_York", label: "Eastern (New York)" },
+  { value: "America/Phoenix", label: "Mountain — no DST (Phoenix)" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+];
+
+// Curated accent swatches per §17.1.1. Chosen to avoid clashes with
+// ribbons (gold / DOD blue / SOD red / birthday pink+blue) while
+// staying warm and serious.
+const accentSwatches: Array<{ value: string | null; label: string }> = [
+  { value: null, label: "Default burgundy" },
+  { value: "#6d4b36", label: "Saddle brown" },
+  { value: "#3f6b5e", label: "Forest" },
+  { value: "#2e4a6b", label: "Deep slate blue" },
+  { value: "#7a4a8a", label: "Amethyst" },
+  { value: "#8b6f2e", label: "Antique gold" },
+  { value: "#5a3d24", label: "Walnut" },
+  { value: "#234a36", label: "Pine" },
+  { value: "#8a4a62", label: "Mulberry" },
+];
+---
+
+<AdminLayout title="Profile" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Profile"
+    lead="Your name, contact info, timezone, and admin accent color. Click any field to edit; changes save as you move off the field."
+  />
+
+  <section class="panel">
+    <h2 class="panel-title">You</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Display name"
+        endpoint={endpoint}
+        field="displayName"
+        value={user.displayName}
+        placeholder="Your name"
+      />
+      <InlineField
+        label="Email"
+        endpoint={endpoint}
+        field="email"
+        value={user.email}
+        tooltip="The email you enter at sign-in. Also where new-inquiry notifications land unless you turn them off on the Notifications page."
+      />
+      <InlineField
+        label="Phone"
+        endpoint={endpoint}
+        field="phone"
+        value={user.phone}
+        nullable={true}
+        placeholder="Add a phone number"
+        tooltip="Optional. Required only if you want SMS notifications for new inquiries."
+      />
+      <InlineField
+        label="Timezone"
+        endpoint={endpoint}
+        field="timeZone"
+        value={user.timeZone}
+        variant="select"
+        options={tzOptions}
+        tooltip="Used for timestamps in audit logs, nudges, and notifications. Defaults to Pacific for ranch operations."
+      />
+      <div class="field-row">
+        <div class="label-row">
+          <span class="label">Role</span>
+        </div>
+        <p class="readonly-value">{user.role}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Admin accent color</h2>
+    <div class="panel-body">
+      <p class="help">
+        Only affects the admin interface chrome you see. The public site and
+        other admins&rsquo; surfaces stay on the ranch burgundy.
+      </p>
+      <div
+        class="swatches"
+        role="radiogroup"
+        aria-label="Admin accent color"
+        data-accent-picker
+        data-endpoint={endpoint}
+      >
+        {accentSwatches.map((swatch) => {
+          const selected =
+            (user.adminAccentColor ?? null) === swatch.value;
+          return (
+            <button
+              type="button"
+              class:list={["swatch", { selected }]}
+              data-accent-value={swatch.value ?? ""}
+              style={swatch.value ? `--swatch: ${swatch.value};` : undefined}
+              aria-pressed={selected ? "true" : "false"}
+              title={swatch.label}
+            >
+              <span class="fill"></span>
+              <span class="swatch-label">{swatch.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p class="accent-status" data-accent-status aria-live="polite"></p>
+    </div>
+  </section>
+</AdminLayout>
+
+<script>
+  function initAccentPicker() {
+    const picker = document.querySelector<HTMLElement>("[data-accent-picker]");
+    if (!picker) return;
+    const endpoint = picker.dataset.endpoint!;
+    const status = document.querySelector<HTMLElement>("[data-accent-status]");
+
+    picker.addEventListener("click", async (evt) => {
+      const btn = (evt.target as HTMLElement).closest<HTMLButtonElement>(".swatch");
+      if (!btn) return;
+      const raw = btn.dataset.accentValue;
+      const value = raw === "" || raw === undefined ? null : raw;
+
+      if (status) status.textContent = "Saving…";
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "adminAccentColor", value }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !payload.ok) {
+          if (status) status.textContent = payload.error ?? "Couldn't save.";
+          return;
+        }
+
+        // Update selected state
+        picker.querySelectorAll<HTMLButtonElement>(".swatch").forEach((b) => {
+          const match =
+            (b.dataset.accentValue === "" && value === null) ||
+            b.dataset.accentValue === value;
+          b.classList.toggle("selected", match);
+          b.setAttribute("aria-pressed", match ? "true" : "false");
+        });
+
+        // Update the body accent variable live
+        document.body.style.setProperty(
+          "--color-accent",
+          value ?? ""
+        );
+        if (value === null) {
+          document.body.style.removeProperty("--color-accent");
+        }
+        if (status) status.textContent = "Saved";
+        setTimeout(() => {
+          if (status) status.textContent = "";
+        }, 1800);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Network error.";
+        if (status) status.textContent = message;
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAccentPicker);
+  } else {
+    initAccentPicker();
+  }
+</script>
+
+<style>
+  .panel {
+    margin-bottom: var(--space-8);
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 48rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .panel-body {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .field-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .label-row .label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .readonly-value {
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .help {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0 0 var(--space-5);
+    max-width: var(--max-width-prose);
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-3);
+    padding: var(--space-3);
+    cursor: pointer;
+    transition: var(--transition-default);
+    --swatch: var(--color-accent);
+  }
+
+  .swatch:hover,
+  .swatch:focus-visible {
+    border-color: var(--color-cream-deep);
+  }
+
+  .swatch.selected {
+    border-color: var(--swatch);
+  }
+
+  .fill {
+    display: block;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .swatch-label {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-ink);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .accent-status {
+    margin: var(--space-4) 0 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    min-height: 1em;
+  }
+</style>

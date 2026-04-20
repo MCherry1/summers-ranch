@@ -1,0 +1,90 @@
+---
+/**
+ * Cta — primary and secondary call-to-action per spec §18.3 and
+ * POLISH §7.1.
+ *
+ * Primary: filled burgundy bg, cream text, 1px burgundy border,
+ *   radius 1px (intentionally square per POLISH — sharp is the
+ *   aesthetic). Padding 0.85rem 1.8rem. Work Sans 600 at 0.78rem,
+ *   0.15em tracking, uppercase. Hover: darkens to --color-accent-deep.
+ *
+ * Secondary: transparent bg, burgundy text, 1px burgundy border,
+ *   otherwise identical. Hover: fills burgundy with cream text.
+ *
+ * External links get a ↗ icon after the label; internal links get no
+ * icon. ariaLabel can override the visible label for screen readers.
+ */
+
+interface Props {
+  href: string;
+  variant?: "primary" | "secondary";
+  external?: boolean;
+  ariaLabel?: string;
+}
+
+const {
+  href,
+  variant = "primary",
+  external = false,
+  ariaLabel,
+} = Astro.props;
+
+const rel = external ? "noopener noreferrer" : undefined;
+const target = external ? "_blank" : undefined;
+---
+
+<a
+  href={href}
+  class:list={["cta", variant]}
+  rel={rel}
+  target={target}
+  aria-label={ariaLabel}
+>
+  <slot />
+  {external && <span aria-hidden="true" class="external">&nbsp;&#8599;</span>}
+</a>
+
+<style>
+  .cta {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.85rem 1.8rem;
+    border-radius: var(--radius-1);
+    border: 1px solid var(--color-accent);
+    transition: var(--transition-default);
+    white-space: nowrap;
+  }
+
+  .cta.primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .cta.primary:hover {
+    background: var(--color-accent-deep);
+    border-color: var(--color-accent-deep);
+    text-decoration: none;
+    color: var(--color-bg);
+  }
+
+  .cta.secondary {
+    background: transparent;
+    color: var(--color-accent);
+  }
+
+  .cta.secondary:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    text-decoration: none;
+  }
+
+  .external {
+    display: inline-block;
+    margin-left: 0.15em;
+  }
+</style>

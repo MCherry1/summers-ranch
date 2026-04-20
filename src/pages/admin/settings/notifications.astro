@@ -1,0 +1,330 @@
+---
+/**
+ * Notifications — spec §17.2. Per-user email/SMS preference matrix.
+ *
+ * Events (spec table):
+ *   - New inquiry received
+ *   - Contributor uploaded
+ *   - Pending tag requires resolution
+ *   - Upload issue detected
+ *   - Nudge surfaced on animal I've edited recently
+ *
+ * Rows without a phone set on Profile have their SMS toggle disabled
+ * with a hint linking back to Profile. Each change POSTs to
+ * /api/admin/user/[id]/notification and flips the toggle live.
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import { requireAdmin } from "~/lib/auth/guards";
+
+const guard = await requireAdmin(Astro);
+if (guard instanceof Response) return guard;
+const user = guard;
+
+interface EventRow {
+  key: string;
+  label: string;
+  description: string;
+}
+
+// Role-aware event list. Contributors get none of these (they have
+// no admin capabilities that would fire these events).
+const rowsForRole = (role: string): EventRow[] => {
+  if (role === "contributor") {
+    return [];
+  }
+  const base: EventRow[] = [
+    {
+      key: "new-inquiry-received",
+      label: "New inquiry received",
+      description: "Someone used the public contact form or an Ask-about-this-animal CTA.",
+    },
+    {
+      key: "contributor-uploaded",
+      label: "Contributor uploaded",
+      description: "A team member at the Contributor role sent photos.",
+    },
+    {
+      key: "pending-tag-requires-resolution",
+      label: "Pending tag requires resolution",
+      description: "The Shortcut created a placeholder animal that needs name, sex, and DOB filled in.",
+    },
+    {
+      key: "upload-issue-detected",
+      label: "Upload issue detected",
+      description: "A photo came in that needs attention — invalid tag, classifier failure, not cattle.",
+    },
+    {
+      key: "nudge-surfaced",
+      label: "Nudge surfaced",
+      description: "An animal I've edited recently has a new nudge — stale photo, missing field, etc.",
+    },
+  ];
+  // Editor role doesn't see inquiries, so hide that row.
+  if (role === "editor") {
+    return base.filter((r) => r.key !== "new-inquiry-received");
+  }
+  return base;
+};
+
+const rows = rowsForRole(user.role);
+const endpoint = `/api/admin/user/${user.id}/notification`;
+const hasPhone = Boolean(user.phone);
+---
+
+<AdminLayout title="Notifications" user={user}>
+  <AdminPageHeader
+    kicker="Settings"
+    title="Notifications"
+    lead="Choose how you want to hear about each event. Changes save immediately."
+  />
+
+  {rows.length === 0 ? (
+    <section class="panel">
+      <div class="panel-body">
+        <p class="muted">
+          Contributors don&rsquo;t receive notifications by default. Your uploads just work.
+        </p>
+      </div>
+    </section>
+  ) : (
+    <section class="panel">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th scope="col" class="event-col">Event</th>
+            <th scope="col">Email</th>
+            <th scope="col">SMS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const current = user.notificationPrefs[row.key] ?? { email: false, sms: false };
+            return (
+              <tr>
+                <th scope="row" class="event-cell">
+                  <span class="event-label">{row.label}</span>
+                  <span class="event-desc">{row.description}</span>
+                </th>
+                <td>
+                  <label class="toggle">
+                    <input
+                      type="checkbox"
+                      data-notify
+                      data-endpoint={endpoint}
+                      data-event={row.key}
+                      data-channel="email"
+                      checked={current.email}
+                    />
+                    <span class="toggle-track"></span>
+                  </label>
+                </td>
+                <td>
+                  <label
+                    class:list={["toggle", { disabled: !hasPhone }]}
+                    title={hasPhone ? undefined : "Add a phone number on Profile to enable SMS."}
+                  >
+                    <input
+                      type="checkbox"
+                      data-notify
+                      data-endpoint={endpoint}
+                      data-event={row.key}
+                      data-channel="sms"
+                      checked={current.sms}
+                      disabled={!hasPhone}
+                    />
+                    <span class="toggle-track"></span>
+                  </label>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {!hasPhone && (
+        <p class="phone-hint">
+          SMS is disabled — <a href="/admin/settings">add a phone number on Profile</a> to turn it on.
+        </p>
+      )}
+    </section>
+  )}
+</AdminLayout>
+
+<script>
+  const toggles = document.querySelectorAll<HTMLInputElement>("[data-notify]");
+  toggles.forEach((toggle) => {
+    toggle.addEventListener("change", async () => {
+      const endpoint = toggle.dataset.endpoint!;
+      const event = toggle.dataset.event!;
+      const channel = toggle.dataset.channel!;
+      const value = toggle.checked;
+      const previous = !value;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event, channel, value }),
+        });
+        if (!res.ok) {
+          const err = (await res.json().catch(() => ({}))) as { error?: string };
+          toggle.checked = previous;
+          alert(err.error ?? "Couldn't save.");
+        }
+      } catch (err) {
+        toggle.checked = previous;
+        alert(err instanceof Error ? err.message : "Network error.");
+      }
+    });
+  });
+</script>
+
+<style>
+  .panel {
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 52rem;
+    overflow: hidden;
+  }
+
+  .panel-body {
+    padding: var(--space-5);
+  }
+
+  .muted {
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .matrix thead th {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    padding: var(--space-4) var(--space-3);
+    text-align: center;
+    border-bottom: 1px solid var(--color-cream-deep);
+    width: 88px;
+  }
+
+  .matrix thead th.event-col {
+    text-align: left;
+    width: auto;
+    padding-left: var(--space-5);
+  }
+
+  .matrix tbody tr {
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .matrix tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .event-cell {
+    text-align: left;
+    padding: var(--space-4) var(--space-5);
+    vertical-align: middle;
+    font-weight: var(--font-weight-normal);
+  }
+
+  .event-label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .event-desc {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin-top: var(--space-1);
+    max-width: 32rem;
+  }
+
+  .matrix tbody td {
+    text-align: center;
+    vertical-align: middle;
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  .toggle.disabled {
+    cursor: not-allowed;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: inherit;
+  }
+
+  .toggle-track {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--color-cream-deep);
+    border-radius: 999px;
+    position: relative;
+    transition: var(--transition-default);
+  }
+
+  .toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: var(--color-paper);
+    border-radius: 50%;
+    transition: var(--transition-default);
+    box-shadow: var(--shadow-ambient);
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--color-accent);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(20px);
+  }
+
+  .toggle input:disabled + .toggle-track {
+    opacity: 0.5;
+  }
+
+  .phone-hint {
+    padding: var(--space-4) var(--space-5);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    border-top: 1px solid var(--color-cream-deep);
+    margin: 0;
+  }
+
+  .phone-hint a {
+    color: var(--color-accent);
+  }
+</style>

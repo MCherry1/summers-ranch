@@ -1,0 +1,44 @@
+---
+/**
+ * Home — spec §8. Five sections top to bottom: hero, meet-the-herd,
+ * about, looking-to-buy (hidden when 0 available per §8.2), contact.
+ *
+ * This file composes the sections; section components live in
+ * src/components/home/. Real section copy lives in src/content/home/.
+ *
+ * Built out in stages. For now: the site shell is in place with Nav
+ * and Footer, and a minimal above-the-fold hero. Remaining sections
+ * land in the next push.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import Hero from "~/components/home/Hero.astro";
+import MeetTheHerd from "~/components/home/MeetTheHerd.astro";
+import AboutRanch from "~/components/home/AboutRanch.astro";
+import LookingToBuy from "~/components/home/LookingToBuy.astro";
+import GetInTouch from "~/components/home/GetInTouch.astro";
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
+import { availableCountLive } from "~/lib/cattle-live";
+
+const available = await availableCountLive();
+
+// Short CDN cache so public home reflects admin edits within a minute
+// without making every request hit the origin.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
+---
+
+<BaseLayout
+  title={`${site.ranchName} — registered Herefords, Sutter Creek, California`}
+  description="Summers Ranch — a family-owned registered Hereford operation in Sutter Creek, California since 1998."
+  canonicalPath="/"
+>
+  <Hero />
+  <MeetTheHerd />
+  <AboutRanch />
+  {available > 0 && <LookingToBuy count={available} />}
+  <GetInTouch />
+</BaseLayout>

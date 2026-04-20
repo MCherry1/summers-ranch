@@ -1,0 +1,41 @@
+---
+/**
+ * Looking-to-buy home section — spec §8.1 item 4. Renders only when
+ * 1+ animals are available (§8.2). Caller handles the visibility
+ * check; this component assumes it should render.
+ *
+ * Kicker + Playfair title with italic emphasis + short prose +
+ * "See what's available" CTA linking to /herd filtered to Available.
+ */
+import PageSection from "~/layouts/PageSection.astro";
+import Cta from "~/components/ui/Cta.astro";
+
+interface Props {
+  count: number;
+}
+
+const { count } = Astro.props;
+
+const leadCopy = count === 1
+  ? "There is one animal currently available. Every sale carries the same standard of care and documentation."
+  : `There are ${count} animals currently available. Every sale carries the same standard of care and documentation.`;
+---
+
+<PageSection
+  kicker="Looking to buy"
+  title={`Looking for your <em>next sire?</em>`}
+  lead={leadCopy}
+  align="center"
+>
+  <div class="cta-row">
+    <Cta href="/herd?filter=available">See what&rsquo;s available</Cta>
+  </div>
+</PageSection>
+
+<style>
+  .cta-row {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: center;
+  }
+</style>

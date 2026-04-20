@@ -1,0 +1,18 @@
+{
+  "ranchName": "Summers Ranch",
+  "tagline": "A family tradition, honestly kept.",
+  "contactPhone": "209-555-5555",
+  "contactEmail": "info@mrsummersranch.com",
+  "contactAddress": "Sutter Creek, California",
+  "publicSurfaceToggles": {
+    "usePlaceholderSeed": true
+  },
+  "newUserNotificationDefaults": {
+    "new-inquiry-received": { "email": true, "sms": true },
+    "contributor-uploaded": { "email": false, "sms": false },
+    "pending-tag-requires-resolution": { "email": true, "sms": false },
+    "upload-issue-detected": { "email": false, "sms": false },
+    "nudge-surfaced": { "email": false, "sms": false }
+  },
+  "styleDirectionId": "v4-locked-2026-04-19"
+}

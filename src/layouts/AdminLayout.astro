@@ -1,0 +1,87 @@
+---
+/**
+ * AdminLayout — shell for all /admin/* surfaces.
+ *
+ * Differences from BaseLayout:
+ *   - No public nav/footer
+ *   - Admin nav (rail + bottom bar) via AdminNav
+ *   - Per-user adminAccentColor injected on the wrapper — overrides
+ *     --color-accent for admin chrome only (§17.1.1). Public pages
+ *     never receive this override.
+ *   - robots: noindex, nofollow
+ *
+ * Callers pass the resolved user from their guard:
+ *
+ *   const result = await requireAdmin(Astro);
+ *   if (result instanceof Response) return result;
+ *   const user = result;
+ */
+import "~/styles/global.css";
+import AdminNav from "~/components/admin/AdminNav.astro";
+import TransferBanner from "~/components/admin/TransferBanner.astro";
+import type { AdminUser } from "~/schemas";
+
+interface Props {
+  title: string;
+  user: AdminUser;
+}
+
+const { title, user } = Astro.props;
+const accentStyle = user.adminAccentColor
+  ? `--color-accent: ${user.adminAccentColor};`
+  : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Summers Ranch admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Work+Sans:wght@400;500;600;700&display=swap"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body data-admin="true" style={accentStyle}>
+    <div class="admin-chrome">
+      <AdminNav user={user} currentPath={Astro.url.pathname} />
+      <main class="admin-main">
+        <TransferBanner user={user} />
+        <slot />
+      </main>
+    </div>
+
+    <style>
+      body[data-admin="true"] {
+        background: var(--color-bg);
+      }
+
+      .admin-chrome {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .admin-main {
+        padding: var(--space-6) var(--space-4) calc(var(--space-16) + 60px);
+        max-width: 100%;
+      }
+
+      @media (min-width: 960px) {
+        .admin-chrome {
+          grid-template-columns: 240px 1fr;
+        }
+
+        .admin-main {
+          padding: var(--space-10) var(--space-12);
+        }
+      }
+    </style>
+  </body>
+</html>

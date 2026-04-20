@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hereford calf silhouette placeholder">
+  <rect width="300" height="400" fill="#f7f0e3"/>
+  <g fill="#c9b79a" opacity="0.85">
+    <!-- smaller, shorter body with proportionally larger head -->
+    <path d="M 75 210
+             C 72 195, 78 188, 92 186
+             L 218 186
+             C 232 186, 240 195, 238 210
+             L 238 258
+             C 238 270, 232 276, 222 278
+             L 214 278
+             L 212 310
+             C 212 316, 208 320, 204 320
+             L 196 320
+             C 192 320, 190 316, 190 310
+             L 190 278
+             L 120 278
+             L 120 310
+             C 120 316, 116 320, 112 320
+             L 104 320
+             C 100 320, 96 316, 96 310
+             L 94 278
+             L 90 278
+             C 80 276, 74 268, 72 258
+             Z"/>
+    <!-- head: proportionally larger, softer -->
+    <path d="M 220 200
+             C 240 197, 254 202, 260 212
+             C 264 218, 264 225, 260 232
+             C 256 238, 246 240, 238 238
+             L 238 218
+             Z"/>
+    <!-- ear -->
+    <path d="M 232 198 C 236 193, 242 194, 244 200 L 242 210 L 234 208 Z"/>
+    <!-- tail (proportionally shorter) -->
+    <path d="M 72 210 C 66 213, 64 220, 66 228 L 70 236 L 74 226 Z"/>
+  </g>
+  <text x="150" y="380" text-anchor="middle" font-family="Georgia, serif"
+        font-size="9" fill="#7d6a5a" opacity="0.4" font-style="italic">
+    photo coming soon
+  </text>
+</svg>

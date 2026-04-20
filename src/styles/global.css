@@ -1,0 +1,106 @@
+@import "./tokens.css";
+
+/*
+ * Summers Ranch — global baseline
+ *
+ * Thin normalizer on top of tokens.css. Site-wide defaults: font stacks,
+ * body background, link treatment, focus ring, :target behavior. Page-level
+ * styles live with their components. Component primitives (CTA, kicker,
+ * form field) land as they're built.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-body);
+  font-size: 17px;                    /* 1rem = 17px — slight uplift for older eyes */
+  line-height: var(--line-height-relaxed);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-normal);
+  transition: var(--transition-mode);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 0;
+}
+
+p {
+  margin: 0 0 var(--space-4) 0;
+  max-width: var(--max-width-prose);
+}
+
+em {
+  color: var(--color-accent);
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: var(--transition-default);
+}
+
+a:hover {
+  color: var(--color-accent-deep);
+  text-decoration-thickness: 2px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--color-cream-deep);
+  margin: var(--space-8) 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: inherit;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

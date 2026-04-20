@@ -1,0 +1,123 @@
+/*
+ * Summers Ranch — design tokens
+ *
+ * Single source of truth for the visual system. Light mode defaults live on
+ * :root; dark-mode overrides live under body[data-mode="dark"]. Dark mode
+ * tokens ship Phase 1; the dark-mode UI build is Phase 2.
+ *
+ * Locked 2026-04-19 per STYLE-DIRECTION-LOCKED.md (Marty and Roianne, v4).
+ * Structure follows CARD-REDESIGN-SPEC §18.
+ */
+
+:root {
+  /* ── Color — light mode ─────────────────────────────────────────────── */
+  --color-bg: #f7f0e3;                /* warm cream — page background */
+  --color-paper: #ffffff;             /* lifted surface (cards) */
+  --color-ink: #14100e;               /* near-black body text */
+  --color-muted: #5a5046;             /* secondary text, metadata, labels */
+  --color-accent: #8b1e3a;            /* burgundy — scarce accent */
+  --color-accent-deep: #5c0f24;       /* hover / pressed */
+  --color-accent-soft: #d08a9a;       /* decorative only */
+  --color-cream-deep: #e8d9bd;        /* 1px dividers, form borders */
+
+  /* ── Typography ────────────────────────────────────────────────────── */
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  --font-ribbon-ceremonial: "Cinzel", Georgia, serif;
+  --font-ribbon-available: "Lato", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --font-size-xs: 0.72rem;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1.15rem;
+  --font-size-lg: 1.4rem;
+  --font-size-xl: 1.85rem;
+  --font-size-2xl: 2.4rem;
+  --font-size-3xl: 3rem;
+  --font-size-4xl: 4rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.15;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.05em;
+  --letter-spacing-cta: 0.15em;
+  --letter-spacing-kicker: 0.25em;
+
+  /* ── Spacing (4px base) ────────────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* ── Radius — square-leaning ───────────────────────────────────────── */
+  --radius-0: 0;                      /* hero / full-bleed photography */
+  --radius-1: 1px;                    /* CTAs — intentionally sharp */
+  --radius-3: 3px;                    /* cards — printed-photo chamfer */
+  --radius-pill: 9999px;              /* rare, pill shapes */
+
+  /* ── Shadow — elevation hierarchy ──────────────────────────────────── */
+  --shadow-ambient: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-resting: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.25);
+
+  /* ── Motion ────────────────────────────────────────────────────────── */
+  --transition-default: all 0.25s ease;
+  --transition-mode: background 0.3s ease, color 0.3s ease;
+  --transition-slide: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ── Z-index scale ─────────────────────────────────────────────────── */
+  --z-base: 1;
+  --z-ribbon: 10;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-tooltip: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  --max-width-prose: 42rem;           /* ~65 characters per line */
+  --max-width-data: 50rem;
+  --max-width-hero: 36rem;
+  --max-width-page: 72rem;
+}
+
+body[data-mode="dark"] {
+  /* Dark mode tokens — UI build Phase 2, but tokens are locked here */
+  --color-bg: #0a0506;
+  --color-paper: #14090b;
+  --color-ink: #f7f0e3;
+  --color-muted: #a89d8c;
+  --color-accent: #c8425e;
+  --color-accent-deep: #8b1e3a;
+  --color-accent-soft: #e5a4b5;
+  --color-cream-deep: #2f1d21;
+
+  /* Dark-mode shadows drop alpha by ~35% — dark bg swallows shadow */
+  --shadow-ambient: 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-resting: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.18);
+}
+
+/* Per-user admin accent override. Admin layout injects
+   body[data-admin-user="<userId>"] and sets --color-accent inline. Public
+   pages never receive this attribute; public always uses the ranch accent. */

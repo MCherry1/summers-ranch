@@ -1,0 +1,108 @@
+---
+/**
+ * Animal detail — spec §3 + §4. Full-width Card composing front and
+ * back with slide transition. Static generation: getStaticPaths builds
+ * one route per animal in the seed.
+ *
+ * OG per §20.2: this URL rewrites og:url and og:image to the animal's
+ * card-front composite so shared links deep-link to the front. The
+ * composite generation pipeline ships in a later push; canonicalPath
+ * and ogImage are wired now so OG meta is correct once assets land.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import Card from "~/components/cattle/Card.astro";
+import {
+  getAnimalLive,
+  getSireLive,
+  getDamLive,
+  getCalvesOfLive,
+  getPrimaryPhotoLive,
+  getThumbnailPhotoLive,
+  getAllPhotosForLive,
+} from "~/lib/cattle-live";
+import { displayName } from "~/lib/derive/naming";
+
+const { id } = Astro.params;
+const animal = id ? await getAnimalLive(id) : null;
+
+if (!animal) {
+  return Astro.redirect("/herd");
+}
+
+const primaryPhoto = await getPrimaryPhotoLive(animal.id);
+const thumbnailPhoto = await getThumbnailPhotoLive(animal.id);
+const sire = await getSireLive(animal);
+const dam = await getDamLive(animal);
+const calves = await getCalvesOfLive(animal);
+
+// Timeline photos for the growth carousel (§4.3). Phase 1 admits every
+// timeline-eligible photo in chronological order; the life-stage
+// density rubric (§14.10) is Phase 2.
+const allPhotos = await getAllPhotosForLive(animal.id, "oldest-first");
+const timelinePhotos = allPhotos.filter((p) => p.timelineEligible);
+
+const name = displayName(animal);
+const pageTitle = `${name} — Summers Ranch`;
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={`${name} · Summers Ranch, Sutter Creek, California.`}
+  canonicalPath={`/herd/${animal.id}`}
+  ogImage={`/og/animal/${animal.id}.jpg`}
+  ogType="article"
+>
+  <main class="animal-surface">
+    <nav class="back-link">
+      <a href="/herd">&lsaquo; Back to the herd</a>
+    </nav>
+    <Card
+      animal={animal}
+      primaryPhoto={primaryPhoto}
+      thumbnailPhoto={thumbnailPhoto}
+      timelinePhotos={timelinePhotos}
+      sire={sire}
+      dam={dam}
+      calves={calves}
+    />
+  </main>
+</BaseLayout>
+
+<style>
+  .animal-surface {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4) var(--space-12);
+  }
+
+  @media (min-width: 640px) {
+    .animal-surface {
+      padding: var(--space-10) var(--space-6) var(--space-16);
+    }
+  }
+
+  .back-link {
+    margin-bottom: var(--space-4);
+  }
+
+  .back-link a {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-muted);
+  }
+
+  .back-link a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+</style>

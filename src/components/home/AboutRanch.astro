@@ -1,0 +1,32 @@
+---
+/**
+ * About-the-ranch home section — spec §8.1 item 3. Kicker + title +
+ * short prose + "Our story" CTA linking to /about.
+ *
+ * Placeholder prose paraphrases facts from the spec (family-owned,
+ * Sutter Creek, since 1998). When Marty and Roianne write the real
+ * copy, it replaces this block.
+ */
+import PageSection from "~/layouts/PageSection.astro";
+import Cta from "~/components/ui/Cta.astro";
+---
+
+<PageSection
+  kicker="About the ranch"
+  title={`A small family operation, <em>carefully kept.</em>`}
+  lead="Marty and Roianne Summers have raised registered Hereford cattle in the Sierra foothills of Sutter Creek since 1998. The herd is small by design — every animal is known by name, and every decision is made with the next generation in mind."
+  align="center"
+  tone="muted"
+>
+  <div class="cta-row">
+    <Cta href="/about" variant="secondary">Our story</Cta>
+  </div>
+</PageSection>
+
+<style>
+  .cta-row {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: center;
+  }
+</style>

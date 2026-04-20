@@ -1,0 +1,118 @@
+---
+// Note: not prerendered — compare needs runtime access to ?animals=
+// query params for SSR resolution against the seed. If the seed is
+// empty, this still SSRs a minimal placeholder.
+/**
+ * Compare placeholder per spec §6.1. Phase 1 locks the URL pattern
+ * (/compare?animals=<comma-separated-tags>) and ships a placeholder
+ * that displays each referenced animal's name, tag, and current front
+ * photo in a simple vertical stack. Full side-by-side build is Phase 2.
+ */
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import PageSection from "~/layouts/PageSection.astro";
+import CardFront from "~/components/cattle/CardFront.astro";
+import { getAnimalByTagLive, getPrimaryPhotoLive } from "~/lib/cattle-live";
+import { displayName } from "~/lib/derive/naming";
+
+const rawTags = Astro.url.searchParams.get("animals") ?? "";
+const tags = rawTags
+  .split(",")
+  .map((t) => t.trim())
+  .filter(Boolean);
+
+const resolved = (
+  await Promise.all(tags.map((tag) => getAnimalByTagLive(tag)))
+).filter((a): a is NonNullable<typeof a> => a !== null);
+
+const resolvedTags = new Set(resolved.map((a) => a.tag));
+const unresolved = tags.filter((tag) => !resolvedTags.has(tag));
+
+const photoMap = new Map(
+  await Promise.all(
+    resolved.map(async (a) => [a.id, await getPrimaryPhotoLive(a.id)] as const)
+  )
+);
+---
+
+<BaseLayout
+  title="Compare — Summers Ranch"
+  description="Compare animals from Summers Ranch side by side."
+  canonicalPath="/compare"
+>
+  <PageSection
+    kicker="Compare"
+    title={`Side by side <em>— soon.</em>`}
+    lead="The full side-by-side compare view is coming soon. For now, here are the animals you're looking at."
+  >
+    {resolved.length > 0 && (
+      <div class="stack">
+        {resolved.map((animal) => (
+          <div class="stack-item">
+            <CardFront
+              animal={animal}
+              primaryPhoto={photoMap.get(animal.id) ?? null}
+              detailsHref={`/herd/${animal.id}`}
+              static
+            />
+            <p class="label">{displayName(animal)}</p>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {unresolved.length > 0 && (
+      <p class="unresolved">
+        Couldn&rsquo;t find: {unresolved.map((tag) => `#${tag}`).join(", ")}
+      </p>
+    )}
+
+    {tags.length === 0 && (
+      <p class="hint">
+        Compare URLs look like <code>/compare?animals=840,842,901</code>.
+      </p>
+    )}
+  </PageSection>
+</BaseLayout>
+
+<style>
+  .stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+    margin-top: var(--space-6);
+  }
+
+  @media (min-width: 640px) {
+    .stack {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+  }
+
+  .stack-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .label {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    text-align: center;
+    margin: 0;
+  }
+
+  .unresolved,
+  .hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin-top: var(--space-6);
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-1);
+  }
+</style>

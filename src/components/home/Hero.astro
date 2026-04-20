@@ -1,0 +1,173 @@
+---
+/**
+ * Home hero — spec §8.3. Small uppercase kicker ("Registered Herefords
+ * · Est. 1998"), large Playfair display title ("Summers Ranch" with
+ * italic emphasis on "Ranch"), italic tagline, small uppercase
+ * "Sutter Creek, California" below.
+ *
+ * Background photograph: prefers /dummy-photos/hero.jpg when Matt
+ * drops a real shot into that path; otherwise falls back to the
+ * authored SVG landscape placeholder. The check runs at build time
+ * via Astro's import.meta.glob over public/dummy-photos so no fetch
+ * happens at runtime.
+ *
+ * When a photograph is present, the bottom-third scrim engages per
+ * spec §18.4 to preserve photo color in the top 60-70% while holding
+ * text legibility below. When only the SVG placeholder shows, the
+ * scrim stays off — the SVG is already warm+textured and doesn't
+ * need darkening.
+ *
+ * Hero sizing follows POLISH §5.1: height 68vh, min 420px, max 600px.
+ * Text is left-aligned on mobile (POLISH §8.3) and centered on
+ * desktop per POLISH §4.2's hero carve-out.
+ */
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
+
+// Build-time check: is the real hero photo in place yet?
+const realHeroCandidates = import.meta.glob(
+  "../../../public/dummy-photos/hero.{jpg,jpeg,webp,avif}",
+  { eager: true }
+);
+const hasRealHero = Object.keys(realHeroCandidates).length > 0;
+
+const heroImageUrl = hasRealHero
+  ? `/dummy-photos/${Object.keys(realHeroCandidates)[0]!.split("/").pop()}`
+  : "/dummy-photos/hero-placeholder.svg";
+---
+
+<section
+  class:list={["hero", { "with-photo": hasRealHero }]}
+  style={`background-image: url('${heroImageUrl}');`}
+  aria-labelledby="hero-title"
+>
+  {hasRealHero && <div class="hero-scrim" aria-hidden="true"></div>}
+  <div class="hero-inner">
+    <p class="kicker">Registered Herefords &middot; Est. 1998</p>
+    <h1 id="hero-title" class="display">
+      Summers <em>Ranch</em>
+    </h1>
+    <p class="tagline">{site.tagline}</p>
+    <p class="location">{site.contactAddress}</p>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    height: 68vh;
+    min-height: 420px;
+    max-height: 600px;
+    background-color: var(--color-bg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+  }
+
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 45%,
+      rgba(0, 0, 0, 0.55) 75%,
+      rgba(0, 0, 0, 0.82) 100%
+    );
+    z-index: var(--z-base);
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: calc(var(--z-base) + 1);
+    max-width: var(--max-width-page);
+    margin: 0 auto;
+    height: 100%;
+    padding: var(--space-16) var(--space-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 var(--space-6);
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-6);
+    max-width: var(--max-width-hero);
+  }
+
+  .tagline {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--font-size-lg);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-6);
+    max-width: var(--max-width-hero);
+  }
+
+  .location {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  /* When a real photo is loaded, text flips to cream with layered
+     drop shadows for legibility over varied photography. */
+  .hero.with-photo .kicker,
+  .hero.with-photo .display,
+  .hero.with-photo .tagline,
+  .hero.with-photo .location {
+    color: var(--color-bg);
+    text-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.5),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero.with-photo .kicker {
+    color: var(--color-accent-soft);
+  }
+
+  @media (min-width: 640px) {
+    .display {
+      font-size: var(--font-size-4xl);
+    }
+
+    .tagline {
+      font-size: var(--font-size-xl);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .hero-inner {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .display,
+    .tagline {
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+</style>

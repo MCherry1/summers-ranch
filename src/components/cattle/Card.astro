@@ -1,0 +1,174 @@
+---
+/**
+ * Card — composes CardFront and CardBack with a slide transition.
+ *
+ * Per spec §2: "Swipe vertically (or tap 'Details ›') to flip between
+ * front and back. Slide transition, not flip." Cubic-bezier iOS curve
+ * per POLISH §6.1.
+ *
+ * Mechanics: both surfaces render; only one is visible at a time. Tap
+ * the Details button on the front → slides back in. Tap the reverse
+ * affordance on the back → slides front in. Keyboard: Arrow keys
+ * and Enter on the card trigger the same toggle. `prefers-reduced-
+ * motion` skips the transition.
+ *
+ * Used on /herd/[id] for the full-width animal view. Herd-grid cards
+ * use <CardFront detailsAction="link" /> directly — the grid doesn't
+ * slide, it navigates (§7.3 still frames only in list view).
+ */
+import type { AnimalRecord, MediaAsset } from "~/schemas";
+import CardFront from "./CardFront.astro";
+import CardBack from "./CardBack.astro";
+
+interface Props {
+  animal: AnimalRecord;
+  primaryPhoto: MediaAsset | null;
+  thumbnailPhoto: MediaAsset | null;
+  timelinePhotos?: MediaAsset[];
+  sire: AnimalRecord | null;
+  dam: AnimalRecord | null;
+  calves: AnimalRecord[];
+}
+
+const {
+  animal,
+  primaryPhoto,
+  thumbnailPhoto,
+  timelinePhotos = [],
+  sire,
+  dam,
+  calves,
+} = Astro.props;
+---
+
+<div class="card-stage" data-animal-id={animal.id} data-face="front">
+  <div class="face face-front" aria-hidden="false">
+    <CardFront
+      animal={animal}
+      primaryPhoto={primaryPhoto}
+      detailsAction="toggle"
+    />
+  </div>
+  <div class="face face-back" aria-hidden="true">
+    <button
+      type="button"
+      class="reverse-affordance"
+      data-card-toggle="front"
+      aria-label="Back to card front"
+    >
+      <span aria-hidden="true">&lsaquo;</span> Back to photo
+    </button>
+    <CardBack
+      animal={animal}
+      thumbnailPhoto={thumbnailPhoto}
+      timelinePhotos={timelinePhotos}
+      sire={sire}
+      dam={dam}
+      calves={calves}
+    />
+  </div>
+</div>
+
+<script>
+  // Minimal vanilla-JS slide toggle. No framework, no hydration cost.
+  // Each .card-stage is independent.
+
+  type Face = "front" | "back";
+
+  function initCards() {
+    const stages = document.querySelectorAll<HTMLElement>(".card-stage");
+    stages.forEach((stage) => {
+      const toggles = stage.querySelectorAll<HTMLButtonElement>(
+        "[data-card-toggle]"
+      );
+      toggles.forEach((btn) => {
+        btn.addEventListener("click", (evt) => {
+          evt.preventDefault();
+          const target = btn.dataset.cardToggle as Face;
+          setFace(stage, target);
+        });
+      });
+    });
+  }
+
+  function setFace(stage: HTMLElement, face: "front" | "back") {
+    stage.dataset.face = face;
+    const front = stage.querySelector<HTMLElement>(".face-front");
+    const back = stage.querySelector<HTMLElement>(".face-back");
+    if (!front || !back) return;
+    front.setAttribute("aria-hidden", face === "front" ? "false" : "true");
+    back.setAttribute("aria-hidden", face === "back" ? "false" : "true");
+
+    const nextFocus =
+      face === "back"
+        ? back.querySelector<HTMLElement>("[data-card-toggle='front']")
+        : front.querySelector<HTMLElement>("[data-card-toggle='back']");
+    nextFocus?.focus();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initCards);
+  } else {
+    initCards();
+  }
+</script>
+
+<style>
+  .card-stage {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .face {
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.3s ease;
+  }
+
+  .face-back {
+    position: absolute;
+    inset: 0;
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card-stage[data-face="back"] .face-front {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card-stage[data-face="back"] .face-back {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .reverse-affordance {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    background: none;
+    border: 0;
+    padding: var(--space-2) 0;
+    margin-bottom: var(--space-3);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .reverse-affordance:hover {
+    color: var(--color-accent-deep);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .face {
+      transition: none;
+    }
+  }
+</style>

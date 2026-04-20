@@ -1,0 +1,456 @@
+---
+/**
+ * InlineField — shared inline-edit primitive per spec §12.7.
+ *
+ * Read-only by default; clicking the value transforms it into an
+ * input. Blur auto-saves. No "Save" button — save on blur is the
+ * commit signal. Enter in single-line inputs also commits.
+ *
+ * Save POSTs to the `endpoint` prop (/api/admin/animal/[id]/field
+ * or /api/admin/user/[id]/field). On success, the displayed value
+ * updates and a brief "saved" affordance pulses. On error, the
+ * value reverts and an inline error message appears.
+ *
+ * `variant` picks the editor:
+ *   text     — single-line input (name, phone, email, tag, etc.)
+ *   textarea — multi-line (privateNotes)
+ *   number   — numeric input
+ *   date     — native date picker (YYYY-MM-DD)
+ *   select   — <select> with provided options
+ *   nullable — any of the above that accepts null (shows a clear button)
+ *
+ * The component is a progressive enhancement: if JS fails, the value
+ * still renders read-only with a plain "Can't edit right now" hint.
+ * No broken visuals.
+ *
+ * Placeholder handling: when the current value is null/empty, the
+ * display shows `placeholder` prop text in muted color. Clicking
+ * still opens the editor for null values (progressive disclosure
+ * per §12.8 — empty-but-relevant fields are visible to admin).
+ */
+import type { Capability } from "~/lib/auth/rbac";
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  label: string;                  // display label (kicker-styled)
+  endpoint: string;               // where to POST the change
+  field: string;                  // the field name in the record
+  value: string | number | null;  // current value
+  variant?: "text" | "textarea" | "number" | "date" | "select";
+  options?: Option[];             // for variant="select"
+  placeholder?: string;           // shown when value is null/empty
+  nullable?: boolean;             // allow clearing to null
+  tooltip?: string;               // §12.9 tooltip content
+  readOnly?: boolean;             // display-only, no editor
+  requiredCapability?: Capability; // handled server-side too
+}
+
+const {
+  label,
+  endpoint,
+  field,
+  value,
+  variant = "text",
+  options = [],
+  placeholder = "Add…",
+  nullable = false,
+  tooltip,
+  readOnly = false,
+} = Astro.props;
+
+const displayValue =
+  value === null || value === "" || value === undefined
+    ? null
+    : String(value);
+
+const inputValue = displayValue ?? "";
+---
+
+<div
+  class="inline-field"
+  data-endpoint={endpoint}
+  data-field={field}
+  data-variant={variant}
+  data-nullable={nullable ? "true" : undefined}
+  data-readonly={readOnly ? "true" : undefined}
+>
+  <div class="label-row">
+    <label>{label}</label>
+    {tooltip && (
+      <button
+        type="button"
+        class="tooltip-trigger"
+        aria-label={`What is ${label}?`}
+        data-tooltip={tooltip}
+      >?</button>
+    )}
+  </div>
+
+  <div class="value-row" data-mode="view">
+    <button
+      type="button"
+      class:list={["display", { empty: displayValue === null }]}
+      data-edit-trigger
+      disabled={readOnly}
+    >
+      {displayValue ?? placeholder}
+    </button>
+
+    <span class="status" aria-live="polite"></span>
+  </div>
+
+  <div class="editor" data-editor hidden>
+    {variant === "text" || variant === "number" || variant === "date" ? (
+      <input
+        type={variant === "number" ? "number" : variant === "date" ? "date" : "text"}
+        value={inputValue}
+        data-input
+      />
+    ) : variant === "textarea" ? (
+      <textarea rows="4" data-input>{inputValue}</textarea>
+    ) : variant === "select" ? (
+      <select data-input>
+        {nullable && <option value="">{placeholder}</option>}
+        {options.map((opt) => (
+          <option value={opt.value} selected={String(value) === opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    ) : null}
+
+    {nullable && variant !== "select" && (
+      <button type="button" class="clear" data-clear>Clear</button>
+    )}
+  </div>
+
+  <p class="error" data-error hidden></p>
+</div>
+
+<style>
+  .inline-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .inline-field:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .tooltip-trigger {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--color-cream-deep);
+    background: var(--color-paper);
+    color: var(--color-muted);
+    font-family: var(--font-body);
+    font-size: 10px;
+    line-height: 1;
+    padding: 0;
+    cursor: help;
+    transition: var(--transition-default);
+  }
+
+  .tooltip-trigger:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .value-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 1.6em;
+  }
+
+  .display {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    color: var(--color-ink);
+    text-align: left;
+    cursor: text;
+    transition: color 0.15s ease;
+  }
+
+  .display.empty {
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  .display:hover:not(:disabled) {
+    color: var(--color-accent);
+  }
+
+  .display:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+
+  .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .status[data-state="saving"] {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+
+  .status[data-state="saved"] {
+    opacity: 1;
+  }
+
+  .editor {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+  }
+
+  .editor input,
+  .editor textarea,
+  .editor select {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    flex: 1;
+    transition: var(--transition-default);
+  }
+
+  .editor textarea {
+    resize: vertical;
+    min-height: 6rem;
+    font-family: var(--font-body);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .editor input:focus,
+  .editor textarea:focus,
+  .editor select:focus {
+    outline: 0;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  }
+
+  .clear {
+    background: none;
+    border: 0;
+    padding: 0.45rem 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .clear:hover {
+    color: var(--color-accent);
+  }
+
+  .error {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-accent);
+    margin: 0;
+  }
+</style>
+
+<script>
+  type FieldState = "view" | "editing" | "saving";
+
+  function initInlineFields() {
+    const fields = document.querySelectorAll<HTMLElement>(".inline-field");
+    fields.forEach(initField);
+  }
+
+  function initField(root: HTMLElement) {
+    const readOnly = root.dataset.readonly === "true";
+    if (readOnly) return;
+
+    const trigger = root.querySelector<HTMLButtonElement>("[data-edit-trigger]");
+    const editor = root.querySelector<HTMLElement>("[data-editor]");
+    const input = root.querySelector("[data-input]") as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | HTMLSelectElement
+      | null;
+    const display = root.querySelector<HTMLButtonElement>(".display");
+    const status = root.querySelector<HTMLElement>(".status");
+    const error = root.querySelector<HTMLElement>("[data-error]");
+    const clearBtn = root.querySelector<HTMLButtonElement>("[data-clear]");
+    if (!trigger || !editor || !input || !display || !status || !error) return;
+
+    const endpoint = root.dataset.endpoint!;
+    const field = root.dataset.field!;
+    const variant = root.dataset.variant!;
+    const nullable = root.dataset.nullable === "true";
+
+    let state: FieldState = "view";
+
+    function enterEdit() {
+      if (state !== "view") return;
+      state = "editing";
+      root.querySelector(".value-row")?.setAttribute("hidden", "");
+      editor!.removeAttribute("hidden");
+      input!.focus();
+      if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
+        input.select();
+      }
+      clearError();
+    }
+
+    function exitEdit() {
+      state = "view";
+      root.querySelector(".value-row")?.removeAttribute("hidden");
+      editor!.setAttribute("hidden", "");
+    }
+
+    function clearError() {
+      error!.setAttribute("hidden", "");
+      error!.textContent = "";
+    }
+
+    function setStatus(label: string, stateName: "saving" | "saved" | "idle") {
+      status!.textContent = label;
+      status!.dataset.state = stateName;
+    }
+
+    async function save(rawValue: string | null) {
+      if (state === "saving") return;
+      state = "saving";
+      setStatus("Saving…", "saving");
+      clearError();
+
+      let value: unknown = rawValue;
+      if (rawValue === null) {
+        value = null;
+      } else if (variant === "number") {
+        value = rawValue === "" ? null : Number(rawValue);
+        if (typeof value === "number" && Number.isNaN(value)) {
+          showError("That isn't a valid number.");
+          return;
+        }
+      } else if (variant === "select" && nullable && rawValue === "") {
+        value = null;
+      }
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field, value }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          ok?: boolean;
+        };
+        if (!res.ok || !payload.ok) {
+          showError(payload.error ?? "Couldn't save.");
+          return;
+        }
+        // Update the display
+        const displayValue = formatForDisplay(value);
+        if (displayValue === null) {
+          display!.classList.add("empty");
+          display!.textContent = display!.dataset.placeholder ?? "Add…";
+        } else {
+          display!.classList.remove("empty");
+          display!.textContent = displayValue;
+        }
+        exitEdit();
+        setStatus("Saved", "saved");
+        setTimeout(() => setStatus("", "idle"), 1800);
+      } catch (err) {
+        showError(err instanceof Error ? err.message : "Network error.");
+      }
+    }
+
+    function showError(message: string) {
+      state = "editing";
+      setStatus("", "idle");
+      error!.textContent = message;
+      error!.removeAttribute("hidden");
+    }
+
+    function formatForDisplay(value: unknown): string | null {
+      if (value === null || value === undefined) return null;
+      if (typeof value === "string" && value === "") return null;
+      return String(value);
+    }
+
+    trigger.addEventListener("click", enterEdit);
+    display.dataset.placeholder = display.textContent?.trim() ?? "";
+
+    input.addEventListener("blur", () => {
+      if (state !== "editing") return;
+      const v = input.value;
+      save(v);
+    });
+
+    input.addEventListener("keydown", (ev) => {
+      if (ev instanceof KeyboardEvent) {
+        if (ev.key === "Escape") {
+          ev.preventDefault();
+          exitEdit();
+          clearError();
+        } else if (
+          ev.key === "Enter" &&
+          !(input instanceof HTMLTextAreaElement)
+        ) {
+          ev.preventDefault();
+          (input as HTMLInputElement | HTMLSelectElement).blur();
+        }
+      }
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        save(null);
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initInlineFields);
+  } else {
+    initInlineFields();
+  }
+</script>

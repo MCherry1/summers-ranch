@@ -1,0 +1,292 @@
+---
+/**
+ * AdminNav — desktop left rail + mobile bottom nav per spec §12.6.
+ *
+ * Renders the rail (desktop) and the fixed bottom bar (mobile). The
+ * parent AdminLayout is responsible for the grid that places the
+ * main content beside the rail — AdminNav only contributes the nav
+ * surfaces themselves, so the parent can choose its own main wrapper.
+ *
+ * Items filtered by role via navItemsForRole (lib/auth/rbac.ts).
+ * Contributors see only Profile + Notifications. Editors see every-
+ * thing except Inquiries. Owner/Admin see everything.
+ */
+import type { AdminUser } from "~/schemas";
+import { navItemsForRole } from "~/lib/auth/rbac";
+
+interface Props {
+  user: AdminUser;
+  currentPath: string;
+}
+
+const { user, currentPath } = Astro.props;
+const items = navItemsForRole(user.role);
+
+function isActive(href: string): boolean {
+  if (href === "/admin/settings") {
+    return currentPath === "/admin/settings" || currentPath === "/admin/settings/";
+  }
+  return currentPath === href || currentPath.startsWith(href + "/");
+}
+---
+
+<aside class="rail" aria-label="Admin navigation">
+  <a href="/admin/herd" class="brand">
+    <span class="brand-name">Summers Ranch</span>
+    <span class="brand-role">{user.role}</span>
+  </a>
+
+  <nav aria-label="Primary admin">
+    <ul>
+      {items.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            class:list={["rail-link", { active: isActive(item.href) }]}
+            aria-current={isActive(item.href) ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <form method="POST" action="/api/auth/logout" class="logout">
+    <button type="submit">Log out</button>
+  </form>
+
+  <p class="user-footer">{user.displayName}</p>
+</aside>
+
+<nav class="bottom-bar" aria-label="Primary admin">
+  {items.slice(0, 4).map((item) => (
+    <a
+      href={item.href}
+      class:list={["bar-link", { active: isActive(item.href) }]}
+      aria-current={isActive(item.href) ? "page" : undefined}
+    >
+      {item.label}
+    </a>
+  ))}
+  {items.length > 4 ? (
+    <details class="more">
+      <summary>More</summary>
+      <ul>
+        {items.slice(4).map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class:list={["bar-link", { active: isActive(item.href) }]}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+        <li>
+          <form method="POST" action="/api/auth/logout">
+            <button type="submit">Log out</button>
+          </form>
+        </li>
+      </ul>
+    </details>
+  ) : (
+    <form method="POST" action="/api/auth/logout" class="mobile-logout">
+      <button type="submit">Log out</button>
+    </form>
+  )}
+</nav>
+
+<style>
+  .rail {
+    display: none;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-6) var(--space-5);
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+    letter-spacing: var(--letter-spacing-tight);
+  }
+
+  .brand-role {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .rail nav ul {
+    list-style: none;
+    padding: var(--space-3) 0;
+    margin: 0;
+  }
+
+  .rail-link {
+    display: block;
+    padding: var(--space-3) var(--space-5);
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: var(--transition-default);
+  }
+
+  .rail-link:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .rail-link.active {
+    color: var(--color-accent);
+    border-left-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  }
+
+  .logout {
+    margin-top: auto;
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-cream-deep);
+  }
+
+  .logout button,
+  .mobile-logout button,
+  .more form button {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .logout button:hover {
+    color: var(--color-accent);
+  }
+
+  .user-footer {
+    padding: 0 var(--space-5) var(--space-5);
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-cream-deep);
+    padding: var(--space-1) 0;
+    z-index: var(--z-sticky);
+  }
+
+  .bar-link {
+    flex: 1 1 0;
+    padding: var(--space-3) var(--space-1);
+    text-align: center;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-decoration: none;
+    min-height: 44px;
+  }
+
+  .bar-link.active {
+    color: var(--color-accent);
+  }
+
+  .more {
+    position: relative;
+    flex: 1 1 0;
+  }
+
+  .more summary {
+    padding: var(--space-3) var(--space-1);
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-align: center;
+    cursor: pointer;
+    list-style: none;
+    min-height: 44px;
+  }
+
+  .more summary::-webkit-details-marker { display: none; }
+
+  .more[open] > ul {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    min-width: 180px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-bottom: 0;
+    list-style: none;
+    padding: var(--space-2) 0;
+    margin: 0;
+    box-shadow: var(--shadow-resting);
+  }
+
+  .more ul li .bar-link {
+    display: block;
+    text-align: left;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
+  }
+
+  .more ul form,
+  .mobile-logout {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .mobile-logout {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (min-width: 960px) {
+    .rail {
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+      border-right: 1px solid var(--color-cream-deep);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .bottom-bar {
+      display: none;
+    }
+  }
+</style>

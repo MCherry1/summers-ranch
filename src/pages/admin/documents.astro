@@ -1,0 +1,27 @@
+---
+/**
+ * Documents — spec §16. Admin-authored markdown + uploaded files.
+ * Admin-only in Phase 1 (no public surface).
+ */
+import AdminLayout from "~/layouts/AdminLayout.astro";
+import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
+import ComingSoon from "~/components/admin/ComingSoon.astro";
+import { requireCapability } from "~/lib/auth/guards";
+
+const result = await requireCapability(Astro, "edit-documents");
+if (result instanceof Response) return result;
+const user = result;
+---
+
+<AdminLayout title="Documents" user={user}>
+  <AdminPageHeader
+    kicker="Admin"
+    title="Documents"
+    lead="Photo guidelines, upload instructions, registration forms, industry reference, site operations."
+  />
+
+  <ComingSoon
+    milestone="admin operational checkpoint"
+    detail="Five category sections (Photo Guidelines, Upload Instructions, Registration Forms, Industry Reference, Site Operations) each holding authored markdown pages and uploaded files. Content pass is a separate writing task."
+  />
+</AdminLayout>
