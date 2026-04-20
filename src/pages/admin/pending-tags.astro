@@ -1,28 +1,222 @@
 ---
 /**
- * Pending tags queue — spec §14.5. New animals created via the
- * "Add new tag" Shortcut path have only a tag number + photo until
- * name/sex/DOB are filled in here.
+ * Pending tags queue — spec §14.5.
+ *
+ * When the Shortcut's "Add new tag" path creates a placeholder animal
+ * (tag only, defaults elsewhere), that animal lands here for an admin
+ * to graduate by filling in name / sex / DOB. Once DOB is set, the
+ * animal exits this queue and lives normally in /admin/herd.
+ *
+ * Phase 1 heuristic: "pending" means dateOfBirth is null. Matt's
+ * workflow creates animals with DOB populated from Marty/Roianne's
+ * records, so a null DOB signals a Shortcut-created placeholder.
+ *
+ * Each row shows: tag · recent photos · inline-edit name / sex / DOB
+ * · link to full edit page for everything else.
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
+import InlineField from "~/components/admin/InlineField.astro";
 import { requireCapability } from "~/lib/auth/guards";
+import {
+  getAllAnimalsLive,
+  getAllPhotosForLive,
+} from "~/lib/cattle-live";
+import { silhouetteFor } from "~/lib/display/silhouette";
 
-const result = await requireCapability(Astro, "resolve-pending-tags");
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireCapability(Astro, "resolve-pending-tags");
+if (guard instanceof Response) return guard;
+const user = guard;
+
+const allAnimals = await getAllAnimalsLive();
+const pending = allAnimals.filter((a) => a.dateOfBirth === null);
+
+// Pre-fetch recent photos for each pending animal (up to 3 most-recent)
+const recentPhotos = new Map<string, string[]>();
+for (const animal of pending) {
+  const photos = await getAllPhotosForLive(animal.id, "newest-first");
+  const uris = photos.slice(0, 3).map((p) => p.uri);
+  if (uris.length === 0) uris.push(silhouetteFor(animal.sex));
+  recentPhotos.set(animal.id, uris);
+}
+
+const sexOptions = [
+  { value: "cow", label: "Cow" },
+  { value: "bull", label: "Bull" },
+  { value: "heifer", label: "Heifer" },
+  { value: "steer", label: "Steer" },
+  { value: "calf", label: "Calf" },
+];
 ---
 
 <AdminLayout title="Pending tags" user={user}>
   <AdminPageHeader
     kicker="Admin"
     title="Pending tags"
-    lead="Animals created with just a tag — name, sex, and birth date needed before they graduate into the herd."
+    lead={
+      pending.length === 0
+        ? "Nothing pending. When the Shortcut creates a new-tag placeholder, it'll land here for name, sex, and birth date."
+        : `${pending.length} animal${pending.length === 1 ? "" : "s"} need${pending.length === 1 ? "s" : ""} the minimum details filled in.`
+    }
   />
 
-  <ComingSoon
-    milestone="photo pipeline checkpoint"
-    detail="Stub animals with recent photos, quick-action inputs for name/sex/DOB, link to full record. Animal exits the queue once minimum required fields are set."
-  />
+  {pending.length > 0 && (
+    <ul class="queue">
+      {pending.map((animal) => {
+        const endpoint = `/api/admin/animal/${animal.id}/field`;
+        const photos = recentPhotos.get(animal.id) ?? [];
+        return (
+          <li class="row">
+            <div class="photo-strip">
+              {photos.map((src) => (
+                <div class="photo-tile">
+                  <img src={src} alt={`Recent photo of ${animal.tag}`} />
+                </div>
+              ))}
+            </div>
+
+            <div class="fields">
+              <div class="tag-line">
+                <span class="tag-label">Tag</span>
+                <span class="tag-value">#{animal.tag}</span>
+              </div>
+              <InlineField
+                label="Name"
+                endpoint={endpoint}
+                field="name"
+                value={animal.name}
+                nullable
+                placeholder="No name yet"
+              />
+              <InlineField
+                label="Sex"
+                endpoint={endpoint}
+                field="sex"
+                value={animal.sex}
+                variant="select"
+                options={sexOptions}
+              />
+              <InlineField
+                label="Date of birth"
+                endpoint={endpoint}
+                field="dateOfBirth"
+                value={animal.dateOfBirth}
+                variant="date"
+                nullable
+                placeholder="Add birth date to graduate"
+                tooltip="Setting a birth date moves this animal out of the pending queue into the main herd."
+              />
+            </div>
+
+            <div class="actions">
+              <a href={`/admin/herd/${animal.id}`} class="link-action">
+                Full edit &rsaquo;
+              </a>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )}
 </AdminLayout>
+
+<style>
+  .queue {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-width: 62rem;
+  }
+
+  .row {
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    padding: var(--space-5);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  @media (min-width: 960px) {
+    .row {
+      grid-template-columns: 240px 1fr auto;
+      gap: var(--space-6);
+      align-items: start;
+    }
+  }
+
+  .photo-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .photo-tile {
+    aspect-ratio: 3 / 4;
+    background: var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    overflow: hidden;
+  }
+
+  .photo-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .tag-line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-cream-deep);
+  }
+
+  .tag-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .tag-value {
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
+    color: var(--color-accent);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+
+  .link-action {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-decoration: none;
+    padding: var(--space-2) 0;
+    transition: var(--transition-default);
+  }
+
+  .link-action:hover {
+    color: var(--color-accent);
+  }
+</style>
