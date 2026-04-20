@@ -1,4 +1,4 @@
-import type { AdminUser, AnimalRecord } from "~/schemas";
+import type { AdminUser, AnimalRecord, CattleMediaLink, MediaAsset } from "~/schemas";
 
 /**
  * KV overlay pattern — spec §23.4.
@@ -146,4 +146,184 @@ export function mergeUser(
 ): AdminUser {
   if (!override) return seed;
   return { ...seed, ...override };
+}
+
+// ── Media assets (new records, not overlays) ────────────────────────
+// Uploaded photos create fresh MediaAsset + CattleMediaLink records.
+// Reads merge seed + created; writes go straight to KV. Created records
+// support patch writes (for classifier score updates, throne flips,
+// admin overrides) via the same merge pattern as animals.
+
+export async function getMediaOverride(
+  mediaId: string
+): Promise<Partial<MediaAsset> | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get(`media:${mediaId}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Partial<MediaAsset>;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeMediaRecord(
+  mediaId: string,
+  record: MediaAsset | Partial<MediaAsset>
+): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  const existing = (await getMediaOverride(mediaId)) ?? {};
+  const merged = { ...existing, ...record };
+  await env.OVERRIDES.put(`media:${mediaId}`, JSON.stringify(merged));
+}
+
+export async function getAllCreatedMedia(): Promise<MediaAsset[]> {
+  const env = await getEnv();
+  const result: MediaAsset[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({ prefix: "media:", cursor });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        const asset = JSON.parse(raw) as MediaAsset;
+        // only include if the record is complete enough to render
+        if (asset.id && asset.uri) result.push(asset);
+      } catch {
+        // skip malformed
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  return result;
+}
+
+// ── Links (new join records, not overlays) ──────────────────────────
+// CattleMediaLink identity uses a synthetic key of <animalId>:<mediaAssetId>
+// since the schema has no link.id field.
+
+function linkKey(animalId: string, mediaAssetId: string): string {
+  return `link:${animalId}:${mediaAssetId}`;
+}
+
+export async function getLinkOverride(
+  animalId: string,
+  mediaAssetId: string
+): Promise<Partial<CattleMediaLink> | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get(linkKey(animalId, mediaAssetId));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Partial<CattleMediaLink>;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeLinkRecord(
+  link: CattleMediaLink | Partial<CattleMediaLink> & { animalId: string; mediaAssetId: string }
+): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  const key = linkKey(link.animalId, link.mediaAssetId);
+  const existing = (await getLinkOverride(link.animalId, link.mediaAssetId)) ?? {};
+  const merged = { ...existing, ...link };
+  await env.OVERRIDES.put(key, JSON.stringify(merged));
+}
+
+export async function getAllCreatedLinks(): Promise<CattleMediaLink[]> {
+  const env = await getEnv();
+  const result: CattleMediaLink[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({ prefix: "link:", cursor });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        const link = JSON.parse(raw) as CattleMediaLink;
+        if (link.animalId && link.mediaAssetId) result.push(link);
+      } catch {
+        // skip malformed
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  return result;
+}
+
+// ── Upload issues (queue of flagged uploads) ────────────────────────
+
+export interface UploadIssue {
+  id: string;                 // stable uuid
+  type:
+    | "invalid-tag"           // Shortcut referenced a non-existent animal
+    | "classification-failed" // Claude call failed after retry
+    | "not-cattle"            // classifier flagged subjectPresent: false
+    | "duplicate"             // same image hash already present
+    | "corrupt-file";         // server couldn't read the image
+  mediaAssetId: string | null;
+  animalId: string | null;
+  uploaderUserId: string;
+  uploadedAt: string;
+  message: string;
+  resolved: boolean;
+}
+
+export async function writeUploadIssue(issue: UploadIssue): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return;
+  await env.OVERRIDES.put(`issue:${issue.id}`, JSON.stringify(issue));
+}
+
+export async function getAllUploadIssues(): Promise<UploadIssue[]> {
+  const env = await getEnv();
+  const result: UploadIssue[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({ prefix: "issue:", cursor });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        result.push(JSON.parse(raw) as UploadIssue);
+      } catch {
+        // skip
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  result.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  return result;
+}
+
+export async function resolveUploadIssue(id: string): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return;
+  const raw = await env.OVERRIDES.get(`issue:${id}`);
+  if (!raw) return;
+  try {
+    const issue = JSON.parse(raw) as UploadIssue;
+    issue.resolved = true;
+    await env.OVERRIDES.put(`issue:${id}`, JSON.stringify(issue));
+  } catch {
+    // ignore
+  }
 }
