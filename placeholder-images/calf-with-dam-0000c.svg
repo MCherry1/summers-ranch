@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder — Hereford calf with mother, TAG 0000">
+  <!-- PLACEHOLDER — not a real photo, not a real animal -->
+  <defs>
+    <linearGradient id="bg0000c" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c0d8a8"/>
+      <stop offset="55%" stop-color="#9db585"/>
+      <stop offset="100%" stop-color="#788f64"/>
+    </linearGradient>
+    <linearGradient id="ground0000c" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a7358"/>
+      <stop offset="100%" stop-color="#4d3e2a"/>
+    </linearGradient>
+    <linearGradient id="body0000c" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a05530"/>
+      <stop offset="60%" stop-color="#7f3e1e"/>
+      <stop offset="100%" stop-color="#5c2a10"/>
+    </linearGradient>
+    <linearGradient id="calfbody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b86840"/>
+      <stop offset="60%" stop-color="#9a5028"/>
+      <stop offset="100%" stop-color="#703618"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="1100" fill="url(#bg0000c)"/>
+  <rect x="0" y="1100" width="1200" height="500" fill="url(#ground0000c)"/>
+
+  <!-- Mother cow (partial, in background) -->
+  <g transform="translate(550, 750)" opacity="0.85">
+    <ellipse cx="300" cy="200" rx="320" ry="135" fill="url(#body0000c)"/>
+    <ellipse cx="300" cy="305" rx="300" ry="30" fill="#f0e5d0" opacity="0.9"/>
+    <g transform="translate(560, 140)">
+      <ellipse cx="55" cy="50" rx="95" ry="68" fill="url(#body0000c)"/>
+      <ellipse cx="65" cy="55" rx="60" ry="48" fill="#f4ede0"/>
+      <ellipse cx="118" cy="75" rx="22" ry="16" fill="#d4b59a"/>
+      <circle cx="48" cy="40" r="5" fill="#14100e"/>
+    </g>
+    <rect x="80" y="320" width="32" height="200" rx="6" fill="url(#body0000c)"/>
+    <rect x="140" y="320" width="32" height="200" rx="6" fill="url(#body0000c)"/>
+    <rect x="430" y="320" width="32" height="200" rx="6" fill="url(#body0000c)"/>
+    <rect x="490" y="320" width="32" height="200" rx="6" fill="url(#body0000c)"/>
+    <rect x="80" y="480" width="32" height="40" rx="3" fill="#f4ede0"/>
+    <rect x="140" y="480" width="32" height="40" rx="3" fill="#f4ede0"/>
+    <rect x="430" y="480" width="32" height="40" rx="3" fill="#f4ede0"/>
+    <rect x="490" y="480" width="32" height="40" rx="3" fill="#f4ede0"/>
+  </g>
+
+  <!-- Calf — small, in foreground, feet slightly awkward -->
+  <g transform="translate(200, 980)">
+    <!-- Body -->
+    <ellipse cx="200" cy="130" rx="180" ry="85" fill="url(#calfbody)"/>
+    <!-- White underbelly -->
+    <ellipse cx="200" cy="200" rx="170" ry="22" fill="#f0e5d0" opacity="0.9"/>
+    <!-- Head — big for body (calf proportions) -->
+    <g transform="translate(335, 75)">
+      <ellipse cx="50" cy="45" rx="78" ry="58" fill="url(#calfbody)"/>
+      <ellipse cx="55" cy="48" rx="48" ry="38" fill="#f4ede0"/>
+      <ellipse cx="95" cy="66" rx="18" ry="13" fill="#d4b59a"/>
+      <circle cx="42" cy="35" r="5" fill="#14100e"/>
+      <!-- Bigger ears on calf -->
+      <ellipse cx="-18" cy="10" rx="18" ry="25" fill="url(#calfbody)" transform="rotate(-30 -18 10)"/>
+      <ellipse cx="10" cy="-8" rx="16" ry="23" fill="url(#calfbody)" transform="rotate(-15 10 -8)"/>
+    </g>
+    <!-- Legs (thin and long for calf) -->
+    <rect x="65" y="215" width="22" height="150" rx="5" fill="url(#calfbody)"/>
+    <rect x="105" y="215" width="22" height="150" rx="5" fill="url(#calfbody)"/>
+    <rect x="270" y="215" width="22" height="150" rx="5" fill="url(#calfbody)"/>
+    <rect x="310" y="215" width="22" height="150" rx="5" fill="url(#calfbody)"/>
+    <!-- White socks -->
+    <rect x="65" y="330" width="22" height="35" rx="3" fill="#f4ede0"/>
+    <rect x="105" y="330" width="22" height="35" rx="3" fill="#f4ede0"/>
+    <rect x="270" y="330" width="22" height="35" rx="3" fill="#f4ede0"/>
+    <rect x="310" y="330" width="22" height="35" rx="3" fill="#f4ede0"/>
+    <!-- Little tail -->
+    <rect x="15" y="90" width="10" height="55" rx="3" fill="url(#calfbody)" transform="rotate(25 15 90)"/>
+  </g>
+
+  <line x1="0" y1="1100" x2="1200" y2="1100" stroke="#5a4e3c" stroke-width="2" opacity="0.4"/>
+
+  <text x="40" y="1560" font-family="monospace" font-size="20" fill="#f4ede0" opacity="0.7">
+    PLACEHOLDER · TAG 0000 · calf with dam · not real
+  </text>
+</svg>

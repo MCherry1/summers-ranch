@@ -699,10 +699,257 @@ Every uploaded photo is classified. Classification produces:
   - `prescriptionScore` + subscores: angle, legs, full-body, height, head, cleanliness, background, lighting
   - `aestheticScore` + subscores: technical, composition, lighting character, color/tonal
   - `timelineScore`, `galleryScore`, `editorialScore` — null in Phase 1 (rubrics deferred)
-- **Orientation** — `portrait` / `landscape` / `square`
-- **Aspect ratio** — exact decimal
+- **Orientation** — `portrait` / `landscape` / `square` (computed from image dimensions, not Claude)
+- **Aspect ratio** — exact decimal (computed from image dimensions, not Claude)
 
-Classification infrastructure ships Phase 1. The classifier itself (Phase 1) uses a small set of heuristics + admin manual overrides. ML-based classification is Phase 2+.
+Classification runs once per upload, asynchronously, after R2 persistence. Results write back to the MediaAsset record. See §14.7.1 for the implementation.
+
+### 14.7.1 🟧 Classification implementation — Claude vision pipeline
+
+**Architecture:**
+
+After `/api/upload` writes an image to R2 and returns 202 to the Shortcut, a follow-up classification job runs asynchronously:
+
+1. Upload handler enqueues a classification task (Cloudflare Queues or a scheduled worker — Phase 1 can use a simple immediate-fire-and-forget within the upload handler)
+2. Classifier worker reads the image from R2, computes dimensions (for orientation and aspect ratio)
+3. Classifier worker calls Claude API with the image and a structured prompt
+4. Claude returns JSON with `detectedShotType`, subscores, eligibility reasoning
+5. Worker parses, writes to MediaAsset record, triggers throne recomputation for the animal
+
+**Model selection — do not hardcode the model ID anywhere in source.** Use an environment variable `CLAUDE_MODEL_CLASSIFIER` with a source-level fallback default:
+
+```typescript
+const model = env.CLAUDE_MODEL_CLASSIFIER || 'claude-haiku-4-5-20251001';
+```
+
+This pattern is **mandatory**. Claude models evolve faster than the site will — hardcoding pins us to a specific generation and creates a hunt-and-replace burden at every upgrade. Config-driven model selection lets Matt update the env var in Cloudflare Pages when a new Haiku generation ships, with zero code change.
+
+Guidance for current selection: Haiku tier is the right choice for this task. Vision-capable, fast, cheap enough that even classifying thousands of photos costs pennies. Sonnet or Opus would be overkill for this bounded classification. When upgrading, keep the task at the Haiku tier unless benchmarks specifically show the higher tier materially improves classification accuracy enough to justify 3-5× the cost.
+
+**Current as of 2026-04:** `claude-haiku-4-5-20251001`. Always use the named alias if available (`claude-haiku-latest` is not an Anthropic convention — use a dated model ID, just make it env-driven).
+
+**API endpoint:** `POST https://api.anthropic.com/v1/messages`
+
+**Auth:** the `ANTHROPIC_API_KEY` environment variable. Set this in Cloudflare Pages settings → Environment variables → Production. Never commit the key to the repo.
+
+**Input shape** — base64 encoded image in a messages.create() call:
+
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+// Model is env-driven, never hardcoded. Fallback default ships in source
+// as a safety net but Cloudflare env var should override.
+const model = env.CLAUDE_MODEL_CLASSIFIER || 'claude-haiku-4-5-20251001';
+
+const imageBase64 = await readImageFromR2AsBase64(mediaAsset.uri);
+const mediaType = mediaAsset.uri.endsWith('.heic') ? 'image/heic' : 'image/jpeg';
+
+const response = await client.messages.create({
+  model,
+  max_tokens: 1024,
+  messages: [{
+    role: 'user',
+    content: [
+      {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: imageBase64,
+        },
+      },
+      {
+        type: 'text',
+        text: CLASSIFICATION_PROMPT,
+      },
+    ],
+  }],
+});
+```
+
+**The classification prompt** (roughly; refine during implementation):
+
+```
+You are classifying a photograph of cattle for a registered Hereford ranch 
+catalog site. Analyze the image and return JSON only (no prose, no markdown 
+fences, just raw JSON parseable by JSON.parse).
+
+Classify the shot type, then score on the two rubrics below.
+
+Schema:
+{
+  "detectedShotType": "side-profile" | "head" | "three-quarter" | "action" 
+    | "scenic" | "with-dam" | "detail" | "landscape" | "other",
+  "subjectPresent": boolean,  // is there a Hereford cow/bull in the photo at all
+  "prescriptionSubscores": {
+    // 0.0 to 1.0 each. Only populate when detectedShotType is "side-profile".
+    // Return null for other shot types.
+    "angle": number,           // how straight-on is the side profile (1.0 = perfect)
+    "legs": number,            // are all four legs visible and clear
+    "fullBody": number,        // is the full body in frame
+    "height": number,          // is camera height appropriate (roughly eye-level of cow)
+    "head": number,            // is head visible and not obscured
+    "cleanliness": number,     // is the animal clean (not muddy, matted, etc.)
+    "background": number,      // is the background clean and not distracting
+    "lighting": number         // is lighting adequate to evaluate conformation
+  } | null,
+  "aestheticSubscores": {
+    // 0.0 to 1.0 each. Evaluate craft only — no emotional judgment.
+    "technical": number,            // focus, exposure, noise
+    "composition": number,          // framing, rule of thirds, balance
+    "lightingCharacter": number,    // quality of light (golden hour, flat noon, etc.)
+    "colorTonal": number            // color harmony, tonal range
+  },
+  "eligibility": {
+    "cardFrontEligible": boolean,       // usable as a primary identifier shot
+    "timelineEligible": boolean,        // usable in a growth timeline (usually = side-profile shots with subject)
+    "galleryHerdCandidate": boolean,    // atmospheric shot of cattle in environment
+    "galleryRanchCandidate": boolean,   // ranch atmosphere, cattle optional
+    "editorialCandidate": boolean       // distinctive, story-telling shot
+  },
+  "notes": string  // 1-2 sentences on why these classifications (for debugging)
+}
+
+Important:
+- If subjectPresent is false, set detectedShotType to "landscape" or "other" 
+  as appropriate, and set most eligibility flags to false except possibly 
+  galleryRanchCandidate.
+- Return JSON only. No prose, no markdown, no code fences.
+```
+
+**Response handling:**
+
+```typescript
+// Parse the JSON from response.content[0].text
+const raw = response.content.find(b => b.type === 'text')?.text ?? '';
+const parsed = JSON.parse(raw);
+
+// Compute blended scores from subscores using the weights in §14.8
+const prescriptionScore = parsed.prescriptionSubscores
+  ? computePrescriptionScore(parsed.prescriptionSubscores) * 100
+  : null;
+const aestheticScore = computeAestheticScore(parsed.aestheticSubscores) * 100;
+
+// Write back to MediaAsset
+await updateMediaAsset(mediaAsset.id, {
+  detectedShotType: parsed.detectedShotType,
+  prescriptionScore,
+  prescriptionSubscores: parsed.prescriptionSubscores,
+  aestheticScore,
+  aestheticSubscores: parsed.aestheticSubscores,
+  cardFrontEligible: parsed.eligibility.cardFrontEligible,
+  timelineEligible: parsed.eligibility.timelineEligible,
+  galleryHerdCandidate: parsed.eligibility.galleryHerdCandidate,
+  galleryRanchCandidate: parsed.eligibility.galleryRanchCandidate,
+  editorialCandidate: parsed.eligibility.editorialCandidate,
+});
+
+// Trigger throne recomputation for the animal
+await recomputeThrones(animalId);
+```
+
+**Cost estimation:**
+
+Typical HEIC photo resized to long-edge 1568px yields ~1600 image tokens at Claude vision rates. With ~300 tokens of prompt plus ~400 tokens output, a classification runs ~2300 total tokens.
+
+At Haiku 4.5 rates ($1 input / $5 output per million):
+- Input: 1900 tokens × $1/M = $0.0019
+- Output: 400 tokens × $5/M = $0.0020
+- **Per-photo cost: ~$0.004** (four-tenths of a cent)
+
+Classifying 10,000 photos costs ~$40. Summers Ranch will upload a few hundred photos per year. Classification is effectively free.
+
+**Error handling:**
+
+- If the Claude API call fails (timeout, rate limit, 5xx): retry once with exponential backoff; if still failing, write `classificationStatus: 'failed'` to the MediaAsset and enqueue for manual admin review in `/admin/upload-issues/`
+- If the returned JSON is malformed (invalid, missing fields): same failure path — flag for manual review, don't guess
+- If `subjectPresent: false` for a photo uploaded to a specific animal: flag in upload-issues as "likely not cattle" — admin decides whether to keep or delete
+
+**Admin override:**
+
+Any classification field is editable by admin from the photo's detail row on `/admin/herd/[id]`. Manual overrides carry a flag `classificationManuallyOverridden: true` so a future reclassification pass doesn't clobber admin judgment.
+
+**Reclassification:**
+
+Phase 1 doesn't reclassify. Each photo is classified once on upload.
+
+Phase 2+ may add a reclassification mechanism (e.g., when the rubric is refined or a better model is available) that respects `classificationManuallyOverridden`.
+
+**What Claude vision gets right and wrong:**
+
+Based on experience with similar image-classification tasks, expect:
+- **Reliably correct:** distinguishing cattle from non-cattle, identifying obvious side-profile vs headshot vs action, recognizing cleanliness and lighting quality, detecting full-body framing
+- **Mostly correct but occasionally wrong:** subtle angle judgments ("is this 3/4 turned or fully side?"), scoring composition on atmospheric shots, detecting subject being with dam vs just adjacent
+- **Not reliable alone:** final prescription judgments ("is this angle acceptable for evaluation?") — we use the scores as inputs to the throne algorithm (§14.8), not as final decisions. Admin Prefer/Hide overrides per §14.12 exist precisely because automated scoring isn't authoritative.
+
+**Concrete integration with the upload flow:**
+
+```
+Shortcut POST /api/upload → Worker writes to R2, returns 202
+    ↓
+Worker enqueues classification job (or fires directly in Phase 1)
+    ↓
+Classifier reads image, gets dimensions, calls Claude
+    ↓
+Claude returns JSON classification
+    ↓
+Worker writes scores/flags to MediaAsset record
+    ↓
+Worker calls recomputeThrones(animalId)
+    ↓
+Throne changes propagate to card-front selection on next render
+```
+
+The upload handler returns 202 before classification completes. The Shortcut doesn't wait. If classification fails, the photo is still uploaded and visible — just unclassified, which admin can manually classify later.
+
+### 14.7.2 🟧 Model lifecycle management — automated checks
+
+Two scheduled background checks keep the classifier's model selection healthy without requiring Matt to actively monitor Anthropic's documentation.
+
+**Weekly deprecation check** (`/functions/cron/weekly-deprecation-check.ts`):
+
+- Runs every Monday at 4am UTC via Cloudflare Cron Trigger (`0 4 * * 1`)
+- Fetches Anthropic's deprecation list (from the models API or the deprecations documentation URL)
+- For each currently-configured `CLAUDE_MODEL_*` env var, checks whether that model appears in the deprecation list
+- If yes:
+  - **If a clean successor is recommended by Anthropic** (same tier, same price or cheaper): logs the intent, sends an urgent email to the Owner, waits 7 days for response, then automatically updates the env var and sends a confirmation email. The 7-day window gives Matt a chance to object; the automatic update ensures the site never goes down due to an ignored email.
+  - **If no clean successor is recommended**: sends an urgent email flagging the situation and requires manual action. No automatic change.
+- Logs all activity to the audit log (per spec §17.4)
+
+**Quarterly model review** (separate, documented in `DEPLOYMENT-SECRETS.md`):
+
+- Runs every 90 days
+- Composes a human-readable email summarizing current model vs newer alternatives, including benchmark comparisons from public leaderboards (Artificial Analysis primary, Anthropic docs fallback)
+- **Never auto-upgrades.** Always requires human action via Cloudflare Pages env var change.
+- Rationale: generation upgrades (Haiku 4.5 → Haiku 5) carry real risk of behavior changes on cattle-specific photos; the value of Matt's human judgment here is high.
+
+**Request-level fallback** (runtime, not scheduled):
+
+Already specified in §14.7.1's error handling. If a classification call fails with "model not found" at runtime, the worker retries once with the hardcoded fallback default model and logs a loud warning. This is the last line of defense if both scheduled checks somehow fail.
+
+**Combined defense-in-depth:**
+
+- **Day-of-failure protection:** request-level fallback — site doesn't go down if the configured model evaporates mid-request
+- **Week-of-deprecation protection:** weekly check catches deprecation notices with 6-month runway plus an additional 7-day grace window for Matt to act, or automatic migration if he doesn't
+- **Quarterly improvement protection:** quarterly email nudges upgrades when newer models offer benchmark improvements at same or lower cost, but never takes action without explicit approval
+
+**Matt's total required effort:**
+
+- Opening the quarterly email once every 90 days (~30 seconds to read, 30 seconds to decide)
+- Responding to the urgent deprecation email within 7 days if one ever arrives (probably once every 18-24 months based on historical Anthropic deprecation cadence)
+- Zero ongoing monitoring effort
+
+**Shared implementation note:**
+
+Both scheduled checks can live in the same `/functions/cron/` directory and share utility modules for:
+- Fetching Anthropic models list
+- Parsing deprecation data
+- Composing and dispatching emails via the inquiry-notification email channel
+- Reading/writing Cloudflare Pages environment variables programmatically (requires an additional API token with Cloudflare API Settings:Edit permission, stored as `CF_API_TOKEN` env var)
+
+The "automatically update env var" path specifically requires the `CF_API_TOKEN` secret — it's the only way to change a Pages environment variable programmatically. If that token isn't configured, both scheduled checks degrade gracefully to email-only mode (no automatic updates, just notifications).
 
 ### 14.8 🟧 Throne mechanics — card front (side profile)
 
@@ -1623,6 +1870,39 @@ The following are intentionally deferred beyond Phase 1:
 **Content:**
 - Tooltip content pass (infrastructure Phase 1, content late Phase 1 / post-launch)
 - Documents section content pass
+
+**Phase 3+ concepts (not committed, captured for future consideration):**
+
+- **AI-assisted buyer evaluation tool (`/admin/evaluate/`).** Admin-only private tool for Marty to evaluate *other* ranchers' animals during purchase or breeding decisions. Not a public feature. Not a tool for evaluating his own herd.
+
+  **User flow:** Marty uploads 1-5 photos of a candidate animal (from a sale catalog, a private seller, or anywhere else), pastes or types whatever metadata he has (EPDs, registration number, seller claims, asking price), optionally states his current breeding goal. System produces a structured evaluation report including conformation observations, EPD interpretation, fit-to-goal analysis, questions to ask the seller, and red flags if any.
+
+  **Why admin-only, never public:**
+  - Uses the same Claude vision pipeline as classification, but for a completely different purpose — the buyer's side of the transaction, not the seller's
+  - Output is advice to Marty, not content about any animal
+  - Avoids reputation risks associated with public AI commentary on specific animals
+  - Treats Marty's buyer-evaluation workflow as what it is: a private competitive advantage, appropriately kept private
+  - Respects copyright — catalog photos uploaded for private evaluation are fair use; publishing AI critiques of them would not be
+
+  **Use cases this serves:**
+  - AHA sale catalog triage (narrowing hundreds of candidates to ones worth deeper investigation)
+  - Out-of-state purchase decisions where physical visit isn't feasible before commitment
+  - Pairing decisions within his own herd (which cow × which bull for which breeding goal)
+  - Sanity-checking gut reactions to specific animals
+
+  **Output delivery:** structured reports saved to Marty's admin space, viewable only by Owner and optionally Admin. Never by Editor or Contributor. Never leaves the admin surface.
+
+  **Constraints:**
+  - Never surface temperament judgments (AI cannot read temperament from photos)
+  - Never verify seller-supplied claims as authoritative — reports note what AI observed, what AI couldn't determine, and what Marty should confirm independently
+  - Bounded compute (admin-invoked, hard-capped at reasonable per-evaluation cost)
+  - Clear labeling as "AI observations for your decision-making — not a verified assessment"
+  - Input photos and generated reports stored privately; never aggregated, never published
+  - Copyright treated carefully — uploaded catalog photos must not be republished anywhere
+
+  **Dependencies on Phase 1 work:** requires the Phase 1 classification pipeline (§14.7.1) to be mature and well-calibrated. Any confidence in structural evaluation of arbitrary animals is downstream of reliable shot-type detection and scoring on Marty's own herd first.
+
+  **Explicitly not proposed:** a public-facing "AI comparison engine" that lets buyers evaluate Marty's animals against their own criteria. That version would fight the seedstock business model — the buyer-breeder relationship is core to selling registered Herefords, automated scoring creates reputation risk, and unbounded public compute is budget-dangerous.
 
 ---
 

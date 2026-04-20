@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder — Hereford bull side profile, TAG 0000">
+  <!-- PLACEHOLDER — not a real photo, not a real animal -->
+  <defs>
+    <linearGradient id="bg0000b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a8b89a"/>
+      <stop offset="60%" stop-color="#7d8e6f"/>
+      <stop offset="100%" stop-color="#5d6b4f"/>
+    </linearGradient>
+    <linearGradient id="ground0000b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#78654e"/>
+      <stop offset="100%" stop-color="#3d3124"/>
+    </linearGradient>
+    <linearGradient id="body0000b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#854020"/>
+      <stop offset="55%" stop-color="#602c13"/>
+      <stop offset="100%" stop-color="#3d1c08"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="1050" fill="url(#bg0000b)"/>
+  <rect x="0" y="1050" width="1200" height="550" fill="url(#ground0000b)"/>
+
+  <!-- Bull — bigger body, more muscular, deeper chest -->
+  <g transform="translate(180, 680)">
+    <!-- Body -->
+    <ellipse cx="420" cy="220" rx="400" ry="175" fill="url(#body0000b)"/>
+    
+    <!-- Shoulder hump (bulls have more developed shoulders) -->
+    <ellipse cx="250" cy="100" rx="140" ry="70" fill="url(#body0000b)"/>
+    
+    <!-- White underbelly -->
+    <ellipse cx="420" cy="345" rx="360" ry="35" fill="#f0e5d0" opacity="0.9"/>
+    
+    <!-- Head — stronger, more squared -->
+    <g transform="translate(720, 130)">
+      <ellipse cx="70" cy="60" rx="125" ry="90" fill="url(#body0000b)"/>
+      <!-- White face -->
+      <ellipse cx="80" cy="65" rx="78" ry="62" fill="#f4ede0"/>
+      <!-- Muzzle -->
+      <ellipse cx="155" cy="95" rx="28" ry="20" fill="#d4b59a"/>
+      <!-- Eye -->
+      <circle cx="60" cy="45" r="7" fill="#14100e"/>
+      <!-- Ears -->
+      <ellipse cx="-20" cy="18" rx="25" ry="33" fill="url(#body0000b)" transform="rotate(-25 -20 18)"/>
+      <ellipse cx="14" cy="-6" rx="22" ry="30" fill="url(#body0000b)" transform="rotate(-10 14 -6)"/>
+      <!-- Horns (bulls often have more pronounced horns; polled bulls don't) -->
+      <path d="M -10 20 Q -35 -10 -25 -35" stroke="#e8d9bd" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M 30 -5 Q 55 -30 80 -30" stroke="#e8d9bd" stroke-width="8" fill="none" stroke-linecap="round"/>
+    </g>
+    
+    <!-- Legs — thicker than cow -->
+    <rect x="115" y="370" width="48" height="230" rx="10" fill="url(#body0000b)"/>
+    <rect x="195" y="370" width="48" height="230" rx="10" fill="url(#body0000b)"/>
+    <rect x="570" y="370" width="48" height="230" rx="10" fill="url(#body0000b)"/>
+    <rect x="650" y="370" width="48" height="230" rx="10" fill="url(#body0000b)"/>
+    
+    <!-- White leg socks -->
+    <rect x="115" y="548" width="48" height="52" rx="5" fill="#f4ede0"/>
+    <rect x="195" y="548" width="48" height="52" rx="5" fill="#f4ede0"/>
+    <rect x="570" y="548" width="48" height="52" rx="5" fill="#f4ede0"/>
+    <rect x="650" y="548" width="48" height="52" rx="5" fill="#f4ede0"/>
+    
+    <!-- Tail -->
+    <rect x="25" y="160" width="18" height="130" rx="5" fill="url(#body0000b)" transform="rotate(18 25 160)"/>
+  </g>
+
+  <line x1="0" y1="1050" x2="1200" y2="1050" stroke="#5a4e3c" stroke-width="2" opacity="0.4"/>
+
+  <text x="40" y="1560" font-family="monospace" font-size="20" fill="#f4ede0" opacity="0.7">
+    PLACEHOLDER · TAG 0000 · bull · not real
+  </text>
+</svg>

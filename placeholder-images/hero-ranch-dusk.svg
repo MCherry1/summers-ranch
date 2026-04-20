@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 1500" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder hero image — silhouette of Hereford cattle at dusk">
+  <!-- PLACEHOLDER — not a real photo, not a real animal -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d8a88a"/>
+      <stop offset="45%" stop-color="#e8c9a8"/>
+      <stop offset="100%" stop-color="#f4d8b5"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a5046"/>
+      <stop offset="55%" stop-color="#3d362e"/>
+      <stop offset="100%" stop-color="#241e17"/>
+    </linearGradient>
+    <linearGradient id="hills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6d5a4a"/>
+      <stop offset="100%" stop-color="#4a3d30"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky -->
+  <rect x="0" y="0" width="2400" height="900" fill="url(#sky)"/>
+
+  <!-- Sun -->
+  <circle cx="1700" cy="720" r="80" fill="#f7e5b8" opacity="0.55"/>
+
+  <!-- Distant hills -->
+  <path d="M 0 900 L 0 820 Q 300 760 600 810 Q 900 860 1200 820 Q 1500 780 1800 830 Q 2100 870 2400 830 L 2400 900 Z" fill="url(#hills)" opacity="0.75"/>
+
+  <!-- Foreground field -->
+  <rect x="0" y="900" width="2400" height="600" fill="url(#field)"/>
+
+  <!-- Stylized cattle silhouettes (placeholder — not a real animal) -->
+  <!-- Cow 1 — foreground left -->
+  <g transform="translate(600, 1080) scale(1.1)" fill="#14100e" opacity="0.85">
+    <ellipse cx="100" cy="50" rx="85" ry="35"/>
+    <rect x="20" y="50" width="15" height="50" rx="3"/>
+    <rect x="50" y="50" width="15" height="50" rx="3"/>
+    <rect x="130" y="50" width="15" height="50" rx="3"/>
+    <rect x="160" y="50" width="15" height="50" rx="3"/>
+    <ellipse cx="200" cy="35" rx="25" ry="18"/>
+    <rect x="190" y="45" width="14" height="20" rx="3"/>
+  </g>
+
+  <!-- Cow 2 — mid -->
+  <g transform="translate(1100, 1130) scale(0.9)" fill="#14100e" opacity="0.72">
+    <ellipse cx="100" cy="50" rx="85" ry="35"/>
+    <rect x="20" y="50" width="15" height="50" rx="3"/>
+    <rect x="50" y="50" width="15" height="50" rx="3"/>
+    <rect x="130" y="50" width="15" height="50" rx="3"/>
+    <rect x="160" y="50" width="15" height="50" rx="3"/>
+    <ellipse cx="200" cy="35" rx="25" ry="18"/>
+  </g>
+
+  <!-- Cow 3 — back far right -->
+  <g transform="translate(1700, 1160) scale(0.72)" fill="#14100e" opacity="0.6">
+    <ellipse cx="100" cy="50" rx="85" ry="35"/>
+    <rect x="20" y="50" width="15" height="50" rx="3"/>
+    <rect x="50" y="50" width="15" height="50" rx="3"/>
+    <rect x="130" y="50" width="15" height="50" rx="3"/>
+    <rect x="160" y="50" width="15" height="50" rx="3"/>
+    <ellipse cx="200" cy="35" rx="25" ry="18"/>
+  </g>
+
+  <!-- Subtle placeholder watermark — visible only on close inspection -->
+  <text x="60" y="1450" font-family="monospace" font-size="22" fill="#f4d8b5" opacity="0.45">
+    PLACEHOLDER · TAG 0000 · Hereford silhouette · not a real animal
+  </text>
+</svg>
