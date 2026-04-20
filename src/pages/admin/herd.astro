@@ -19,13 +19,15 @@ import AdminLayout from "~/layouts/AdminLayout.astro";
 import CardFront from "~/components/cattle/CardFront.astro";
 import { requireAdmin } from "~/lib/auth/guards";
 import { can } from "~/lib/auth/rbac";
-import { animals, groupByBinder, getPrimaryPhoto } from "~/lib/cattle";
+import { getAllAnimalsLive, groupByBinderLive } from "~/lib/cattle-live";
+import { getPrimaryPhoto } from "~/lib/cattle";
 
 const result = await requireAdmin(Astro);
 if (result instanceof Response) return result;
 const user = result;
 
-const sections = groupByBinder(animals);
+const animals = await getAllAnimalsLive();
+const sections = await groupByBinderLive();
 const isEmpty = animals.length === 0;
 
 // Status strip counts (stubs until the admin operational queues land)

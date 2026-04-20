@@ -1,38 +1,104 @@
 ---
 /**
- * Admin per-animal editor — spec §12.7 (inline edit).
+ * Admin per-animal editor — spec §12.7 inline-edit.
  *
- * Phase 1 full UI lands in the next checkpoint: inline-edit fields
- * with auto-save on blur, per-field audit trail, progressive
- * disclosure, tooltips. For now: read-only view of the record plus
- * a link back to the public front so admins can verify rendering.
+ * Every field is click-to-edit via InlineField. Writes go to
+ * /api/admin/animal/[id]/field, which validates the field and value
+ * against the AnimalRecord schema, persists the change as a KV
+ * overlay, and appends a per-field audit entry.
+ *
+ * Progressive disclosure (§12.8): null fields still render as
+ * editable slots with muted "Add…" placeholders — admin sees what's
+ * available to fill without the public view showing empty rows.
+ * Sections that only apply when the animal is in a particular state
+ * (sale details, progeny) render conditionally.
+ *
+ * Plain-language labels per §12.8. "American Hereford papers", not
+ * "Registration." "Calves from this cow", not "Progeny."
  */
 import AdminLayout from "~/layouts/AdminLayout.astro";
 import AdminPageHeader from "~/components/admin/AdminPageHeader.astro";
-import ComingSoon from "~/components/admin/ComingSoon.astro";
-import { requireAdmin } from "~/lib/auth/guards";
-import { getAnimal } from "~/lib/cattle";
-import { displayName } from "~/lib/derive/naming";
+import InlineField from "~/components/admin/InlineField.astro";
+import { requireCapability } from "~/lib/auth/guards";
+import { getAnimalLive, getAllAnimalsLive } from "~/lib/cattle-live";
+import { displayName, headerStrip } from "~/lib/derive/naming";
+import { readTargetAuditTrail } from "~/lib/audit";
+import { getAdminUser } from "~/lib/admin-users";
 
-const result = await requireAdmin(Astro);
-if (result instanceof Response) return result;
-const user = result;
+const guard = await requireCapability(Astro, "edit-animals");
+if (guard instanceof Response) return guard;
+const user = guard;
 
 const { id } = Astro.params;
-const animal = id ? getAnimal(id) : null;
+const animal = id ? await getAnimalLive(id) : null;
 
 if (!animal) {
   return Astro.redirect("/admin/herd", 302);
 }
 
+const allAnimals = await getAllAnimalsLive();
+
+const endpoint = `/api/admin/animal/${animal.id}/field`;
 const name = displayName(animal);
+const title = headerStrip(animal);
+
+const sexOptions = [
+  { value: "cow", label: "Cow" },
+  { value: "bull", label: "Bull" },
+  { value: "heifer", label: "Heifer" },
+  { value: "steer", label: "Steer" },
+  { value: "calf", label: "Calf" },
+];
+
+const statusOptions = [
+  { value: "available", label: "Available" },
+  { value: "breeding", label: "Active in herd" },
+  { value: "growing", label: "Growing" },
+  { value: "sold", label: "Sold" },
+  { value: "deceased", label: "In memory" },
+  { value: "retired", label: "Retired" },
+];
+
+const distinctionOptions = [
+  { value: "DOD", label: "DOD — Dam of Distinction" },
+  { value: "SOD", label: "SOD — Sire of Distinction" },
+];
+
+// Sire/dam options: animals that could plausibly be parents. No
+// self-reference. No animals younger than this one.
+function parentOptions(sex: "bull" | "cow"): Array<{ value: string; label: string }> {
+  return allAnimals
+    .filter((a) => a.id !== animal!.id && a.sex === sex)
+    .map((a) => ({ value: a.id, label: displayName(a) }));
+}
+
+const sireOptions = parentOptions("bull");
+const damOptions = parentOptions("cow");
+
+// Recent audit entries for a subtle "last edited" footer
+const audit = await readTargetAuditTrail("animal", animal.id, 5);
+const lastEdit = audit[0];
+const lastEditActor = lastEdit ? getAdminUser(lastEdit.actorUserId) : null;
+
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: user.timeZone,
+  });
+}
+
+const canEditPrivateNotes = user.role !== "editor";
 ---
 
 <AdminLayout title={`Edit ${name}`} user={user}>
   <AdminPageHeader
-    kicker="Admin · Herd"
-    title={name}
-    lead="Read-only view of this animal's record. Inline editing ships in the next checkpoint."
+    kicker={`Admin · Herd`}
+    title={title}
+    lead="Click any field to edit. Changes save as you move off the field."
   />
 
   <div class="actions">
@@ -42,33 +108,169 @@ const name = displayName(animal);
     <a href="/admin/herd">&lsaquo; Back to herd</a>
   </div>
 
-  <ComingSoon
-    milestone="inline-edit checkpoint"
-    detail="Every field on this page will be click-to-edit, auto-save on blur, with a per-field audit trail and plain-language tooltips. Progressive disclosure will hide irrelevant sections until an animal's state makes them apply."
-  />
-
-  <section class="record">
-    <h2>Current record</h2>
-    <dl>
-      <div class="row"><dt>Tag</dt><dd>#{animal.tag}</dd></div>
-      {animal.name && <div class="row"><dt>Name</dt><dd>{animal.name}</dd></div>}
-      <div class="row"><dt>Sex</dt><dd>{animal.sex}</dd></div>
-      <div class="row"><dt>Breed</dt><dd>{animal.breed}</dd></div>
-      {animal.dateOfBirth && (
-        <div class="row"><dt>DOB</dt><dd>{animal.dateOfBirth}</dd></div>
-      )}
-      <div class="row"><dt>Status</dt><dd>{animal.currentStatus}</dd></div>
-      {animal.registrationNumber && (
-        <div class="row"><dt>AHA #</dt><dd>{animal.registrationNumber}</dd></div>
-      )}
-      {animal.distinction && (
-        <div class="row">
-          <dt>Distinction</dt>
-          <dd>{animal.distinction} ({animal.distinctionYear})</dd>
-        </div>
-      )}
-    </dl>
+  <section class="panel">
+    <h2 class="panel-title">Identity</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Tag"
+        endpoint={endpoint}
+        field="tag"
+        value={animal.tag}
+        placeholder="Add a tag number"
+        tooltip="The ear tag number. Usually a short alphanumeric — '840', '109A'. This is the primary way Marty and Roianne refer to the animal day-to-day."
+      />
+      <InlineField
+        label="Name"
+        endpoint={endpoint}
+        field="name"
+        value={animal.name}
+        nullable={true}
+        placeholder="No name yet"
+        tooltip="The animal's given name. Not every cow has one — leave blank if they don't."
+      />
+      <InlineField
+        label="Sex"
+        endpoint={endpoint}
+        field="sex"
+        value={animal.sex}
+        variant="select"
+        options={sexOptions}
+        tooltip="Cow (mature female), bull (mature male), heifer (young female before first calf), steer (castrated male), calf (young animal before classification)."
+      />
+      <InlineField
+        label="Breed"
+        endpoint={endpoint}
+        field="breed"
+        value={animal.breed}
+        placeholder="Hereford"
+      />
+      <InlineField
+        label="Date of birth"
+        endpoint={endpoint}
+        field="dateOfBirth"
+        value={animal.dateOfBirth}
+        variant="date"
+        nullable={true}
+        placeholder="Add a birth date"
+        tooltip="The animal's birthday. Drives age display, life-stage logic, and the birthday ribbon on the card front."
+      />
+      <InlineField
+        label="Status"
+        endpoint={endpoint}
+        field="currentStatus"
+        value={animal.currentStatus}
+        variant="select"
+        options={statusOptions}
+        tooltip="What's going on with this animal right now. 'Available' shows the gold AVAILABLE ribbon on the public card; 'In memory' and 'Retired' move them into the Reference section of the herd."
+      />
+    </div>
   </section>
+
+  <section class="panel">
+    <h2 class="panel-title">American Hereford papers</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Registration number"
+        endpoint={endpoint}
+        field="registrationNumber"
+        value={animal.registrationNumber}
+        nullable={true}
+        placeholder="Not registered"
+        tooltip="The AHA registration number. When set, the public card links directly to the hereford.org lookup for this animal."
+      />
+      <InlineField
+        label="Distinction"
+        endpoint={endpoint}
+        field="distinction"
+        value={animal.distinction}
+        variant="select"
+        options={distinctionOptions}
+        nullable={true}
+        placeholder="No distinction"
+        tooltip="DOD is Dam of Distinction; SOD is Sire of Distinction. Both are AHA awards. Shows the blue or red hanging ribbon on the public card."
+      />
+      <InlineField
+        label="Distinction year"
+        endpoint={endpoint}
+        field="distinctionYear"
+        value={animal.distinctionYear}
+        variant="number"
+        nullable={true}
+        placeholder="Add year"
+      />
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Sire and dam</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Sire"
+        endpoint={endpoint}
+        field="sireId"
+        value={animal.sireId}
+        variant="select"
+        options={sireOptions}
+        nullable={true}
+        placeholder="Not set"
+        tooltip="Links the public card's pedigree to the sire's card. Only in-herd bulls appear here."
+      />
+      <InlineField
+        label="Dam"
+        endpoint={endpoint}
+        field="damId"
+        value={animal.damId}
+        variant="select"
+        options={damOptions}
+        nullable={true}
+        placeholder="Not set"
+        tooltip="Links the public card's pedigree to the dam's card. Only in-herd cows appear here."
+      />
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Reference state</h2>
+    <div class="panel-body">
+      <InlineField
+        label="Reference animal"
+        endpoint={endpoint}
+        field="isReference"
+        value={animal.isReference ? "true" : "false"}
+        variant="select"
+        options={[
+          { value: "false", label: "Active in the herd" },
+          { value: "true", label: "Reference only" },
+        ]}
+        tooltip="Reference animals are deceased, sold, or no longer owned but kept in the catalog as history. They sort into the Reference section of the herd."
+      />
+    </div>
+  </section>
+
+  {canEditPrivateNotes && (
+    <section class="panel">
+      <h2 class="panel-title">Private notes (never shown publicly)</h2>
+      <div class="panel-body">
+        <InlineField
+          label="Notes"
+          endpoint={endpoint}
+          field="privateNotes"
+          value={animal.privateNotes}
+          variant="textarea"
+          placeholder="Jot anything private about this animal…"
+          tooltip="These notes are only visible to Owner and Admin. They never appear on the public surface."
+        />
+      </div>
+    </section>
+  )}
+
+  {lastEdit && (
+    <p class="last-edit">
+      Last changed by {lastEditActor?.displayName ?? "someone"} ·
+      {formatTimestamp(lastEdit.timestamp)} · field:
+      <code>{lastEdit.field}</code>
+    </p>
+  )}
 </AdminLayout>
 
 <style>
@@ -80,60 +282,42 @@ const name = displayName(animal);
     font-size: var(--font-size-sm);
   }
 
-  .record {
-    margin-top: var(--space-10);
-    max-width: var(--max-width-data);
+  .panel {
+    margin-bottom: var(--space-8);
     background: var(--color-paper);
-    border-radius: var(--radius-3);
-    padding: var(--space-6);
     border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    max-width: 48rem;
   }
 
-  .record h2 {
+  .panel-title {
     font-family: var(--font-body);
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-xs);
     letter-spacing: var(--letter-spacing-kicker);
     text-transform: uppercase;
     color: var(--color-muted);
-    margin: 0 0 var(--space-4);
-  }
-
-  dl {
     margin: 0;
-    display: grid;
-    grid-template-columns: 10rem 1fr;
-    gap: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-cream-deep);
   }
 
-  .row {
-    display: contents;
+  .panel-body {
+    padding: var(--space-4) var(--space-5);
   }
 
-  dt, dd {
-    padding: var(--space-3) 0;
-    border-top: 1px solid var(--color-cream-deep);
-    margin: 0;
-  }
-
-  .row:first-child dt,
-  .row:first-child dd {
-    border-top: 0;
-    padding-top: 0;
-  }
-
-  dt {
+  .last-edit {
+    margin-top: var(--space-6);
     font-family: var(--font-body);
-    font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-xs);
-    letter-spacing: var(--letter-spacing-kicker);
-    text-transform: uppercase;
     color: var(--color-muted);
   }
 
-  dd {
-    font-family: var(--font-body);
-    font-size: var(--font-size-base);
-    color: var(--color-ink);
+  .last-edit code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-cream-deep);
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-1);
   }
 </style>
