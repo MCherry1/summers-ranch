@@ -16,7 +16,9 @@ import MeetTheHerd from "~/components/home/MeetTheHerd.astro";
 import AboutRanch from "~/components/home/AboutRanch.astro";
 import LookingToBuy from "~/components/home/LookingToBuy.astro";
 import GetInTouch from "~/components/home/GetInTouch.astro";
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
 import { availableCountLive } from "~/lib/cattle-live";
 
 const available = await availableCountLive();

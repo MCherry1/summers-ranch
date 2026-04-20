@@ -8,13 +8,14 @@
  * Work Sans 500 at --font-size-sm, ink default, burgundy + underline
  * on active, hover darkens color without adding underline.
  */
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
 
 interface Props {
   currentPath: string;   // Astro.url.pathname from the page
 }
 
 const { currentPath } = Astro.props;
+const site = await getSiteLive();
 
 const items: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },

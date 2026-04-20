@@ -21,7 +21,9 @@
  * Text is left-aligned on mobile (POLISH §8.3) and centered on
  * desktop per POLISH §4.2's hero carve-out.
  */
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
+
+const site = await getSiteLive();
 
 // Build-time check: is the real hero photo in place yet?
 const realHeroCandidates = import.meta.glob(

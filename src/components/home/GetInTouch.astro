@@ -10,8 +10,9 @@
  */
 import PageSection from "~/layouts/PageSection.astro";
 import Cta from "~/components/ui/Cta.astro";
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
 
+const site = await getSiteLive();
 const hasPhone = Boolean(site.contactPhone);
 const hasEmail = Boolean(site.contactEmail);
 const hasLocation = Boolean(site.contactAddress);

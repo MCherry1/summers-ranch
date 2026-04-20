@@ -5,8 +5,9 @@
  * text, left-aligned. Contact fields hide when null per "better empty
  * than wrong."
  */
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
 
+const site = await getSiteLive();
 const currentYear = new Date().getFullYear();
 ---
 
