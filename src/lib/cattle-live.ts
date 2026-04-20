@@ -111,12 +111,12 @@ async function getAllLinksLive(): Promise<CattleMediaLink[]> {
 }
 
 /**
- * Primary front photo per §3.5. Overlay-aware — respects throne flags
+ * Primary front photo per §3.5. Overlay-aware — respects king flags
  * on either seed links or KV-created links.
  *
- *   available animal      → cardFrontThrone (side profile)
- *   not-available animal  → cardFrontBeautyThrone
- *   fallback              → the other throne
+ *   available animal      → cardFrontKing (side profile)
+ *   not-available animal  → cardFrontBeautyKing
+ *   fallback              → the other crown
  *   empty                 → null (caller shows silhouette)
  */
 export async function getPrimaryPhotoLive(
@@ -132,20 +132,18 @@ export async function getPrimaryPhotoLive(
   const mediaById = new Map(allMedia.map((m) => [m.id, m]));
   const animalLinks = allLinks.filter((l) => l.animalId === animalId);
 
-  const wantThrone =
+  const wantKing =
     animal.currentStatus === "available"
-      ? "cardFrontThrone"
-      : "cardFrontBeautyThrone";
+      ? "cardFrontKing"
+      : "cardFrontBeautyKing";
 
-  const throneLink = animalLinks.find((l) => l[wantThrone]);
-  if (throneLink) {
-    return mediaById.get(throneLink.mediaAssetId) ?? null;
+  const kingLink = animalLinks.find((l) => l[wantKing]);
+  if (kingLink) {
+    return mediaById.get(kingLink.mediaAssetId) ?? null;
   }
 
   const otherField =
-    wantThrone === "cardFrontThrone"
-      ? "cardFrontBeautyThrone"
-      : "cardFrontThrone";
+    wantKing === "cardFrontKing" ? "cardFrontBeautyKing" : "cardFrontKing";
   const otherLink = animalLinks.find((l) => l[otherField]);
   return otherLink ? (mediaById.get(otherLink.mediaAssetId) ?? null) : null;
 }
@@ -160,8 +158,8 @@ export async function getThumbnailPhotoLive(
   const mediaById = new Map(allMedia.map((m) => [m.id, m]));
   const animalLinks = allLinks.filter((l) => l.animalId === animalId);
 
-  const throneLink = animalLinks.find((l) => l.cardFrontThrone);
-  if (throneLink) return mediaById.get(throneLink.mediaAssetId) ?? null;
+  const kingLink = animalLinks.find((l) => l.cardFrontKing);
+  if (kingLink) return mediaById.get(kingLink.mediaAssetId) ?? null;
 
   const anyLink = animalLinks[0];
   return anyLink ? (mediaById.get(anyLink.mediaAssetId) ?? null) : null;

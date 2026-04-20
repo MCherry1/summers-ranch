@@ -341,7 +341,7 @@ export async function getAllTransfers(): Promise<PendingOwnershipTransfer[]> {
 // ── Media assets (new records, not overlays) ────────────────────────
 // Uploaded photos create fresh MediaAsset + CattleMediaLink records.
 // Reads merge seed + created; writes go straight to KV. Created records
-// support patch writes (for classifier score updates, throne flips,
+// support patch writes (for classifier score updates, king flips,
 // admin overrides) via the same merge pattern as animals.
 
 export async function getMediaOverride(

@@ -63,7 +63,7 @@ const animalById = new Map(animals.map((a) => [a.id, a]));
 const animalByTag = new Map(animals.map((a) => [a.tag, a]));
 const mediaById = new Map(media.map((m) => [m.id, m]));
 
-// links grouped by animal for constant-time throne lookup
+// links grouped by animal for constant-time king lookup
 const linksByAnimal = new Map<string, CattleMediaLink[]>();
 for (const link of links) {
   const bucket = linksByAnimal.get(link.animalId) ?? [];
@@ -83,8 +83,8 @@ export function getAnimalByTag(tag: string): AnimalRecord | null {
 
 /**
  * Primary front photo per §3.5:
- *   available animal    → cardFrontThrone (side profile)
- *   not-available animal → cardFrontBeautyThrone (beauty/action)
+ *   available animal    → cardFrontKing (side profile)
+ *   not-available animal → cardFrontBeautyKing (beauty/action)
  *   fallback / reference / zero-photo → null (caller shows silhouette)
  */
 export function getPrimaryPhoto(animalId: string): MediaAsset | null {
@@ -92,33 +92,31 @@ export function getPrimaryPhoto(animalId: string): MediaAsset | null {
   if (!animal) return null;
   const animalLinks = linksByAnimal.get(animalId) ?? [];
 
-  const wantThrone =
+  const wantKing =
     animal.currentStatus === "available"
-      ? "cardFrontThrone"
-      : "cardFrontBeautyThrone";
+      ? "cardFrontKing"
+      : "cardFrontBeautyKing";
 
-  const throneLink = animalLinks.find((l) => l[wantThrone]);
-  if (throneLink) {
-    return mediaById.get(throneLink.mediaAssetId) ?? null;
+  const kingLink = animalLinks.find((l) => l[wantKing]);
+  if (kingLink) {
+    return mediaById.get(kingLink.mediaAssetId) ?? null;
   }
 
-  // Fallback: other-throne if the primary throne is empty
+  // Fallback: other crown if the primary king is empty
   const otherField =
-    wantThrone === "cardFrontThrone"
-      ? "cardFrontBeautyThrone"
-      : "cardFrontThrone";
+    wantKing === "cardFrontKing" ? "cardFrontBeautyKing" : "cardFrontKing";
   const otherLink = animalLinks.find((l) => l[otherField]);
   return otherLink ? (mediaById.get(otherLink.mediaAssetId) ?? null) : null;
 }
 
 /**
- * Back thumbnail per §4.5 — always side-profile throne regardless of
+ * Back thumbnail per §4.5 — always the side-profile king regardless of
  * status (the back is the evaluation surface).
  */
 export function getThumbnailPhoto(animalId: string): MediaAsset | null {
   const animalLinks = linksByAnimal.get(animalId) ?? [];
-  const throneLink = animalLinks.find((l) => l.cardFrontThrone);
-  if (throneLink) return mediaById.get(throneLink.mediaAssetId) ?? null;
+  const kingLink = animalLinks.find((l) => l.cardFrontKing);
+  if (kingLink) return mediaById.get(kingLink.mediaAssetId) ?? null;
   const anyLink = animalLinks[0];
   return anyLink ? (mediaById.get(anyLink.mediaAssetId) ?? null) : null;
 }

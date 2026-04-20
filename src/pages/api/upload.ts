@@ -8,7 +8,7 @@ import {
   writeUploadIssue,
 } from "~/lib/overrides";
 import { classifyAndPersist } from "~/lib/classifier";
-import { recomputeThrones } from "~/lib/throne";
+import { recomputeKings } from "~/lib/king";
 import {
   getUserByUploadToken,
   resolveBearerToken,
@@ -160,12 +160,12 @@ export const POST: APIRoute = async (context) => {
   const link: CattleMediaLink = {
     animalId: animal.id,
     mediaAssetId,
-    cardFrontThrone: false,
-    cardFrontThroneSince: null,
-    cardFrontThroneLostAt: null,
-    cardFrontBeautyThrone: false,
-    cardFrontBeautyThroneSince: null,
-    cardFrontBeautyThroneLostAt: null,
+    cardFrontKing: false,
+    cardFrontKingSince: null,
+    cardFrontKingLostAt: null,
+    cardFrontBeautyKing: false,
+    cardFrontBeautyKingSince: null,
+    cardFrontBeautyKingLostAt: null,
     forceInclude: false,
     forceIncludeExpiresAt: null,
     forceExclude: false,
@@ -176,7 +176,7 @@ export const POST: APIRoute = async (context) => {
   await writeMediaRecord(mediaAssetId, asset);
   await writeLinkRecord(link);
 
-  // ── Fire-and-forget classify + recompute thrones ──────────────────
+  // ── Fire-and-forget classify + recompute kings ────────────────────
   // Astro adapter exposes the Cloudflare ExecutionContext via
   // locals.runtime.cfContext — schedule the classifier so we return 202
   // immediately without blocking the Shortcut.
@@ -189,7 +189,7 @@ export const POST: APIRoute = async (context) => {
       imageBytes: bytes,
       mediaType: classificationType,
     });
-    await recomputeThrones(animal.id);
+    await recomputeKings(animal.id);
   };
 
   if (ctx?.waitUntil) {

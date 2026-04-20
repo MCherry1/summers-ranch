@@ -5,7 +5,7 @@ import { idString, isoDateTime } from "./common";
  * MediaAsset and CattleMediaLink — per CARD-REDESIGN-SPEC §22.1.
  *
  * MediaAsset is the photo; CattleMediaLink is the join to AnimalRecord
- * that carries throne state, admin overrides, and attribution. Scores
+ * that carries king-of-the-hill state, admin overrides, and attribution. Scores
  * are 0-100 with subscores 0-1. Timeline / gallery / editorial scores
  * are null in Phase 1 (rubrics deferred per §24).
  */
@@ -80,15 +80,15 @@ export const CattleMediaLink = z.object({
   animalId: idString,
   mediaAssetId: idString,
 
-  // side-profile throne (evaluation shot)
-  cardFrontThrone: z.boolean(),
-  cardFrontThroneSince: isoDateTime.nullable(),
-  cardFrontThroneLostAt: isoDateTime.nullable(),
+  // side-profile king-of-the-hill (evaluation shot)
+  cardFrontKing: z.boolean(),
+  cardFrontKingSince: isoDateTime.nullable(),
+  cardFrontKingLostAt: isoDateTime.nullable(),
 
-  // beauty/action throne (not-available animals)
-  cardFrontBeautyThrone: z.boolean(),
-  cardFrontBeautyThroneSince: isoDateTime.nullable(),
-  cardFrontBeautyThroneLostAt: isoDateTime.nullable(),
+  // beauty/action king (not-available animals)
+  cardFrontBeautyKing: z.boolean(),
+  cardFrontBeautyKingSince: isoDateTime.nullable(),
+  cardFrontBeautyKingLostAt: isoDateTime.nullable(),
 
   // admin overrides
   forceInclude: z.boolean(),

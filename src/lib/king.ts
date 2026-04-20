@@ -1,4 +1,4 @@
-import type { AnimalRecord, CattleMediaLink, MediaAsset } from "~/schemas";
+import type { CattleMediaLink, MediaAsset } from "~/schemas";
 import {
   getAllCreatedLinks,
   getAllCreatedMedia,
@@ -11,24 +11,35 @@ import {
 import { getAnimalLive } from "~/lib/cattle-live";
 
 /**
- * Throne recomputation — spec §14.8 and §14.9.
+ * King-of-the-hill recomputation — spec §14.8 and §14.9.
  *
  * Invoked after every upload, classification update, or admin
  * Prefer/Hide toggle for an animal. Reads all candidate photos,
- * ranks them by the blended score formula, and sets the appropriate
- * throne flag on exactly one link per slot.
+ * ranks them by a single unified blend, and sets the appropriate
+ * king flag on exactly one link per slot.
+ *
+ * Unified blend per §14.8:
+ *   score = 0.9 × prescription + 0.1 × aesthetic
+ * Applied everywhere. No status-dependent variation. A king can only
+ * be dethroned by a higher-scoring side-profile photo under this
+ * single formula.
+ *
+ * Technical-quality floor per §14.8 and §14.9:
+ *   photos with aestheticSubscores.technical < 0.4 are excluded
+ *   entirely from both crown pools. Gate, not a weight — a blurry
+ *   photo cannot sit on a crown regardless of prescription score.
  *
  * Phase 1 beauty fallback (§14.9): most-recent photo among eligible
  * beauty shot types (action / scenic / three-quarter / head / with-dam
  * / other) by aesthetic score. Side profiles are schema-eligible per
- * the 2026-04 refinement but Phase 1 rubric does not set the beauty
- * throne to side profiles — Phase 2 will introduce the 15-20% penalty.
+ * §14.9 but Phase 1 does not set them as beauty king — Phase 2 will
+ * introduce the 15-20% side-profile penalty.
  *
  * Admin overrides (§14.12):
- *   forceExclude: true  → permanently excluded from both throne slots
- *   forceInclude: true  → wins its slot (if it has a plausible shot
- *                         type for that slot), time-bounded by life-
- *                         stage staleness threshold
+ *   forceExclude: true  → permanently excluded from both crowns
+ *   forceInclude: true  → wins its crown (if plausible shot type and
+ *                         passes the technical floor), time-bounded
+ *                         by life-stage staleness threshold
  */
 
 const BEAUTY_TYPES = new Set([
@@ -40,7 +51,31 @@ const BEAUTY_TYPES = new Set([
   "other",
 ]);
 
-export async function recomputeThrones(animalId: string): Promise<void> {
+/** Technical-quality floor for crown eligibility per §14.8 / §14.9. */
+export const TECHNICAL_FLOOR = 0.4;
+
+/**
+ * Is this photo usable for any crown? Gated by the technical-quality
+ * floor plus the admin forceExclude flag. A photo below the floor is
+ * still viewable in the per-animal gallery but cannot sit on a crown.
+ *
+ * Unclassified photos (aestheticSubscores null) are admitted — they
+ * haven't been scored yet. Once the classifier runs, the floor applies.
+ */
+export function passesTechnicalFloor(asset: MediaAsset): boolean {
+  const technical = asset.aestheticSubscores?.technical;
+  if (technical === null || technical === undefined) return true;
+  return technical >= TECHNICAL_FLOOR;
+}
+
+/** Unified side-profile blend per §14.8. */
+export function blendedScore(asset: MediaAsset): number {
+  const prescription = asset.prescriptionScore ?? 0;
+  const aesthetic = asset.aestheticScore ?? 0;
+  return 0.9 * prescription + 0.1 * aesthetic;
+}
+
+export async function recomputeKings(animalId: string): Promise<void> {
   const animal = await getAnimalLive(animalId);
   if (!animal) return;
 
@@ -66,30 +101,28 @@ export async function recomputeThrones(animalId: string): Promise<void> {
     (l) => l.animalId === animalId
   );
 
-  // Compute the new side-profile throne winner
-  const sideProfileLink = pickSideProfileThrone(animalLinks, mediaById, animal);
-  // Compute the new beauty throne winner
-  const beautyLink = pickBeautyThrone(animalLinks, mediaById);
+  const sideProfileLink = pickSideProfileKing(animalLinks, mediaById);
+  const beautyLink = pickBeautyKing(animalLinks, mediaById);
 
   const now = new Date().toISOString();
 
-  // Apply flags: set throne on winners, clear on everyone else.
+  // Apply flags: crown the winners, dethrone everyone else.
   for (const link of animalLinks) {
     const shouldBeSide = link === sideProfileLink;
     const shouldBeBeauty = link === beautyLink;
     const patch: Partial<CattleMediaLink> = {};
 
-    if (link.cardFrontThrone !== shouldBeSide) {
-      patch.cardFrontThrone = shouldBeSide;
-      patch.cardFrontThroneSince = shouldBeSide ? now : link.cardFrontThroneSince;
-      patch.cardFrontThroneLostAt = shouldBeSide ? null : now;
+    if (link.cardFrontKing !== shouldBeSide) {
+      patch.cardFrontKing = shouldBeSide;
+      patch.cardFrontKingSince = shouldBeSide ? now : link.cardFrontKingSince;
+      patch.cardFrontKingLostAt = shouldBeSide ? null : now;
     }
-    if (link.cardFrontBeautyThrone !== shouldBeBeauty) {
-      patch.cardFrontBeautyThrone = shouldBeBeauty;
-      patch.cardFrontBeautyThroneSince = shouldBeBeauty
+    if (link.cardFrontBeautyKing !== shouldBeBeauty) {
+      patch.cardFrontBeautyKing = shouldBeBeauty;
+      patch.cardFrontBeautyKingSince = shouldBeBeauty
         ? now
-        : link.cardFrontBeautyThroneSince;
-      patch.cardFrontBeautyThroneLostAt = shouldBeBeauty ? null : now;
+        : link.cardFrontBeautyKingSince;
+      patch.cardFrontBeautyKingLostAt = shouldBeBeauty ? null : now;
     }
 
     if (Object.keys(patch).length > 0) {
@@ -106,18 +139,18 @@ function linkKey(link: CattleMediaLink): string {
   return `${link.animalId}:${link.mediaAssetId}`;
 }
 
-function pickSideProfileThrone(
+function pickSideProfileKing(
   links: CattleMediaLink[],
-  mediaById: Map<string, MediaAsset>,
-  animal: AnimalRecord
+  mediaById: Map<string, MediaAsset>
 ): CattleMediaLink | null {
-  // forceInclude wins outright when eligible
+  // forceInclude wins outright when eligible (still must pass the floor)
   for (const link of links) {
     if (link.forceExclude) continue;
     if (!link.forceInclude) continue;
     const asset = mediaById.get(link.mediaAssetId);
     if (!asset || asset.detectedShotType !== "side-profile") continue;
     if (!asset.cardFrontEligible) continue;
+    if (!passesTechnicalFloor(asset)) continue;
     return link;
   }
 
@@ -128,36 +161,34 @@ function pickSideProfileThrone(
       (c): c is { link: CattleMediaLink; asset: MediaAsset } =>
         c.asset !== undefined &&
         c.asset.detectedShotType === "side-profile" &&
-        c.asset.cardFrontEligible
+        c.asset.cardFrontEligible &&
+        passesTechnicalFloor(c.asset)
     );
 
   if (candidates.length === 0) return null;
 
-  const { prescriptionWeight, aestheticWeight } = blendWeights(animal);
-
   const scored = candidates
     .map(({ link, asset }) => ({
       link,
-      score:
-        prescriptionWeight * (asset.prescriptionScore ?? 0) +
-        aestheticWeight * (asset.aestheticScore ?? 0),
+      score: blendedScore(asset),
     }))
     .sort((a, b) => b.score - a.score);
 
   return scored[0]?.link ?? null;
 }
 
-function pickBeautyThrone(
+function pickBeautyKing(
   links: CattleMediaLink[],
   mediaById: Map<string, MediaAsset>
 ): CattleMediaLink | null {
-  // forceInclude wins outright for beauty-eligible types
+  // forceInclude wins outright for beauty-eligible types (with floor check)
   for (const link of links) {
     if (link.forceExclude) continue;
     if (!link.forceInclude) continue;
     const asset = mediaById.get(link.mediaAssetId);
     if (!asset || !BEAUTY_TYPES.has(asset.detectedShotType)) continue;
     if (!asset.cardFrontEligible) continue;
+    if (!passesTechnicalFloor(asset)) continue;
     return link;
   }
 
@@ -168,12 +199,14 @@ function pickBeautyThrone(
       (c): c is { link: CattleMediaLink; asset: MediaAsset } =>
         c.asset !== undefined &&
         BEAUTY_TYPES.has(c.asset.detectedShotType) &&
-        c.asset.cardFrontEligible
+        c.asset.cardFrontEligible &&
+        passesTechnicalFloor(c.asset)
     );
 
   if (candidates.length === 0) return null;
 
-  // Phase 1 fallback: most-recent, tiebreak by aesthetic score.
+  // Phase 1 fallback (§14.9): most-recent, tiebreak by aesthetic score.
+  // Phase 2 will introduce a proper rubric with the side-profile penalty.
   const scored = candidates.sort((a, b) => {
     const timeCmp =
       new Date(b.asset.capturedAt).getTime() -
@@ -183,19 +216,4 @@ function pickBeautyThrone(
   });
 
   return scored[0]?.link ?? null;
-}
-
-function blendWeights(animal: AnimalRecord): {
-  prescriptionWeight: number;
-  aestheticWeight: number;
-} {
-  // Spec §14.8:
-  //   Available     → 0.9 * prescription + 0.1 * aesthetic
-  //   Not-available → 0.7 * prescription + 0.3 * aesthetic
-  // The "transition to x.x" variants trigger when multiple candidates
-  // score closely — a Phase 2 refinement; Phase 1 uses the base blend.
-  if (animal.currentStatus === "available") {
-    return { prescriptionWeight: 0.9, aestheticWeight: 0.1 };
-  }
-  return { prescriptionWeight: 0.7, aestheticWeight: 0.3 };
 }

@@ -126,7 +126,7 @@ export const NudgeType = z.enum(["per-animal", "coverage"]);
 export const Nudge = z.object({
   id: idString,
   type: NudgeType,
-  subtype: z.string(),                           // 'stale-throne', 'completion-celebration', etc.
+  subtype: z.string(),                           // 'stale-king', 'completion-celebration', etc.
   animalId: idString.nullable(),                 // null for coverage
   targetFieldPath: z.string().nullable(),        // deep-link to field
   createdAt: isoDateTime,

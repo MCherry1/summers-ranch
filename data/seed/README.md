@@ -9,7 +9,7 @@ render empty-state surfaces gracefully.
 - `animals.json` — `AnimalRecord[]` per spec §22.1
 - `media.json` — `MediaAsset[]` per spec §22.1
 - `links.json` — `CattleMediaLink[]` per spec §22.1 (join records
-  carrying throne flags, admin overrides, attribution)
+  carrying king-of-the-hill flags, admin overrides, attribution)
 - `site-config.json` — single `SiteConfig` object per spec §17.8
 
 ## No fake data policy
