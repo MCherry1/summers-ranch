@@ -148,6 +148,124 @@ export function mergeUser(
   return { ...seed, ...override };
 }
 
+// ── Created users + tombstones ──────────────────────────────────────
+// Team additions at runtime (spec §17.5) land as full records in KV
+// keyed user-created:<userId>. Removals (seed or runtime) drop a
+// tombstone at user-removed:<userId>. getAllAdminUsersLive merges:
+//   seed baseline + created - tombstoned
+
+export async function writeCreatedUser(user: AdminUser): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  await env.OVERRIDES.put(`user-created:${user.id}`, JSON.stringify(user));
+}
+
+export async function getCreatedUser(userId: string): Promise<AdminUser | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get(`user-created:${userId}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AdminUser;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllCreatedUsers(): Promise<AdminUser[]> {
+  const env = await getEnv();
+  const result: AdminUser[] = [];
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({
+      prefix: "user-created:",
+      cursor,
+    });
+    for (const key of listing.keys) {
+      const raw = await env.OVERRIDES.get(key.name);
+      if (!raw) continue;
+      try {
+        result.push(JSON.parse(raw) as AdminUser);
+      } catch {
+        // skip malformed
+      }
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  return result;
+}
+
+export async function tombstoneUser(userId: string): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return;
+  await env.OVERRIDES.put(
+    `user-removed:${userId}`,
+    JSON.stringify({ removedAt: new Date().toISOString() })
+  );
+}
+
+export async function getAllTombstonedUserIds(): Promise<Set<string>> {
+  const env = await getEnv();
+  const result = new Set<string>();
+  if (!env?.OVERRIDES) return result;
+
+  let cursor: string | undefined;
+  do {
+    const listing = await env.OVERRIDES.list({
+      prefix: "user-removed:",
+      cursor,
+    });
+    for (const key of listing.keys) {
+      const id = key.name.slice("user-removed:".length);
+      result.add(id);
+    }
+    cursor = listing.list_complete ? undefined : listing.cursor;
+  } while (cursor);
+
+  return result;
+}
+
+export async function deleteCreatedUser(userId: string): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return;
+  await env.OVERRIDES.delete(`user-created:${userId}`);
+}
+
+// ── Site config overlay ─────────────────────────────────────────────
+// Owner-only edits on SiteConfig (ranch name, tagline, contact info).
+// Seed ships in data/seed/site-config.json; overlay adjusts at runtime.
+
+import type { SiteConfig } from "~/schemas";
+
+export async function getSiteOverride(): Promise<Partial<SiteConfig> | null> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) return null;
+  const raw = await env.OVERRIDES.get("site:config");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Partial<SiteConfig>;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeSiteOverride(
+  patch: Partial<SiteConfig>
+): Promise<void> {
+  const env = await getEnv();
+  if (!env?.OVERRIDES) {
+    throw new Error("OVERRIDES KV binding not available");
+  }
+  const existing = (await getSiteOverride()) ?? {};
+  const merged: Partial<SiteConfig> = { ...existing, ...patch };
+  await env.OVERRIDES.put("site:config", JSON.stringify(merged));
+}
+
 // ── Media assets (new records, not overlays) ────────────────────────
 // Uploaded photos create fresh MediaAsset + CattleMediaLink records.
 // Reads merge seed + created; writes go straight to KV. Created records
