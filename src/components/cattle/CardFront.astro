@@ -34,10 +34,12 @@ import { STATUS_LABEL } from "~/lib/display/status";
 import RibbonAvailable from "~/components/ribbons/RibbonAvailable.astro";
 import RibbonDistinction from "~/components/ribbons/RibbonDistinction.astro";
 import RibbonBirthday from "~/components/ribbons/RibbonBirthday.astro";
+import LivePhotoOnArrival from "~/components/cattle/LivePhotoOnArrival.astro";
 
 interface Props {
   animal: AnimalRecord;
   primaryPhoto: MediaAsset | null;    // null → silhouette
+  livePhotoMovUri?: string | null;    // when present, plays on arrival (§3.2)
   detailsHref?: string;               // when standalone (herd grid)
   detailsAction?: "link" | "toggle";  // "toggle" when inside <Card>
   static?: boolean;                   // true on list grids per §7.3
@@ -47,8 +49,10 @@ interface Props {
 const {
   animal,
   primaryPhoto,
+  livePhotoMovUri = null,
   detailsHref,
   detailsAction = "link",
+  static: isStatic = false,
   ageOverride,
 } = Astro.props;
 
@@ -84,31 +88,39 @@ const captureDateLabel = primaryPhoto
 
 <article class="card-front" data-status={animal.currentStatus}>
   <div class="photo-slot">
-    <img
-      src={photoUrl}
+    <LivePhotoOnArrival
+      stillSrc={photoUrl}
+      livePhotoMovUri={livePhotoMovUri}
       alt={
         isPlaceholder
           ? `Silhouette placeholder — photo of ${animal.name ?? `#${animal.tag}`} coming soon`
           : `Side profile of ${animal.name ?? `#${animal.tag}`}`
       }
-      loading="lazy"
-      class:list={["photo", { placeholder: isPlaceholder }]}
+      placeholder={isPlaceholder}
+      static={isStatic}
     />
 
     {showDistinction && (
       <RibbonDistinction
         distinction={animal.distinction!}
         year={animal.distinctionYear}
+        registrationNumber={animal.registrationNumber}
       />
     )}
     {showBirthday && (
       <RibbonBirthday
         sex={animal.sex}
         animalName={animal.name}
+        dateOfBirth={animal.dateOfBirth}
         leftPx={birthdayLeft}
       />
     )}
-    {showAvailableRibbon && <RibbonAvailable />}
+    {showAvailableRibbon && (
+      <RibbonAvailable
+        animalId={animal.id}
+        animalName={animal.name}
+      />
+    )}
 
     {captureDateLabel && (
       <span class="overlay bl" aria-hidden="true">{captureDateLabel}</span>
@@ -163,6 +175,100 @@ const captureDateLabel = primaryPhoto
     ) : null}
   </div>
 </article>
+
+<script>
+  /*
+   * Ribbon tooltip behavior (spec §3.4).
+   *
+   * Single delegated handler for all ribbon tooltips on the page.
+   * Tap or hover the ribbon button → tooltip shows. Auto-dismisses
+   * after 5s unattended, or on any click outside the tooltip. Only
+   * links inside the tooltip are tappable — the surrounding panel
+   * doesn't navigate (pointer-events controls this).
+   *
+   * prefers-reduced-motion removes the soft fade-in but preserves
+   * the interaction.
+   */
+
+  type TooltipState = {
+    panel: HTMLElement;
+    trigger: HTMLElement;
+    timer?: number;
+  };
+
+  const openTooltips = new Set<TooltipState>();
+
+  function findPanel(trigger: HTMLElement): HTMLElement | null {
+    const wrap = trigger.closest<HTMLElement>("[data-ribbon-tooltip-wrap]");
+    return wrap?.querySelector<HTMLElement>("[data-ribbon-tooltip-panel]") ?? null;
+  }
+
+  function closeTooltip(state: TooltipState) {
+    state.panel.setAttribute("hidden", "");
+    state.panel.removeAttribute("data-open");
+    state.trigger.setAttribute("aria-expanded", "false");
+    if (state.timer !== undefined) window.clearTimeout(state.timer);
+    openTooltips.delete(state);
+  }
+
+  function closeAll() {
+    for (const state of Array.from(openTooltips)) closeTooltip(state);
+  }
+
+  function openTooltip(trigger: HTMLElement) {
+    const panel = findPanel(trigger);
+    if (!panel) return;
+
+    // If this trigger's panel is already open, treat as toggle close.
+    for (const state of openTooltips) {
+      if (state.trigger === trigger) {
+        closeTooltip(state);
+        return;
+      }
+    }
+
+    // Close any other open panel first — one tooltip at a time.
+    closeAll();
+
+    panel.removeAttribute("hidden");
+    panel.setAttribute("data-open", "true");
+    trigger.setAttribute("aria-expanded", "true");
+
+    const state: TooltipState = { panel, trigger };
+    state.timer = window.setTimeout(() => closeTooltip(state), 5000);
+    openTooltips.add(state);
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    const trigger = target.closest<HTMLElement>("[data-ribbon-tooltip-trigger]");
+    if (trigger) {
+      event.preventDefault();
+      openTooltip(trigger);
+      return;
+    }
+    // Click inside an open tooltip's link → let default happen (navigate).
+    const insideTooltip = target.closest("[data-ribbon-tooltip-panel]");
+    if (insideTooltip) return;
+    // Click anywhere else dismisses everything.
+    closeAll();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAll();
+  });
+
+  // Hover on desktop — short delay to avoid flicker on swipe-past
+  let hoverTimer: number | undefined;
+  document.addEventListener("mouseover", (event) => {
+    const target = event.target as HTMLElement;
+    const trigger = target.closest<HTMLElement>("[data-ribbon-tooltip-trigger]");
+    if (!trigger) return;
+    if (matchMedia("(hover: none)").matches) return;
+    if (hoverTimer !== undefined) window.clearTimeout(hoverTimer);
+    hoverTimer = window.setTimeout(() => openTooltip(trigger), 150);
+  });
+</script>
 
 <style>
   .card-front {

@@ -57,6 +57,7 @@ Astro.response.headers.set(
                   animal={animal}
                   primaryPhoto={primaryPhotos.get(animal.id) ?? null}
                   detailsHref={`/herd/${animal.id}`}
+                  static
                 />
               ))}
             </div>

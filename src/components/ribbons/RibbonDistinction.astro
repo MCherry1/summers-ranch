@@ -1,54 +1,94 @@
 ---
 /**
- * Distinction ribbon — spec §19.1. Vertical hanging ribbon, 34px ×
- * 90px, chevron swallowtail bottom. DOD (Dam of Distinction) in AHA
- * blue, SOD (Sire of Distinction) in AHA red. Gold ★ emblem at top,
- * Cinzel stacked letters below.
+ * Distinction ribbon — spec §19.1 + §3.4.
  *
- * Position is the caller's responsibility: spec §3.3 says distinction
- * sits at position 1 (left:12px). The caller sets `left` via style
- * prop; this component only draws the ribbon.
+ * Vertical hanging ribbon with tooltip on tap. DOD tooltip links to
+ * hereford.org registration lookup (spec §3.4). SOD same pattern
+ * with red gradient. Auto-dismisses after 5 seconds or outside
+ * click. Link inside is the only tappable element.
  *
- * Fabric-depth treatment: horizontal gradient (edge shading) + inner
- * box-shadow for vertical fabric weight. drop-shadow filter follows
- * the clip-path chevron shape per POLISH §7.4.
- *
- * All units px. Year shows in the tooltip (Phase 2, hover/tap pending).
+ * Fabric-depth treatment: horizontal gradient (edge shading) +
+ * inner box-shadow for vertical weight. drop-shadow filter follows
+ * the clip-path chevron per POLISH §7.4.
  */
 import type { Distinction } from "~/schemas";
 
 interface Props {
   distinction: Distinction;
   year: number | null;
-  leftPx?: number;  // spec §3.3 default 12; birthday+distinction overrides
+  leftPx?: number;
+  registrationNumber?: string | null;
 }
 
-const { distinction, year, leftPx = 12 } = Astro.props;
+const { distinction, year, leftPx = 12, registrationNumber } = Astro.props;
 
 const label =
   distinction === "DOD" ? "Dam of Distinction" : "Sire of Distinction";
-const letters = distinction.split("");   // ['D','O','D'] or ['S','O','D']
+const letters = distinction.split("");
+const ariaLabel = year ? `${label}, ${year}` : label;
+
+const verifyUrl = registrationNumber
+  ? `https://www.hereford.org/genetics/animal-search/?RegNum=${registrationNumber}`
+  : "https://hereford.org";
 ---
 
-<div
-  class:list={["distinction-ribbon", distinction.toLowerCase()]}
-  style={`left: ${leftPx}px;`}
-  role="img"
-  aria-label={year ? `${label}, ${year}` : label}
->
-  <span class="star" aria-hidden="true">&#9733;</span>
-  <span class="letters">
-    {letters.map((letter) => <span class="letter">{letter}</span>)}
-  </span>
+<div class="ribbon-wrap" style={`left: ${leftPx}px;`} data-ribbon-tooltip-wrap>
+  <button
+    type="button"
+    class="ribbon-trigger"
+    aria-label={`${ariaLabel} — tap for details`}
+    data-ribbon-tooltip-trigger
+    aria-expanded="false"
+  >
+    <div
+      class:list={["distinction-ribbon", distinction.toLowerCase()]}
+      aria-hidden="true"
+    >
+      <span class="star">&#9733;</span>
+      <span class="letters">
+        {letters.map((letter) => <span class="letter">{letter}</span>)}
+      </span>
+    </div>
+  </button>
+
+  <div
+    class="tooltip"
+    role="tooltip"
+    hidden
+    data-ribbon-tooltip-panel
+  >
+    <p class="title">{label}</p>
+    {year && <p class="detail">Awarded by AHA, {year}.</p>}
+    <a
+      href={verifyUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="tooltip-link"
+    >
+      Verify on hereford.org <span aria-hidden="true">&nearr;</span>
+    </a>
+  </div>
 </div>
 
 <style>
-  .distinction-ribbon {
+  .ribbon-wrap {
     position: absolute;
     top: 0;
+    z-index: var(--z-ribbon);
+  }
+
+  .ribbon-trigger {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    /* The button is the same shape as the ribbon so the tap target
+       matches the visible surface. */
+  }
+
+  .distinction-ribbon {
     width: 34px;
     height: 90px;
-    z-index: var(--z-ribbon);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
     clip-path: polygon(
       0 0,
@@ -64,10 +104,6 @@ const letters = distinction.split("");   // ['D','O','D'] or ['S','O','D']
     gap: 3px;
     pointer-events: none;
   }
-
-  /* horizontal edge shading layered on top of the vertical color
-     gradient by using box-shadow insets — gives the fabric a sense
-     of depth without a second element. */
 
   .distinction-ribbon.dod {
     background:
@@ -115,5 +151,57 @@ const letters = distinction.split("");   // ['D','O','D'] or ['S','O','D']
     color: #f0d874;
     letter-spacing: 0;
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .tooltip {
+    position: absolute;
+    top: 100px;
+    left: 0;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 12px 14px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-resting);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    line-height: var(--line-height-relaxed);
+    z-index: calc(var(--z-ribbon) + 1);
+    pointer-events: none;
+  }
+
+  .tooltip[data-open] {
+    pointer-events: auto;
+  }
+
+  .tooltip .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-1);
+  }
+
+  .tooltip .detail {
+    margin: 0 0 var(--space-2);
+    color: var(--color-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .tooltip-link {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    color: var(--color-accent);
+    text-decoration: none;
+    padding: 2px 0;
+  }
+
+  .tooltip-link:hover {
+    color: var(--color-accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
   }
 </style>

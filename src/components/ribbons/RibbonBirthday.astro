@@ -1,30 +1,24 @@
 ---
 /**
- * Birthday ribbon — spec §19.1. Same vertical-hanging chevron shape
- * as distinction (34×90, swallowtail). Baby pink for females (cows,
- * heifers, heifer calves), baby blue for males (bulls, bull calves,
- * steers). Text reads "HAPPY" | "BIRTHDAY" in two stacked columns
- * per §3.3 — not the age number.
+ * Birthday ribbon — spec §19.1 + §3.4.
  *
- * Position per spec §3.3: when coexisting with distinction, birthday
- * takes position 2 (left:54px). Caller controls via leftPx prop;
- * default is position 1.
- *
- * All units px. Cinzel 7px bold, deep-gold on pink / deep-blue on
- * baby-blue per §19.1.
+ * Vertical hanging ribbon, baby pink for female / baby blue for male.
+ * Tooltip reads "Happy birthday, [Name] — born [full date]" per §3.4.
+ * Pure information — no link inside (there's nowhere to navigate for
+ * a birthday).
  */
 import type { Sex } from "~/schemas";
 
 interface Props {
   sex: Sex;
   animalName: string | null;
+  dateOfBirth: string | null;
   leftPx?: number;
 }
 
-const { sex, animalName, leftPx = 12 } = Astro.props;
+const { sex, animalName, dateOfBirth, leftPx = 12 } = Astro.props;
 
 const isGirl = sex === "cow" || sex === "heifer";
-// Calf sex is ambiguous; default to neutral pink until sex is clarified.
 const palette: "girl" | "boy" = isGirl
   ? "girl"
   : sex === "bull" || sex === "steer"
@@ -33,34 +27,89 @@ const palette: "girl" | "boy" = isGirl
 
 const happy = "HAPPY".split("");
 const birthday = "BIRTHDAY".split("");
-const ariaLabel = animalName
-  ? `Happy birthday, ${animalName}`
-  : "Happy birthday";
+
+const displayName = animalName ?? (sex === "calf" ? "Calf" : sex);
+const ariaLabel = `Happy birthday, ${displayName}`;
+
+function fullDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return null;
+  const [, yearStr, monthStr, dayStr] = match;
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+  const MONTHS = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return `${MONTHS[month - 1]} ${day}, ${year}`;
+}
+
+const fullDob = fullDate(dateOfBirth);
 ---
 
-<div
-  class:list={["birthday-ribbon", palette]}
-  style={`left: ${leftPx}px;`}
-  role="img"
-  aria-label={ariaLabel}
->
-  <div class="columns">
-    <div class="col">
-      {happy.map((letter) => <span class="letter">{letter}</span>)}
+<div class="ribbon-wrap" style={`left: ${leftPx}px;`} data-ribbon-tooltip-wrap>
+  <button
+    type="button"
+    class="ribbon-trigger"
+    aria-label={ariaLabel}
+    data-ribbon-tooltip-trigger
+    aria-expanded="false"
+  >
+    <div
+      class:list={["birthday-ribbon", palette]}
+      aria-hidden="true"
+    >
+      <div class="columns">
+        <div class="col">
+          {happy.map((letter) => <span class="letter">{letter}</span>)}
+        </div>
+        <div class="col">
+          {birthday.map((letter) => <span class="letter">{letter}</span>)}
+        </div>
+      </div>
     </div>
-    <div class="col">
-      {birthday.map((letter) => <span class="letter">{letter}</span>)}
-    </div>
+  </button>
+
+  <div
+    class="tooltip"
+    role="tooltip"
+    hidden
+    data-ribbon-tooltip-panel
+  >
+    <p class="title">Happy birthday, {displayName}.</p>
+    {fullDob && <p class="detail">Born {fullDob}.</p>}
   </div>
 </div>
 
 <style>
-  .birthday-ribbon {
+  .ribbon-wrap {
     position: absolute;
     top: 0;
+    z-index: var(--z-ribbon);
+  }
+
+  .ribbon-trigger {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .birthday-ribbon {
     width: 34px;
     height: 90px;
-    z-index: var(--z-ribbon);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     clip-path: polygon(
       0 0,
@@ -125,5 +174,41 @@ const ariaLabel = animalName
   .birthday-ribbon.boy .letter {
     color: #1e4a7e;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .tooltip {
+    position: absolute;
+    top: 100px;
+    left: 0;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 12px 14px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-resting);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    line-height: var(--line-height-relaxed);
+    z-index: calc(var(--z-ribbon) + 1);
+    pointer-events: none;
+  }
+
+  .tooltip[data-open] {
+    pointer-events: auto;
+  }
+
+  .tooltip .title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    color: var(--color-ink);
+    margin: 0 0 var(--space-1);
+  }
+
+  .tooltip .detail {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: var(--font-size-xs);
   }
 </style>

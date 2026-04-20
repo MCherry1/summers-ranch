@@ -1,33 +1,85 @@
 ---
 /**
- * Available ribbon — spec §19.1 / §19.3.
+ * Available ribbon — spec §19.1 + §3.4.
  *
- * Diagonal gold ribbon across the top-right corner of a photo. Fires
- * only when animal's status is 'available'. Copy is "AVAILABLE" per
- * §19.3 (industry-correct — not "For Sale"). Lato 10px bold (900),
- * 0.2em tracking, dark-gold text (#2c2416) on a gold gradient.
+ * Gold diagonal ribbon across the top-right corner. Tapping opens a
+ * small tooltip (§3.4) containing a link to the inquiry form for
+ * this animal. The link is the only tappable element inside the
+ * tooltip — the tooltip surface itself doesn't swallow taps beyond
+ * the link, so accidental ribbon-area taps on older users' phones
+ * can't navigate away. Auto-dismisses after 5 seconds unattended,
+ * or on any outside click.
  *
  * All units in px — iOS text scaling with rem would distort the
  * fixed-size graphic (spec §19.2).
  */
+interface Props {
+  animalId?: string;
+  animalName?: string | null;
+}
+
+const { animalId, animalName } = Astro.props;
+
+const inquiryHref = animalId
+  ? `/contact?animal=${animalId}`
+  : "/contact";
+
+const label = animalName
+  ? `Ask about ${animalName}`
+  : "Ask about this animal";
 ---
 
-<div class="available-ribbon" aria-label="This animal is available for sale">
-  <div class="band">
-    <span class="text">AVAILABLE</span>
+<div class="ribbon-wrap" data-ribbon-tooltip-wrap>
+  <button
+    type="button"
+    class="ribbon-trigger"
+    aria-label="This animal is available — tap for details"
+    data-ribbon-tooltip-trigger
+    aria-expanded="false"
+  >
+    <div class="available-ribbon" aria-hidden="true">
+      <div class="band">
+        <span class="text">AVAILABLE</span>
+      </div>
+    </div>
+  </button>
+
+  <div
+    class="tooltip"
+    role="tooltip"
+    hidden
+    data-ribbon-tooltip-panel
+  >
+    <p>This animal is for sale.</p>
+    <a href={inquiryHref} class="tooltip-link">
+      {label} <span aria-hidden="true">&rsaquo;</span>
+    </a>
   </div>
 </div>
 
 <style>
-  .available-ribbon {
+  .ribbon-wrap {
     position: absolute;
     top: 0;
     right: 0;
+    z-index: var(--z-ribbon);
+  }
+
+  .ribbon-trigger {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    /* The underlying ribbon visual is pointer-events:none so taps
+       land on the button beneath. */
+  }
+
+  .available-ribbon {
+    position: relative;
     width: 110px;
     height: 110px;
-    pointer-events: none;
     overflow: hidden;
-    z-index: var(--z-ribbon);
+    pointer-events: none;
   }
 
   .band {
@@ -60,5 +112,50 @@
     color: #2c2416;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
     line-height: 1;
+  }
+
+  .tooltip {
+    position: absolute;
+    top: 90px;
+    right: 8px;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 12px 14px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-3);
+    box-shadow: var(--shadow-resting);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-ink);
+    line-height: var(--line-height-relaxed);
+    z-index: calc(var(--z-ribbon) + 1);
+    pointer-events: none;
+  }
+
+  .tooltip[data-open] {
+    pointer-events: auto;
+  }
+
+  .tooltip p {
+    margin: 0 0 var(--space-2);
+    color: var(--color-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .tooltip-link {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    color: var(--color-accent);
+    text-decoration: none;
+    padding: 2px 0;
+  }
+
+  .tooltip-link:hover {
+    color: var(--color-accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
   }
 </style>

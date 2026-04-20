@@ -98,6 +98,7 @@ const fabVisible = can(user.role, "edit-animals");
                 animal={animal}
                 primaryPhoto={primaryPhotos.get(animal.id) ?? null}
                 detailsHref={`/admin/herd/${animal.id}`}
+                static
               />
             ))}
           </div>

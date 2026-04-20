@@ -18,6 +18,7 @@ import {
   getCalvesOfLive,
   getPrimaryPhotoLive,
   getThumbnailPhotoLive,
+  getAllPhotosForLive,
 } from "~/lib/cattle-live";
 import { displayName } from "~/lib/derive/naming";
 
@@ -33,6 +34,12 @@ const thumbnailPhoto = await getThumbnailPhotoLive(animal.id);
 const sire = await getSireLive(animal);
 const dam = await getDamLive(animal);
 const calves = await getCalvesOfLive(animal);
+
+// Timeline photos for the growth carousel (§4.3). Phase 1 admits every
+// timeline-eligible photo in chronological order; the life-stage
+// density rubric (§14.10) is Phase 2.
+const allPhotos = await getAllPhotosForLive(animal.id, "oldest-first");
+const timelinePhotos = allPhotos.filter((p) => p.timelineEligible);
 
 const name = displayName(animal);
 const pageTitle = `${name} — Summers Ranch`;
@@ -58,6 +65,7 @@ Astro.response.headers.set(
       animal={animal}
       primaryPhoto={primaryPhoto}
       thumbnailPhoto={thumbnailPhoto}
+      timelinePhotos={timelinePhotos}
       sire={sire}
       dam={dam}
       calves={calves}

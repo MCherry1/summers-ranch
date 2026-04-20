@@ -1,0 +1,183 @@
+---
+/**
+ * LivePhotoOnArrival — spec §3.2.
+ *
+ * Wraps the card-front photo. When the card enters the viewport
+ * (user arrives at it — swipe-to, direct link, scroll-in), plays the
+ * Live Photo motion component once (~2s), then settles on the still
+ * frame. Swiping away and back replays. Tap does not restart (tap is
+ * reserved for the detail affordance).
+ *
+ * Rendering:
+ *   - When livePhotoMovUri is null (no MOV pair, placeholder, etc.),
+ *     renders a plain <img> — the "motion" branch is a no-op.
+ *   - When present, renders a <video muted playsinline> alongside an
+ *     <img> fallback. IntersectionObserver fires the video on first
+ *     entry. After `ended`, the video is hidden and the still <img>
+ *     is revealed, held by the browser (no extra memory spent on
+ *     decoded video frames while idle).
+ *
+ * Reduced motion:
+ *   - prefers-reduced-motion: reduce → video never plays; still frame
+ *     only. Same for compact-view contexts via a `static` prop so the
+ *     herd grid (§7.3) opts out explicitly.
+ */
+
+interface Props {
+  stillSrc: string;                // URL of still image (SVG placeholder or JPEG)
+  livePhotoMovUri?: string | null; // URL of the MOV component when present
+  alt: string;
+  placeholder?: boolean;           // true → contain + padding (silhouette)
+  static?: boolean;                // true → never play motion (herd grid)
+}
+
+const {
+  stillSrc,
+  livePhotoMovUri,
+  alt,
+  placeholder = false,
+  static: isStatic = false,
+} = Astro.props;
+
+const hasMotion = Boolean(livePhotoMovUri) && !isStatic;
+---
+
+<div
+  class:list={["photo-stage", { "has-motion": hasMotion, placeholder }]}
+  data-live-photo-stage={hasMotion ? "true" : undefined}
+>
+  <img
+    src={stillSrc}
+    alt={alt}
+    loading="lazy"
+    class:list={["photo", "still", { placeholder }]}
+  />
+  {hasMotion && (
+    <video
+      class="photo motion"
+      src={livePhotoMovUri ?? ""}
+      muted
+      playsinline
+      preload="metadata"
+      aria-hidden="true"
+    ></video>
+  )}
+</div>
+
+<script>
+  /*
+   * Single delegated Live Photo handler. Watches every [data-live-photo-
+   * stage] in the page and plays the MOV once per "arrival" — defined as
+   * the stage re-entering the viewport after having left. Respects
+   * prefers-reduced-motion.
+   */
+  const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+  interface StageState {
+    stage: HTMLElement;
+    video: HTMLVideoElement;
+    still: HTMLImageElement;
+    hasPlayed: boolean;
+    isVisible: boolean;
+  }
+
+  const stages = new Map<Element, StageState>();
+
+  document.querySelectorAll<HTMLElement>("[data-live-photo-stage]").forEach(
+    (stage) => {
+      const video = stage.querySelector<HTMLVideoElement>("video.motion");
+      const still = stage.querySelector<HTMLImageElement>("img.still");
+      if (!video || !still) return;
+      const state: StageState = {
+        stage,
+        video,
+        still,
+        hasPlayed: false,
+        isVisible: false,
+      };
+      stages.set(stage, state);
+
+      video.addEventListener("ended", () => {
+        video.setAttribute("data-finished", "true");
+      });
+    }
+  );
+
+  function playArrival(state: StageState) {
+    if (prefersReducedMotion.matches) return;
+    if (!state.isVisible) return;
+    if (state.hasPlayed) return;
+    state.hasPlayed = true;
+    state.video.removeAttribute("data-finished");
+    state.video.currentTime = 0;
+    const playPromise = state.video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Autoplay blocked — gracefully stay on the still.
+        state.video.setAttribute("data-finished", "true");
+      });
+    }
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const state = stages.get(entry.target);
+        if (!state) continue;
+        const wasVisible = state.isVisible;
+        state.isVisible = entry.isIntersecting;
+        if (state.isVisible && !wasVisible) {
+          // Arrival: play once, then lock until re-arrival.
+          playArrival(state);
+        } else if (!state.isVisible && wasVisible) {
+          // Left the viewport — reset so next arrival replays (§3.2).
+          state.hasPlayed = false;
+        }
+      }
+    },
+    { threshold: 0.55 }
+  );
+
+  stages.forEach((_state, stage) => observer.observe(stage));
+</script>
+
+<style>
+  .photo-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s ease;
+  }
+
+  .photo.placeholder {
+    object-fit: contain;
+    padding: 8%;
+  }
+
+  .photo-stage.has-motion .motion {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 1;
+  }
+
+  /* Once the motion has played through, fade out so the still image
+     underneath shows. The still sits at z-index 1 (default stacking). */
+  .photo-stage.has-motion .motion[data-finished] {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo-stage.has-motion .motion {
+      display: none;
+    }
+  }
+</style>

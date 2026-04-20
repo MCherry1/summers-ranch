@@ -52,6 +52,7 @@ const photoMap = new Map(
               animal={animal}
               primaryPhoto={photoMap.get(animal.id) ?? null}
               detailsHref={`/herd/${animal.id}`}
+              static
             />
             <p class="label">{displayName(animal)}</p>
           </div>
