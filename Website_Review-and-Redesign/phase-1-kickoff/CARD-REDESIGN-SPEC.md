@@ -716,7 +716,17 @@ After `/api/upload` writes an image to R2 and returns 202 to the Shortcut, a fol
 4. Claude returns JSON with `detectedShotType`, subscores, eligibility reasoning
 5. Worker parses, writes to MediaAsset record, triggers throne recomputation for the animal
 
-**Model:** `claude-haiku-4-5-20251001`. Haiku is vision-capable, fast, and cheap enough that even classifying thousands of photos costs pennies. Sonnet or Opus would be overkill for this bounded task — Haiku is the right tier.
+**Model selection — do not hardcode the model ID anywhere in source.** Use an environment variable `CLAUDE_MODEL_CLASSIFIER` with a source-level fallback default:
+
+```typescript
+const model = env.CLAUDE_MODEL_CLASSIFIER || 'claude-haiku-4-5-20251001';
+```
+
+This pattern is **mandatory**. Claude models evolve faster than the site will — hardcoding pins us to a specific generation and creates a hunt-and-replace burden at every upgrade. Config-driven model selection lets Matt update the env var in Cloudflare Pages when a new Haiku generation ships, with zero code change.
+
+Guidance for current selection: Haiku tier is the right choice for this task. Vision-capable, fast, cheap enough that even classifying thousands of photos costs pennies. Sonnet or Opus would be overkill for this bounded classification. When upgrading, keep the task at the Haiku tier unless benchmarks specifically show the higher tier materially improves classification accuracy enough to justify 3-5× the cost.
+
+**Current as of 2026-04:** `claude-haiku-4-5-20251001`. Always use the named alias if available (`claude-haiku-latest` is not an Anthropic convention — use a dated model ID, just make it env-driven).
 
 **API endpoint:** `POST https://api.anthropic.com/v1/messages`
 
@@ -729,11 +739,15 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
+// Model is env-driven, never hardcoded. Fallback default ships in source
+// as a safety net but Cloudflare env var should override.
+const model = env.CLAUDE_MODEL_CLASSIFIER || 'claude-haiku-4-5-20251001';
+
 const imageBase64 = await readImageFromR2AsBase64(mediaAsset.uri);
 const mediaType = mediaAsset.uri.endsWith('.heic') ? 'image/heic' : 'image/jpeg';
 
 const response = await client.messages.create({
-  model: 'claude-haiku-4-5-20251001',
+  model,
   max_tokens: 1024,
   messages: [{
     role: 'user',

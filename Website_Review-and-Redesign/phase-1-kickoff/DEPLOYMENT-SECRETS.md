@@ -10,7 +10,7 @@ This document covers the environment variables and secrets the site needs at run
 
 ### `ANTHROPIC_API_KEY` — photo classification
 
-Used by `/api/upload` and the async classifier worker (see spec §14.7.1) to call Claude Haiku 4.5 for cattle photo classification.
+Used by `/api/upload` and the async classifier worker (see spec §14.7.1) to call Claude for cattle photo classification.
 
 **Where to set:**
 
@@ -20,9 +20,75 @@ Cloudflare Pages dashboard → Pages → summers-ranch → Settings → Environm
 - Type: Secret (encrypted, never logged)
 - Value: Matt's API key from https://console.anthropic.com
 
+**Keep Matt's Claude Code API key separate.** If you use Claude Code (the terminal agent) during development, generate a distinct API key for it and put it somewhere that doesn't cross with the site's production key. That way a bug in local dev can't blow through the production budget. Each key can have its own spending cap in the Anthropic console.
+
 **Cost envelope:** ~$0.004 per photo classified. Summers Ranch will classify a few hundred photos per year. Budget: under $5/year for classification. Set Anthropic console spending limit to $10/month as a safety fence — alerts if something runs away.
 
 **Rotation:** rotate annually, or immediately if the key is ever accidentally committed to the repo or exposed in logs.
+
+---
+
+## Model selection — env-driven, not hardcoded
+
+The site calls Claude for one task today (photo classification) and may add more over time. **The model ID is never hardcoded in source.** Instead, each task reads from a named environment variable.
+
+### Task aliases
+
+| Env var | Purpose | Current default |
+|---|---|---|
+| `CLAUDE_MODEL_CLASSIFIER` | Photo classification (spec §14.7.1) | `claude-haiku-4-5-20251001` |
+| *(future)* `CLAUDE_MODEL_DRAFTER` | AI-assisted inquiry reply drafts, if added | (not set; probably Sonnet tier when added) |
+| *(future)* `CLAUDE_MODEL_EDITORIAL` | Editorial atmospheric pick-review, if added | (not set; probably Opus tier when added) |
+
+**Naming per task, not one global variable.** Different tasks have different cost/quality tradeoffs. The classifier runs thousands of times per year and must stay at Haiku tier. An editorial reviewer running 20 times a year could afford Opus. One global `CLAUDE_MODEL` variable would force bad tradeoffs.
+
+### Where task aliases are set
+
+Same Cloudflare Pages environment variables as secrets:
+- Production: Cloudflare Pages → Settings → Environment variables → Production
+- Preview: same but under Preview (lets you test a new model on preview deploys before flipping production)
+- Local dev: `.dev.vars` file
+
+Source code always reads `env.CLAUDE_MODEL_*` with a hardcoded fallback default in case the env var is unset. The fallback default is a known-good model ID so the site never fails just because an env var is missing.
+
+### Quarterly model review
+
+Every three months, run this check:
+
+1. Visit https://docs.claude.com/en/api/models-list — Anthropic's current model documentation
+2. For each `CLAUDE_MODEL_*` environment variable in production, ask:
+   - Is the current model still the latest in its tier? (Haiku stays with Haiku, Sonnet with Sonnet, Opus with Opus)
+   - Has a newer generation shipped at the same price or cheaper?
+   - Are there benchmarks for this task showing the newer model is better?
+3. If yes to all three, update the env var in Cloudflare Pages. Preview-deploy first if you want to verify, then promote to production.
+4. Check https://docs.claude.com/en/api/deprecations for any deprecation notices on models you're using. Anthropic gives 6-month windows; don't miss one.
+
+**Put a calendar reminder on the Owner's phone for every three months.** This is the simplest discipline; don't over-engineer it.
+
+### Defensive fallbacks
+
+Two safety nets protect the site if a deprecation or model change slips through unnoticed:
+
+1. **Startup health check (Phase 2+):** on worker cold start, fire a minimal 10-token test prompt to the configured model. If the model returns `"model not found"` or similar, log a loud warning and fall back to the hardcoded default in source. This catches silent deprecations.
+
+2. **Request-level fallback:** if a real classification call fails specifically with a model-not-found error (distinguished from transient 5xx by error code), catch it, log, and retry once with the source-level hardcoded default. The photo still gets classified; the admin gets notified to update the env var.
+
+Both defenses mean the site doesn't go down if the configured model evaporates — it just complains loudly while falling back to a known-good.
+
+### Upgrade without code change
+
+The happy path when a new Haiku ships:
+
+1. Read Anthropic's release notes for the new Haiku
+2. Check price and capability against current Haiku
+3. If it's as cheap and better: Cloudflare Pages → Preview env var → `CLAUDE_MODEL_CLASSIFIER=claude-haiku-5-0-<date>`
+4. Test a few uploads in preview environment, verify classifications are good
+5. Promote the same env var to Production
+6. Update `DEPLOYMENT-SECRETS.md`'s "current default" row above
+
+No code change. No PR. No deploy. Just an env var flip.
+
+---
 
 ### `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — SMS notifications
 
