@@ -646,7 +646,7 @@ Matt builds the master Shortcut once in the iOS Shortcuts app. Its actions:
 
 1. Receive images from share sheet (accepts photos, Live Photos including MOV component)
 2. "Ask When Import" variable `upload_token` — pre-filled during install via byte substitution
-3. **Tag prompt** — numeric numpad input. Header reads `"Tag number (leave blank for ranch-general)"`. Three outcomes based on input:
+3. **Tag prompt** — numeric numpad input. Header reads `"Tag number (press Enter to skip for ranch-general)"`. Three outcomes based on input:
    - **Numeric value entered:** proceed to step 4 (tag resolution)
    - **Empty input + submit:** skip to step 7 as a ranch-general upload (no `X-Animal-Id` header)
    - **Letter-containing tag:** submit opens the text-input fallback (same as step 6's "No" branch) to capture tags like "109A"
@@ -701,9 +701,49 @@ System anomalies surface here:
 - Photos uploaded against deleted or invalid tags
 - Server-side validation failures (corrupted files, unsupported types)
 - Photos flagged by classifier as likely-not-cattle
-- Duplicate uploads
+- Duplicate uploads (with exceptions — see §14.6.1)
+- Tag conflicts (same photo, different tag than previously assigned)
 
 Each issue has a suggested resolution and a manual override. Non-blocking — upload pipeline keeps running while issues accumulate.
+
+### 14.6.1 🟦 Duplicate handling with tag-upgrade
+
+Tags are **additive metadata**, not upload content. A photo's bytes and its animal association are logically separate. This means the upload pipeline treats duplicate detection differently depending on whether the incoming upload adds new information.
+
+**Duplicate detection** runs server-side via a perceptual hash or content hash on the image bytes (exact algorithm an implementation choice, should be robust to minor recompression). When the server detects that the incoming photo's bytes already exist in R2:
+
+**Case A — incoming upload has `X-Animal-Id`, existing MediaAsset has no `CattleMediaLink`:**
+- This is a tag upgrade. The user previously uploaded this photo as ranch-general; now they're providing an animal attribution.
+- Create a `CattleMediaLink` row linking the existing MediaAsset to the incoming animal.
+- Trigger throne recomputation for that animal.
+- Respond `200 OK` with message "Tag added to existing photo" (distinguishable from a fresh upload's `202 Accepted`).
+- Do **not** re-upload bytes to R2. No duplication.
+
+**Case B — incoming upload has `X-Animal-Id`, existing MediaAsset has a `CattleMediaLink` to the same animal:**
+- No new information.
+- Reject as plain duplicate.
+- Respond `409 Conflict` with message "Photo already uploaded for this animal".
+
+**Case C — incoming upload has `X-Animal-Id`, existing MediaAsset has a `CattleMediaLink` to a *different* animal:**
+- Tag conflict. Possibly the earlier tag was wrong, possibly the new one is. A human should resolve this.
+- Reject the upload.
+- Create an entry in `/admin/upload-issues/` with both animal references and the photo. Admin can choose to reassign, keep as-is, or delete.
+- Respond `409 Conflict` with message "Photo already tagged to a different animal — flagged for admin review".
+
+**Case D — incoming upload has no `X-Animal-Id`, existing MediaAsset has any state:**
+- Tag is additive, never subtractive. A "ranch-general re-upload" of an already-tagged photo is just a duplicate.
+- Reject as plain duplicate.
+- Respond `409 Conflict` with message "Photo already uploaded".
+- If admin wants to remove an animal association, that's a separate admin action (§12 admin surfaces), not an upload flow.
+
+**Why this matters:**
+
+Without tag-upgrade handling, the realistic workflow of "upload now, remember the tag later" fails silently. Marty shares a photo to the Shortcut in the middle of morning chores and skips the tag. Three weeks later he remembers — it was Sweetheart. He shares the same photo again and enters her tag. Without §14.6.1, he either gets a duplicate rejection with the tag info lost, or two copies of the photo in storage with inconsistent metadata. With §14.6.1, the system recognizes this as tag enrichment and updates the existing record.
+
+**Out of scope:**
+
+- Photo byte-identity across re-encoding (iOS sometimes re-encodes HEIC → JPEG during share). Perceptual hashing should handle this; if it doesn't, the re-encoded photo is treated as a new upload. Phase 2 can refine.
+- Bulk tag correction. If a rancher needs to correct tags on many already-uploaded photos, the admin surface (§12) provides that; the upload pipeline doesn't.
 
 ### 14.7 🟧 Photo classification
 
@@ -1866,7 +1906,22 @@ The following are intentionally deferred beyond Phase 1:
 - Beauty/action rubric (card-front for not-available animals)
 - HEIC → WebP/AVIF server pipeline
 - EXIF strip + GPS removal
-- ML-based classification (Phase 1 uses heuristics + admin overrides)
+- Photo byte-identity across re-encoding (§14.6.1 edge case)
+
+**Explicitly not on the roadmap — automatic animal re-identification from photos:**
+
+Some upload flows might suggest it would be useful for the classifier to also recognize *which specific animal* is in a photo (to auto-suggest a tag for untagged uploads, or catch tag errors). This was considered and rejected.
+
+Rationale:
+- Herefords are deliberately bred to be visually uniform. Large red-brown bodies, white faces, white socks — that's the breed standard. Individual markings exist but are subtle, inconsistent across angles and lighting, and don't reliably differentiate adult cows.
+- Ear tags themselves rotate, catch oblique angles, and often aren't legible at typical photograph distance.
+- A perceptual/embedding system trained on this herd would likely produce embeddings that cluster tightly across all adult cows and get confused by the same cow at different ages, seasons, and lighting.
+- False positives ("this looks like Sweetheart" when it's actually a different cow) would be frustrating and erode trust in the system.
+- The operational benefit is small: users can just enter or skip the tag themselves, and the Phase 1 pipeline handles both cases cleanly (§14.2, §14.6.1).
+
+**Ranch-general is a first-class upload state, not a fallback from failed identification.** The system never tries to guess. If Marty skips the tag, the photo is ranch-general; if he enters one, the photo is tagged. No middle ground.
+
+---
 
 **Share sheet:**
 - Filter-aware OpenGraph composites
