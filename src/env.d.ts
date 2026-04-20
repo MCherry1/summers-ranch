@@ -16,6 +16,7 @@ interface Env {
   AUDIT_LOG: KVNamespace;
   INSTALL_TOKENS: KVNamespace;
   NUDGES: KVNamespace;
+  OVERRIDES: KVNamespace;   // runtime-mutable AnimalRecord + AdminUser overlays
 
   // Build-time config (set as env vars in Cloudflare Pages)
   RP_ID?: string;           // WebAuthn relying party ID, e.g. "mrsummersranch.com"

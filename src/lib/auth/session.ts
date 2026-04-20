@@ -1,5 +1,5 @@
 import type { AdminUser } from "~/schemas";
-import { getAdminUser } from "~/lib/admin-users";
+import { getAdminUserLive } from "~/lib/admin-users-live";
 
 /**
  * Session mechanics.
@@ -97,7 +97,7 @@ export async function currentUser(
   const userId = await env.SESSIONS.get(token);
   if (!userId) return null;
 
-  return getAdminUser(userId);
+  return getAdminUserLive(userId);
 }
 
 /**

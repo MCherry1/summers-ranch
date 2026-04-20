@@ -5,9 +5,11 @@ import {
   MediaAsset,
   type Sex,
 } from "~/schemas";
+import { site } from "~/lib/site";
 import animalsJson from "../../data/seed/animals.json";
 import mediaJson from "../../data/seed/media.json";
 import linksJson from "../../data/seed/links.json";
+import placeholdersJson from "../../data/seed/placeholders.json";
 
 /**
  * Cattle data loader. Parses and validates the seed JSON at import
@@ -16,15 +18,45 @@ import linksJson from "../../data/seed/links.json";
  *
  * Phase 1 storage is flat JSON in data/seed/ per §22.2. Phase 2
  * migrates to D1/Postgres; this module is the abstraction seam.
+ *
+ * Placeholder gate: when site config has `usePlaceholderSeed: true`,
+ * a small fixture set of animals with tag prefix "0000" is appended
+ * to the real seed. Drops cleanly when the flag is off. Every
+ * placeholder record carries `privateNotes: "PLACEHOLDER — remove
+ * before launch"` so `grep PLACEHOLDER data/` surfaces them for the
+ * pre-launch cleanup.
  */
 
 const Animals = z.array(AnimalRecord);
 const Media = z.array(MediaAsset);
 const Links = z.array(CattleMediaLink);
 
-export const animals: AnimalRecord[] = Animals.parse(animalsJson);
-export const media: MediaAsset[] = Media.parse(mediaJson);
-export const links: CattleMediaLink[] = Links.parse(linksJson);
+const Placeholders = z.object({
+  animals: Animals,
+  media: Media,
+  links: Links,
+});
+
+const usePlaceholders = Boolean(
+  site.publicSurfaceToggles?.["usePlaceholderSeed"]
+);
+
+const placeholders = usePlaceholders
+  ? Placeholders.parse(placeholdersJson)
+  : { animals: [], media: [], links: [] };
+
+export const animals: AnimalRecord[] = [
+  ...Animals.parse(animalsJson),
+  ...placeholders.animals,
+];
+export const media: MediaAsset[] = [
+  ...Media.parse(mediaJson),
+  ...placeholders.media,
+];
+export const links: CattleMediaLink[] = [
+  ...Links.parse(linksJson),
+  ...placeholders.links,
+];
 
 // ── Indexes ─────────────────────────────────────────────────────────
 const animalById = new Map(animals.map((a) => [a.id, a]));
