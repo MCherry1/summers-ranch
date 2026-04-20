@@ -760,6 +760,16 @@ Every uploaded photo is classified. Classification produces:
 
 Classification runs once per upload, asynchronously, after R2 persistence. Results write back to the MediaAsset record. See §14.7.1 for the implementation.
 
+**How shot-type gating and scoring interact** (clarifying the separation of concerns):
+
+Shot-type classification is a **hard gate**, not a soft signal. A photo classified as `three-quarter` does not enter the side-profile throne pool regardless of how beautiful or well-composed it is. The side-profile pool accepts only photos where `detectedShotType === 'side-profile'`.
+
+**Within** the side-profile pool, ranking uses a blended prescription + aesthetic score (§14.8). The `angle` prescription subscore (25% weight) captures "how cleanly side-on is this specific side-profile photo" — a photo slightly off-axis gets a lower angle subscore and ranks lower than a cleanly perpendicular shot. Aesthetic scoring acts as a tiebreaker when prescription scores are close (0.9/0.1 blend transitioning to 0.8/0.2 for close candidates).
+
+**Prescription subscores are computed only for side-profile shots.** A three-quarter or head-shot photo has `prescriptionSubscores: null` in its MediaAsset record. Prescription scoring is not a universal "how good is this photo" measure applied across all shot types — it's a conformation-specific evaluation that only makes sense for side-profile shots.
+
+**The prescription subscores themselves are canonical.** The eight dimensions (angle, legs, full-body, height, head, cleanliness, background, lighting) reflect the conformation evaluation framework used in registered Hereford judging and AHA evaluation. They are not arbitrary system-convenience categories — they are the established rubric that livestock judges actually apply, taught in AHA junior programs and evaluation seminars. **These subscores are not subject to simplification or correlation-based pruning.** Even if two subscores appear correlated in observed data (e.g., clean operations tend to produce photos with both good cleanliness and good backgrounds), each subscore independently tests a real dimension of the evaluation standard. Future rubric work may adjust the *weighting* of these subscores in the blended prescription score (§14.8), but the subscores themselves are fixed.
+
 **Why classify so granularly when Phase 1 only uses `side-profile` vs not?**
 
 The sub-categorization of non-side-profile shots into `head`, `three-quarter`, `action`, `scenic`, `with-dam`, `detail`, `landscape`, `other` may feel over-engineered given that Phase 1 only gates on `side-profile`-ness for card-front eligibility. Three reasons the granularity is preserved:
@@ -860,6 +870,31 @@ fences, just raw JSON parseable by JSON.parse).
 
 Classify the shot type, then score on the two rubrics below.
 
+SHOT TYPE CLASSIFICATION — strict boundaries:
+
+- "side-profile": the animal's body is positioned roughly perpendicular 
+  to the camera — a 90-degree view. Slight deviations (up to ~15 degrees 
+  off perpendicular) still count as side-profile. Beyond ~15 degrees, 
+  classify as "three-quarter" even if the photo is otherwise beautiful. 
+  The purpose of this classification is to identify evaluation-usable 
+  conformation shots; photos that are not genuinely side-on should not 
+  claim this category.
+- "three-quarter": the animal is turned 15-60 degrees off perpendicular 
+  — partial side, partial front or rear visible.
+- "head": headshot or facial portrait; body mostly not visible.
+- "action": animal in motion (running, playing, jumping, moving 
+  purposefully).
+- "scenic": atmospheric shot where the animal is present but the 
+  environment is co-equal or dominant.
+- "with-dam": calf-with-mother composition.
+- "detail": close-up of a specific feature (udder, brand, ear tag, hoof).
+- "landscape": environment shot; animal not present or incidental.
+- "other": doesn't fit any category above.
+
+When in doubt between "side-profile" and "three-quarter", err toward 
+"three-quarter". A mislabeled three-quarter shot harms the card-front 
+selection system more than a conservatively-classified side-profile shot.
+
 Schema:
 {
   "detectedShotType": "side-profile" | "head" | "three-quarter" | "action" 
@@ -868,7 +903,7 @@ Schema:
   "prescriptionSubscores": {
     // 0.0 to 1.0 each. Only populate when detectedShotType is "side-profile".
     // Return null for other shot types.
-    "angle": number,           // how straight-on is the side profile (1.0 = perfect)
+    "angle": number,           // how straight-on is the side profile (1.0 = perfect perpendicular)
     "legs": number,            // are all four legs visible and clear
     "fullBody": number,        // is the full body in frame
     "height": number,          // is camera height appropriate (roughly eye-level of cow)
