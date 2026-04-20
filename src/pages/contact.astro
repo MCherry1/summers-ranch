@@ -1,16 +1,58 @@
 ---
-export const prerender = true;
 /**
- * Contact page — spec §9.2. Phone, email, physical location (optional
- * per site settings), visiting hours, and an inquiry form posting to
- * /api/inquiry (built-in, not Formspree, per §13.1).
+ * Contact page — spec §9.2 + §13.1.
  *
- * Inquiry form lands with the admin operational milestone when the
- * Worker endpoint exists. Structural stub for now.
+ * Direct contact details at the top, followed by an inquiry form
+ * posting to /api/inquiry. Honeypot field included (hidden from real
+ * users, bots fill it, server silently drops).
+ *
+ * Animal pre-fill: /contact?animal=<id> renders a hidden field carrying
+ * the referenced animal id plus a kicker naming the animal so the
+ * visitor knows their context came through. The same works for
+ * /contact?animals=<id>,<id> (comma-separated) for the compare page's
+ * "Ask about these animals" CTA (§6.2).
+ *
+ * Not prerendered — the page reads `sent` / `error` query params and
+ * resolves animal context at request time. CDN-cached briefly so the
+ * bare /contact path (no query) loads instantly for repeat visitors.
  */
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import PageSection from "~/layouts/PageSection.astro";
-import { site } from "~/lib/site";
+import { getSiteLive } from "~/lib/site-live";
+import { getAnimalLive } from "~/lib/cattle-live";
+import { displayName } from "~/lib/derive/naming";
+
+const site = await getSiteLive();
+
+const url = Astro.url;
+const sent = url.searchParams.get("sent") === "1";
+const error = url.searchParams.get("error");
+
+// Accept either ?animal=<id> or ?animals=<id>,<id>
+const animalSingle = url.searchParams.get("animal");
+const animalMulti = (url.searchParams.get("animals") ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+const requestedIds = animalSingle
+  ? [animalSingle, ...animalMulti]
+  : animalMulti;
+
+const referencedAnimals = (
+  await Promise.all(requestedIds.map((id) => getAnimalLive(id)))
+).filter((a): a is NonNullable<typeof a> => a !== null);
+
+const referencedLabels = referencedAnimals.map((a) => displayName(a));
+const referencedIdsCsv = referencedAnimals.map((a) => a.id).join(",");
+
+const contextKicker = referencedLabels.length > 0
+  ? `About ${referencedLabels.join(", ")}`
+  : "Get in touch";
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+);
 ---
 
 <BaseLayout
@@ -19,7 +61,7 @@ import { site } from "~/lib/site";
   canonicalPath="/contact"
 >
   <PageSection
-    kicker="Get in touch"
+    kicker={contextKicker}
     title={`Say <em>hello.</em>`}
     lead="Interested in an animal, visiting the ranch, or just asking a question? We'd love to hear from you."
   >
@@ -49,13 +91,190 @@ import { site } from "~/lib/site";
         </div>
       )}
     </dl>
+
+    {sent && (
+      <aside class="banner success" role="status">
+        <p class="banner-title">Thanks — your message is in.</p>
+        <p class="banner-body">
+          We&rsquo;ll read it soon. If you included a phone number, expect a
+          text or call back within a day or two.
+        </p>
+      </aside>
+    )}
+
+    {error && (
+      <aside class="banner error" role="alert">
+        <p class="banner-title">Something didn&rsquo;t go through.</p>
+        <p class="banner-body">{error}</p>
+      </aside>
+    )}
+
+    <form
+      class="inquiry-form"
+      method="POST"
+      action="/api/inquiry"
+      id="inquiry-form"
+    >
+      {referencedAnimals.length > 0 && (
+        <div class="context-chip">
+          <p class="context-label">Asking about</p>
+          <ul>
+            {referencedAnimals.map((a) => (
+              <li>
+                <a href={`/herd/${a.id}`}>{displayName(a)}</a>
+              </li>
+            ))}
+          </ul>
+          <input
+            type="hidden"
+            name="referencedAnimalIds"
+            value={referencedIdsCsv}
+          />
+        </div>
+      )}
+
+      <div class="fields">
+        <div class="field">
+          <label for="senderName">Your name</label>
+          <input
+            id="senderName"
+            name="senderName"
+            type="text"
+            autocomplete="name"
+            required
+            maxlength="120"
+          />
+        </div>
+        <div class="field">
+          <label for="senderEmail">Email</label>
+          <input
+            id="senderEmail"
+            name="senderEmail"
+            type="email"
+            autocomplete="email"
+            required
+            maxlength="200"
+          />
+        </div>
+        <div class="field">
+          <label for="senderPhone">
+            Phone <span class="opt">optional</span>
+          </label>
+          <input
+            id="senderPhone"
+            name="senderPhone"
+            type="tel"
+            autocomplete="tel"
+            maxlength="40"
+          />
+        </div>
+        <div class="field full">
+          <label for="subject">
+            Subject <span class="opt">optional</span>
+          </label>
+          <input
+            id="subject"
+            name="subject"
+            type="text"
+            maxlength="200"
+          />
+        </div>
+        <div class="field full">
+          <label for="message">Your message</label>
+          <textarea
+            id="message"
+            name="message"
+            rows="6"
+            required
+            minlength="5"
+            maxlength="4000"
+          ></textarea>
+        </div>
+
+        {/* Honeypot — real users don't see this; bots fill it. */}
+        <div class="honeypot" aria-hidden="true">
+          <label>Website (leave blank)</label>
+          <input type="text" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary">Send message</button>
+        <p class="status" id="inquiry-status" aria-live="polite"></p>
+      </div>
+    </form>
   </PageSection>
 </BaseLayout>
+
+<script>
+  // Progressive enhancement: XHR submit so the user stays on the page
+  // and sees an inline confirmation. Falls back to the plain form POST
+  // if JS fails.
+  const form = document.querySelector<HTMLFormElement>("#inquiry-form");
+  const status = document.querySelector<HTMLElement>("#inquiry-status");
+  if (form && status) {
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const submit = form.querySelector<HTMLButtonElement>("button[type='submit']");
+      if (submit) submit.disabled = true;
+      status.textContent = "Sending…";
+      status.dataset.kind = "info";
+      try {
+        const fd = new FormData(form);
+        const payload: Record<string, unknown> = {};
+        fd.forEach((value, key) => {
+          if (key === "referencedAnimalIds" && typeof value === "string") {
+            payload[key] = value.split(",").map((s) => s.trim()).filter(Boolean);
+          } else {
+            payload[key] = value;
+          }
+        });
+        const res = await fetch("/api/inquiry", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !body.ok) {
+          status.textContent = body.error ?? "Couldn't send — please try again.";
+          status.dataset.kind = "error";
+          if (submit) submit.disabled = false;
+          return;
+        }
+        // Replace the form with a success panel in place
+        const section = form.closest(".page-section");
+        form.reset();
+        if (submit) submit.disabled = false;
+        status.textContent = "";
+        const success = document.createElement("aside");
+        success.className = "banner success";
+        success.setAttribute("role", "status");
+        success.innerHTML = `
+          <p class="banner-title">Thanks — your message is in.</p>
+          <p class="banner-body">We&rsquo;ll read it soon. If you included a phone number, expect a text or call back within a day or two.</p>
+        `;
+        form.replaceWith(success);
+        section?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (err) {
+        status.textContent =
+          err instanceof Error ? err.message : "Network error. Try again?";
+        status.dataset.kind = "error";
+        if (submit) submit.disabled = false;
+      }
+    });
+  }
+</script>
 
 <style>
   .contact-list {
     max-width: var(--max-width-data);
-    margin: 0;
+    margin: 0 0 var(--space-10);
     padding: 0;
   }
 
@@ -63,13 +282,11 @@ import { site } from "~/lib/site";
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-1);
-    padding: var(--space-6) 0;
+    padding: var(--space-5) 0;
     border-bottom: 1px solid var(--color-cream-deep);
   }
 
-  .row:first-child {
-    border-top: 1px solid var(--color-cream-deep);
-  }
+  .row:first-child { border-top: 1px solid var(--color-cream-deep); }
 
   dt {
     font-family: var(--font-body);
@@ -93,4 +310,185 @@ import { site } from "~/lib/site";
       gap: var(--space-6);
     }
   }
+
+  .banner {
+    max-width: var(--max-width-prose);
+    padding: var(--space-4) var(--space-5);
+    border-left: 3px solid var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg));
+    margin: 0 0 var(--space-6);
+    border-radius: var(--radius-1);
+  }
+
+  .banner.success { border-left-color: var(--color-accent); }
+  .banner.error { border-left-color: var(--color-accent); }
+
+  .banner-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    margin: 0 0 var(--space-2);
+    color: var(--color-ink);
+  }
+
+  .banner-body {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+    max-width: 42rem;
+  }
+
+  .inquiry-form {
+    margin-top: var(--space-8);
+    max-width: 42rem;
+  }
+
+  .context-chip {
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-paper);
+    border-left: 3px solid var(--color-accent);
+    margin-bottom: var(--space-6);
+    border-radius: var(--radius-1);
+  }
+
+  .context-label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin: 0 0 var(--space-2);
+  }
+
+  .context-chip ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .context-chip a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+  }
+
+  .context-chip a:hover {
+    color: var(--color-accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  @media (min-width: 640px) {
+    .fields {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-5) var(--space-6);
+    }
+    .field.full { grid-column: 1 / -1; }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .field label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-kicker);
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .field .opt {
+    font-weight: var(--font-weight-normal);
+    letter-spacing: 0;
+    text-transform: none;
+    font-style: italic;
+    margin-left: 0.5em;
+  }
+
+  .field input,
+  .field textarea {
+    font: inherit;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-cream-deep);
+    border-radius: var(--radius-1);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    transition: var(--transition-default);
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: 0;
+    border-color: var(--color-accent);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 10rem;
+    line-height: var(--line-height-relaxed);
+  }
+
+  .honeypot {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .actions {
+    margin-top: var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .primary {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.78rem;
+    letter-spacing: var(--letter-spacing-cta);
+    text-transform: uppercase;
+    padding: 0.85rem 1.8rem;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-1);
+    cursor: pointer;
+    transition: var(--transition-default);
+  }
+
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-deep);
+    border-color: var(--color-accent-deep);
+  }
+
+  .primary:disabled { opacity: 0.6; cursor: wait; }
+
+  .status {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  .status[data-kind="error"] { color: var(--color-accent); }
 </style>
