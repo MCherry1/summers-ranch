@@ -49,7 +49,7 @@ The card shape is consistent; what differs is commercial status. An available an
 
 **Front/back photo relationship:**
 
-The back of the card always features the side-profile throne-holder as a corner thumbnail (§4.2), regardless of availability. This is invariant — the back is the evaluation surface for any buyer curious enough to flip it.
+The back of the card always features the side-profile king as a corner thumbnail (§4.2), regardless of availability. This is invariant — the back is the evaluation surface for any buyer curious enough to flip it.
 
 What varies by availability is whether the front *aligns with* or *complements* the back:
 
@@ -132,14 +132,14 @@ Tooltip behavior: appears on tap (mobile) or hover (desktop), non-modal (the res
 
 The front photo depends on availability status:
 
-- **Available animal** → current side-profile throne-holder (see §14 for throne mechanics)
-- **Not-available animal** → current "beauty/action" throne-holder
-- **Empty throne** (no candidate photos yet) → best-available photo by aesthetic score regardless of shot type, with a coverage nudge to admin
+- **Available animal** → current side-profile king (see §14 for king-of-the-hill mechanics)
+- **Not-available animal** → current beauty king
+- **No king crowned yet** (no candidate photos) → best-available photo by aesthetic score regardless of shot type, with a coverage nudge to admin
 - **Reference animal with zero photos** → stylized Hereford silhouette placeholder
 
-The two throne slots (`cardFrontThrone` for side profile, `cardFrontBeautyThrone` for beauty/action) persist independently, so a status transition swaps the displayed photo instantly without recomputation.
+The two king-of-the-hill slots (`cardFrontKing` for side profile, `cardFrontBeautyKing` for beauty/action) persist independently, so a status transition swaps the displayed photo instantly without recomputation.
 
-The side-profile scoring rubric is fully specified in §14. The beauty/action scoring rubric is deferred — Phase 1 uses a fallback: most-recent photo among eligible shot types (`action`, `scenic`, `three-quarter`, `head`, `with-dam`, `other`) by aesthetic score alone. Side profiles are also eligible for the beauty throne with a 15-20% score penalty (see §14.9) — the penalty biases toward visual variety between front and back surfaces, while still letting a dramatically superior side profile win when the beauty pool is weak.
+The side-profile scoring rubric is fully specified in §14. The beauty/action scoring rubric is deferred — Phase 1 uses a fallback: most-recent photo among eligible shot types (`action`, `scenic`, `three-quarter`, `head`, `with-dam`, `other`) by aesthetic score alone. Side profiles are also eligible for the beauty king with a 15-20% score penalty (see §14.9) — the penalty biases toward visual variety between front and back surfaces, while still letting a dramatically superior side profile win when the beauty pool is weak.
 
 ### 3.6 🟧 Orientation handling
 
@@ -162,7 +162,7 @@ The back is the evaluation surface. Its primary content is the animal's detail s
 From top to bottom:
 
 1. **Header strip:** animal's name and tag, large, Playfair Display. For named animals: "Sweetheart · #840". For unnamed: "Cow #842" (sex label + tag).
-2. **Corner thumbnail** (top-right): still image of current side-profile throne-holder, roughly the size of 2-3 stacked stat rows. Subtle expand affordance visible.
+2. **Corner thumbnail** (top-right): still image of current side-profile king, roughly the size of 2-3 stacked stat rows. Subtle expand affordance visible.
 3. **Identity section:** sex, breed, date of birth, age, current status
 4. **Pedigree section:** sire (linked to sire's card if in herd), dam (linked to dam's card if in herd)
 5. **Registration section:** AHA number rendered as tappable external link with ↗ icon, opening hereford.org's registration lookup in a new tab
@@ -203,10 +203,14 @@ For a 9-year-old cow, theoretical maximum is ~23 photos; in practice far fewer s
 
 **Selection within each slice:** the best side-profile photo by the §14 scoring formula, evaluated at the time of the slice. Non-winners do not appear in the carousel but remain in the per-animal gallery (§6).
 
+**Slice scoring is consistent across the carousel.** Every slice uses the same §14.8 blended formula — a single 0.9/0.1 prescription/aesthetic blend with a technical-quality floor. The blend does not vary by slice recency or by availability status. A cow transitioning from available to not-available does not cause her carousel to re-rank; her historical slice winners remain stable unless photos are added, removed, or admin-overridden.
+
+This means the growth story reads as a consistent evaluation across her life, not a "here's the most charming photo from each era" retrospective. A Phase 2+ refinement could introduce relaxed scoring for historical slices of not-available animals (treating old carousel slots as "story" rather than "evaluation"), but Phase 1 applies consistent scoring throughout.
+
 **Autoplay behavior:**
 
 1. Expansion triggers autoplay
-2. First frame is the **most recent** photo (current throne-holder), held for 10 seconds — answers "what does the cow look like now" immediately
+2. First frame is the **most recent** photo (current king), held for 10 seconds — answers "what does the cow look like now" immediately
 3. Transitions to oldest chronological photo
 4. Cycles forward through each slice winner: Live Photo plays once (~2s motion), then still held ~3-5s, transitions to next
 5. When the cycle returns to the current-most-recent, extended 10-second hold
@@ -232,7 +236,7 @@ Internal links to sire/dam cards use standard in-app navigation (sliding to that
 
 ### 4.5 🟧 Back photo selection
 
-The thumbnail shows the current `cardFrontThrone` (side profile), regardless of the animal's availability status. Unlike the front, the back always shows the side profile because the back is the evaluation surface — the buyer who got here wants the information-dense shot.
+The thumbnail shows the current `cardFrontKing` (side profile), regardless of the animal's availability status. Unlike the front, the back always shows the side profile because the back is the evaluation surface — the buyer who got here wants the information-dense shot.
 
 ---
 
@@ -297,7 +301,7 @@ The compare-mode toggle in the herd page is hidden in Phase 1 (since the full co
 - Compare surface: horizontal grid on desktop, horizontal scroll on mobile with sticky attribute column
 - Attribute groups mirror the card-back vocabulary
 - Absent values render as muted "not disclosed" (in compare, absence is meaningful — different from card-level hiding)
-- Photos: single primary photo per animal (side-profile throne-holder), no carousel, no motion
+- Photos: single primary photo per animal (side-profile king), no carousel, no motion
 - "Ask about these animals" CTA opens inquiry form with all selected animals pre-referenced
 - OpenGraph composite image shows all selected animals for shareable URL previews
 
@@ -532,7 +536,7 @@ Capability matrix:
 
 Each Contributor has a trust state:
 
-- **default** — uploads auto-publish immediately, compete in throne algorithm like any other upload. Initial state for every new Contributor.
+- **default** — uploads auto-publish immediately, compete in king-of-the-hill algorithm like any other upload. Initial state for every new Contributor.
 - **review-required** — uploads land in `/admin/review/` queue, not visible publicly until approved. Contributor's phone UX unchanged — they don't know their uploads are gated. Set by Owner or Admin when quality degrades.
 - **revoked** — uploads are silently rejected at the server. Contributor sees success messages on their phone but nothing persists. Set when a Contributor should no longer contribute but admin doesn't want an explicit confrontation.
 
@@ -617,9 +621,9 @@ Notification prefs per user — see §17.2.
 
 ---
 
-## 14. 🟦 Photo system — upload, classification, throne mechanics
+## 14. 🟦 Photo system — upload, classification, king-of-the-hill mechanics
 
-The photo system has three layers: upload (how photos enter the system), classification (what kind of photo this is), and throne mechanics (which photo wins which slot).
+The photo system has three layers: upload (how photos enter the system), classification (what kind of photo this is), and king-of-the-hill mechanics (which photo wins which slot).
 
 ### 14.1 🟦 Upload — Shortcut pipeline (iOS)
 
@@ -646,14 +650,19 @@ Matt builds the master Shortcut once in the iOS Shortcuts app. Its actions:
 
 1. Receive images from share sheet (accepts photos, Live Photos including MOV component)
 2. "Ask When Import" variable `upload_token` — pre-filled during install via byte substitution
-3. **Always-confirm picker** prompts for numeric tag input (a single numpad session, no alphabetic keyboard)
+3. **Tag prompt** — numeric numpad input. Header reads `"Tag number (press Enter to skip for ranch-general)"`. Three outcomes based on input:
+   - **Numeric value entered:** proceed to step 4 (tag resolution)
+   - **Empty input + submit:** skip to step 7 as a ranch-general upload (no `X-Animal-Id` header)
+   - **Letter-containing tag:** submit opens the text-input fallback (same as step 6's "No" branch) to capture tags like "109A"
 4. API call: `GET /api/resolve-tag?tag=<input>` with `Authorization: Bearer <upload_token>` — returns `{ matches: [{ animalId, label }, ...] }`
 5. Picker shown **always** (never auto-proceeds, even with a single match), header `"Matches for <n>:"`, items are identity-labeled strings (e.g., "Sweetheart (Cow, 9yr)"), plus a final "Add new tag" entry
 6. If user chooses "Add new tag": `"Use tag <n>?"` Yes/No prompt. Yes → commits as new animal placeholder with the typed tag. No → opens text input for letter tags (escape hatch for "109A" style tags).
-7. For each image: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>`, `X-Animal-Id: <resolved>`, `X-Batch-Id: <session-generated-uuid>` headers
+7. For each image: `POST /api/upload` with binary body, `Authorization: Bearer <upload_token>`, `X-Batch-Id: <session-generated-uuid>` headers. If an animal was resolved, additionally include `X-Animal-Id: <resolved>`. If no tag was entered (ranch-general), omit the `X-Animal-Id` header entirely — the server treats this as a ranch-general upload.
 8. On all-202 success: brief visual "✓ Sent!" toast. **No audio confirmation** (cow moo scrapped).
 
 **Full-file preservation to R2.** No client compression. HEIC, Live Photo MOV pairs, ProRAW all preserved intact. Post-processing (HEIC → WebP/AVIF, EXIF strip, GPS removal) happens server-side in Phase 2.
+
+**Single pipeline for both animal-attached and ranch-general photos.** The tag is optional metadata, not a gate. Ranch-general photos (landscapes, atmospheric shots, herd-group photos) upload through the same Shortcut without a tag, are classified by the same classifier (§14.7.1), and are eligible for gallery surfaces (The Herd, The Ranch) but **not** eligible for card-front slots (card-front eligibility requires an attached animal).
 
 ### 14.3 🟦 Incoming share sheet
 
@@ -696,9 +705,49 @@ System anomalies surface here:
 - Photos uploaded against deleted or invalid tags
 - Server-side validation failures (corrupted files, unsupported types)
 - Photos flagged by classifier as likely-not-cattle
-- Duplicate uploads
+- Duplicate uploads (with exceptions — see §14.6.1)
+- Tag conflicts (same photo, different tag than previously assigned)
 
 Each issue has a suggested resolution and a manual override. Non-blocking — upload pipeline keeps running while issues accumulate.
+
+### 14.6.1 🟦 Duplicate handling with tag-upgrade
+
+Tags are **additive metadata**, not upload content. A photo's bytes and its animal association are logically separate. This means the upload pipeline treats duplicate detection differently depending on whether the incoming upload adds new information.
+
+**Duplicate detection** runs server-side via a perceptual hash or content hash on the image bytes (exact algorithm an implementation choice, should be robust to minor recompression). When the server detects that the incoming photo's bytes already exist in R2:
+
+**Case A — incoming upload has `X-Animal-Id`, existing MediaAsset has no `CattleMediaLink`:**
+- This is a tag upgrade. The user previously uploaded this photo as ranch-general; now they're providing an animal attribution.
+- Create a `CattleMediaLink` row linking the existing MediaAsset to the incoming animal.
+- Trigger king recomputation for that animal.
+- Respond `200 OK` with message "Tag added to existing photo" (distinguishable from a fresh upload's `202 Accepted`).
+- Do **not** re-upload bytes to R2. No duplication.
+
+**Case B — incoming upload has `X-Animal-Id`, existing MediaAsset has a `CattleMediaLink` to the same animal:**
+- No new information.
+- Reject as plain duplicate.
+- Respond `409 Conflict` with message "Photo already uploaded for this animal".
+
+**Case C — incoming upload has `X-Animal-Id`, existing MediaAsset has a `CattleMediaLink` to a *different* animal:**
+- Tag conflict. Possibly the earlier tag was wrong, possibly the new one is. A human should resolve this.
+- Reject the upload.
+- Create an entry in `/admin/upload-issues/` with both animal references and the photo. Admin can choose to reassign, keep as-is, or delete.
+- Respond `409 Conflict` with message "Photo already tagged to a different animal — flagged for admin review".
+
+**Case D — incoming upload has no `X-Animal-Id`, existing MediaAsset has any state:**
+- Tag is additive, never subtractive. A "ranch-general re-upload" of an already-tagged photo is just a duplicate.
+- Reject as plain duplicate.
+- Respond `409 Conflict` with message "Photo already uploaded".
+- If admin wants to remove an animal association, that's a separate admin action (§12 admin surfaces), not an upload flow.
+
+**Why this matters:**
+
+Without tag-upgrade handling, the realistic workflow of "upload now, remember the tag later" fails silently. Marty shares a photo to the Shortcut in the middle of morning chores and skips the tag. Three weeks later he remembers — it was Sweetheart. He shares the same photo again and enters her tag. Without §14.6.1, he either gets a duplicate rejection with the tag info lost, or two copies of the photo in storage with inconsistent metadata. With §14.6.1, the system recognizes this as tag enrichment and updates the existing record.
+
+**Out of scope:**
+
+- Photo byte-identity across re-encoding (iOS sometimes re-encodes HEIC → JPEG during share). Perceptual hashing should handle this; if it doesn't, the re-encoded photo is treated as a new upload. Phase 2 can refine.
+- Bulk tag correction. If a rancher needs to correct tags on many already-uploaded photos, the admin surface (§12) provides that; the upload pipeline doesn't.
 
 ### 14.7 🟧 Photo classification
 
@@ -715,6 +764,42 @@ Every uploaded photo is classified. Classification produces:
 
 Classification runs once per upload, asynchronously, after R2 persistence. Results write back to the MediaAsset record. See §14.7.1 for the implementation.
 
+**How shot-type gating and scoring interact** (clarifying the separation of concerns):
+
+Shot-type classification is a **hard gate**, not a soft signal. A photo classified as `three-quarter` does not enter the side-profile king pool regardless of how beautiful or well-composed it is. The side-profile pool accepts only photos where `detectedShotType === 'side-profile'`.
+
+**Within** the side-profile pool, ranking uses a blended prescription + aesthetic score (§14.8). The `angle` prescription subscore (25% weight) captures "how cleanly side-on is this specific side-profile photo" — a photo slightly off-axis gets a lower angle subscore and ranks lower than a cleanly perpendicular shot. Aesthetic scoring acts as a tiebreaker when prescription scores are close (single 0.9/0.1 blend, applied everywhere regardless of animal status).
+
+**Prescription subscores are computed only for side-profile shots.** A three-quarter or head-shot photo has `prescriptionSubscores: null` in its MediaAsset record. Prescription scoring is not a universal "how good is this photo" measure applied across all shot types — it's a conformation-specific evaluation that only makes sense for side-profile shots.
+
+**The prescription subscores themselves are canonical.** The eight dimensions (angle, legs, full-body, height, head, cleanliness, background, lighting) reflect the conformation evaluation framework used in registered Hereford judging and AHA evaluation. They are not arbitrary system-convenience categories — they are the established rubric that livestock judges actually apply, taught in AHA junior programs and evaluation seminars. **These subscores are not subject to simplification or correlation-based pruning.** Even if two subscores appear correlated in observed data (e.g., clean operations tend to produce photos with both good cleanliness and good backgrounds), each subscore independently tests a real dimension of the evaluation standard. Future rubric work may adjust the *weighting* of these subscores in the blended prescription score (§14.8), but the subscores themselves are fixed.
+
+**Why classify so granularly when Phase 1 only uses `side-profile` vs not?**
+
+The sub-categorization of non-side-profile shots into `head`, `three-quarter`, `action`, `scenic`, `with-dam`, `detail`, `landscape`, `other` may feel over-engineered given that Phase 1 only gates on `side-profile`-ness for card-front eligibility. Three reasons the granularity is preserved:
+
+1. **Same cost.** The Claude vision API call costs the same whether it outputs `"side-profile"` or `"three-quarter"`. Asking for granular classification costs no more than asking for a binary.
+
+2. **Phase 2 rubrics differentiate meaningfully.** The deferred beauty, editorial, and gallery rubrics (§24) will weigh shot types differently. A beauty rubric might prefer `action` and `three-quarter` over `head`. A gallery curator might want variety across types to avoid five similar headshots in a row. An editorial rubric might penalize `detail` shots as not story-telling. Collapsing to binary now means reclassifying the entire library when those rubrics land, which is thousands of API calls paid again.
+
+3. **Coverage nudges work better with specificity.** "No action shots of Sweetheart in the last 12 months" tells admin what kind of photo to capture next. "No non-side-profile shots" tells them nothing actionable.
+
+**Shot-type usage map** (documents what each type is actually *for* in the system):
+
+| Shot type | Phase 1 use | Phase 2+ use |
+|---|---|---|
+| `side-profile` | Card front (available animals), back thumbnail, timeline carousel, per-animal gallery | Same + potential scoring refinements |
+| `three-quarter` | Beauty-king pool (card front for not-available animals) | Dedicated beauty rubric weighting |
+| `action` | Beauty-king pool | Beauty rubric, editorial rubric (likely high weight) |
+| `head` | Beauty-king pool | Beauty rubric (likely lower weight than action/three-quarter) |
+| `with-dam` | Beauty-king pool | Dedicated "family/pedigree" section if added |
+| `scenic` | Gallery-Ranch candidate, beauty-king pool | Atmospheric gallery curation |
+| `detail` | Gallery eligibility, generally low priority | Low-priority fallback |
+| `landscape` | Gallery-Ranch candidate | Primary source for Ranch gallery |
+| `other` | Beauty-king pool fallback | Admin review flag if too many land here |
+
+If a future rubric turns out to not differentiate by a particular shot type, the enum can stay — unused values cost nothing. If a missing shot type becomes useful, it can be added as a prompt/schema change without back-filling existing photos (the classifier can re-run on demand).
+
 ### 14.7.1 🟧 Classification implementation — Claude vision pipeline
 
 **Architecture:**
@@ -725,7 +810,7 @@ After `/api/upload` writes an image to R2 and returns 202 to the Shortcut, a fol
 2. Classifier worker reads the image from R2, computes dimensions (for orientation and aspect ratio)
 3. Classifier worker calls Claude API with the image and a structured prompt
 4. Claude returns JSON with `detectedShotType`, subscores, eligibility reasoning
-5. Worker parses, writes to MediaAsset record, triggers throne recomputation for the animal
+5. Worker parses, writes to MediaAsset record, triggers king recomputation for the animal
 
 **Model selection — do not hardcode the model ID anywhere in source.** Use an environment variable `CLAUDE_MODEL_CLASSIFIER` with a source-level fallback default:
 
@@ -789,6 +874,31 @@ fences, just raw JSON parseable by JSON.parse).
 
 Classify the shot type, then score on the two rubrics below.
 
+SHOT TYPE CLASSIFICATION — strict boundaries:
+
+- "side-profile": the animal's body is positioned roughly perpendicular 
+  to the camera — a 90-degree view. Slight deviations (up to ~15 degrees 
+  off perpendicular) still count as side-profile. Beyond ~15 degrees, 
+  classify as "three-quarter" even if the photo is otherwise beautiful. 
+  The purpose of this classification is to identify evaluation-usable 
+  conformation shots; photos that are not genuinely side-on should not 
+  claim this category.
+- "three-quarter": the animal is turned 15-60 degrees off perpendicular 
+  — partial side, partial front or rear visible.
+- "head": headshot or facial portrait; body mostly not visible.
+- "action": animal in motion (running, playing, jumping, moving 
+  purposefully).
+- "scenic": atmospheric shot where the animal is present but the 
+  environment is co-equal or dominant.
+- "with-dam": calf-with-mother composition.
+- "detail": close-up of a specific feature (udder, brand, ear tag, hoof).
+- "landscape": environment shot; animal not present or incidental.
+- "other": doesn't fit any category above.
+
+When in doubt between "side-profile" and "three-quarter", err toward 
+"three-quarter". A mislabeled three-quarter shot harms the card-front 
+selection system more than a conservatively-classified side-profile shot.
+
 Schema:
 {
   "detectedShotType": "side-profile" | "head" | "three-quarter" | "action" 
@@ -797,7 +907,7 @@ Schema:
   "prescriptionSubscores": {
     // 0.0 to 1.0 each. Only populate when detectedShotType is "side-profile".
     // Return null for other shot types.
-    "angle": number,           // how straight-on is the side profile (1.0 = perfect)
+    "angle": number,           // how straight-on is the side profile (1.0 = perfect perpendicular)
     "legs": number,            // are all four legs visible and clear
     "fullBody": number,        // is the full body in frame
     "height": number,          // is camera height appropriate (roughly eye-level of cow)
@@ -857,8 +967,8 @@ await updateMediaAsset(mediaAsset.id, {
   editorialCandidate: parsed.eligibility.editorialCandidate,
 });
 
-// Trigger throne recomputation for the animal
-await recomputeThrones(animalId);
+// Trigger king recomputation for the animal
+await recomputeKings(animalId);
 ```
 
 **Cost estimation:**
@@ -893,7 +1003,7 @@ Phase 2+ may add a reclassification mechanism (e.g., when the rubric is refined 
 Based on experience with similar image-classification tasks, expect:
 - **Reliably correct:** distinguishing cattle from non-cattle, identifying obvious side-profile vs headshot vs action, recognizing cleanliness and lighting quality, detecting full-body framing
 - **Mostly correct but occasionally wrong:** subtle angle judgments ("is this 3/4 turned or fully side?"), scoring composition on atmospheric shots, detecting subject being with dam vs just adjacent
-- **Not reliable alone:** final prescription judgments ("is this angle acceptable for evaluation?") — we use the scores as inputs to the throne algorithm (§14.8), not as final decisions. Admin Prefer/Hide overrides per §14.12 exist precisely because automated scoring isn't authoritative.
+- **Not reliable alone:** final prescription judgments ("is this angle acceptable for evaluation?") — we use the scores as inputs to the king-of-the-hill algorithm (§14.8), not as final decisions. Admin Prefer/Hide overrides per §14.12 exist precisely because automated scoring isn't authoritative.
 
 **Concrete integration with the upload flow:**
 
@@ -908,9 +1018,9 @@ Claude returns JSON classification
     ↓
 Worker writes scores/flags to MediaAsset record
     ↓
-Worker calls recomputeThrones(animalId)
+Worker calls recomputeKings(animalId)
     ↓
-Throne changes propagate to card-front selection on next render
+King changes propagate to card-front selection on next render
 ```
 
 The upload handler returns 202 before classification completes. The Shortcut doesn't wait. If classification fails, the photo is still uploaded and visible — just unclassified, which admin can manually classify later.
@@ -962,11 +1072,15 @@ Both scheduled checks can live in the same `/functions/cron/` directory and shar
 
 The "automatically update env var" path specifically requires the `CF_API_TOKEN` secret — it's the only way to change a Pages environment variable programmatically. If that token isn't configured, both scheduled checks degrade gracefully to email-only mode (no automatic updates, just notifications).
 
-### 14.8 🟧 Throne mechanics — card front (side profile)
+### 14.8 🟧 King-of-the-hill — side-profile selection
 
-The current `cardFrontThrone` for each animal is the highest-scoring eligible side-profile photo, where score is a **blended weighted sum** of prescription and aesthetic components.
+The card uses a "king of the hill" selection algorithm for side profiles. At any point in time, one photograph is the reigning king for each animal — the current best side-profile shot by the scoring rubric below. New uploads compete against the reigning king; if they score higher, they take the crown. The field `cardFrontKing: boolean` on `CattleMediaLink` marks the current king for each animal.
 
-**Prescription weighting** (what a buyer wants to evaluate):
+The king drives the card front (for available animals) and the back-of-card thumbnail (for every animal, always). See §3.5 and §4.5 for the display surfaces.
+
+**Scoring rubric — applies to every side-profile photo regardless of animal status:**
+
+Prescription weighting (conformation evaluation — drawn from registered Hereford judging and AHA evaluation practice; the eight subscores are canonical, see §14.7):
 
 | Dimension | Weight |
 |---|---|
@@ -981,7 +1095,7 @@ The current `cardFrontThrone` for each animal is the highest-scoring eligible si
 
 Sum: 100. Each subscore is 0-1; prescription score = sum of (weight × subscore) = 0-100.
 
-**Aesthetic weighting** (craft-only, no emotional or creative judgment):
+Aesthetic weighting (craft only — no emotional judgment):
 
 | Dimension | Weight |
 |---|---|
@@ -992,26 +1106,39 @@ Sum: 100. Each subscore is 0-1; prescription score = sum of (weight × subscore)
 
 Sum: 100.
 
-**Blend formula by availability state:**
+**Blend formula:** score = 0.9 × prescription + 0.1 × aesthetic.
 
-- **Available animal:** score = 0.9 × prescription + 0.1 × aesthetic, transitioning to 0.8 × prescription + 0.2 × aesthetic when multiple candidates score closely
-- **Not-available animal:** score = 0.7 × prescription + 0.3 × aesthetic, transitioning to 0.5 × prescription + 0.5 × aesthetic when multiple candidates score closely
+Single blend, applied everywhere: current king selection, historical slice winners in the carousel (§4.3), every side-profile scoring decision. The blend does **not** vary by animal availability status, by slice recency, or by any other variable. A king can only be dethroned by a higher-scoring side-profile photo under this formula.
 
-The higher weighting on prescription for available animals reflects that buyers need evaluation-usable shots. Not-available animals can lean more aesthetic.
+**Technical quality floor:** photos with aesthetic technical-quality subscore below 0.4 are excluded from the king-of-the-hill pool entirely, regardless of prescription score. This is a gate, not a weight. A prescription-perfect but blurry photo cannot be king — a buyer cannot evaluate a blurry photo even if the framing is correct. Photos below the floor remain in the per-animal gallery but are ineligible to become king, to appear in the carousel, or to appear on the card front or back thumbnail.
 
-### 14.9 🟧 Throne mechanics — card front (beauty/action)
+**Why a single blend and no availability-aware weighting:**
 
-Separate throne slot: `cardFrontBeautyThrone`. Used when the animal is not-available.
+The side-profile king serves one purpose: evaluation. It drives the back thumbnail always (which is the growth timeline — inherently evaluation-oriented) and the front card for available animals (which is also evaluation-oriented). For not-available animals, the front card uses the beauty-king instead (§14.9), not the side-profile king. So the side-profile king's blend never needs to soften toward aesthetic for "invitation" purposes — that's the beauty king's job.
+
+Earlier drafts of this spec had an availability-aware blend (0.9/0.1 for available, 0.7/0.3 for not-available). That was a vestige of thinking the side-profile king served different purposes by status. It didn't. Removed.
+
+**Why a technical floor rather than higher aesthetic weight:**
+
+A blurry photo is a problem regardless of how conformation-correct it is. Giving aesthetic a higher weight (e.g., 80/20) would admit blurriness as merely "deprioritized" rather than excluded — a 90-prescription-30-aesthetic blurry shot still beats a 75-prescription-90-aesthetic sharp shot at 80/20 (78 vs 78). The floor cleanly excludes the unusable photos; the 10% aesthetic weight gives a smooth tiebreaker among usable photos that score closely on prescription.
+
+**Slice winners in the carousel (§4.3)** use this same blend. Historical slices are scored consistently across an animal's life. A status transition does not cause re-ranking of historical slices — but since the blend is the same regardless of status, the question is moot.
+
+### 14.9 🟧 Beauty king — card front for not-available animals
+
+Separate king slot: `cardFrontBeautyKing` on `CattleMediaLink`. Used for the front of the card when the animal is not-available.
 
 **Phase 1 fallback:** most-recent photo classified as `action`, `scenic`, `three-quarter`, `head`, `with-dam`, or `other` by aesthetic score alone. No dedicated rubric.
 
-**Side profiles are also eligible** but with a 15-20% aesthetic score penalty (exact value Phase 2 rubric decision). Rationale: for not-available animals, the front's job is to *invite* while the back's job is to *evaluate*. If the front happens to lead with a side profile too, the front and back become visually redundant (same photo content, same purpose), diluting both surfaces' intent. The penalty biases toward visual variety between front and back for not-available animals. It does not apply to available animals — for them, front and back intentionally align on the same side profile throne-holder because both audiences (buyer-evaluating on the front, buyer-studying on the back) want the same evaluation shot.
+**Side profiles are also eligible** but with a 15-20% aesthetic score penalty (exact value Phase 2 rubric decision). Rationale: for not-available animals, the front's job is to *invite* while the back's job is to *evaluate*. If the front happens to lead with a side profile too, the front and back become visually redundant (same photo content, same purpose), diluting both surfaces' intent. The penalty biases toward visual variety between front and back for not-available animals. It does not apply to available animals — for them, front and back intentionally align on the same side-profile king because both audiences (buyer-evaluating on the front, buyer-studying on the back) want the same evaluation shot.
 
 When the beauty pool is weak or empty (e.g., reference animals documented almost entirely via side profiles), a dramatically superior side profile can still win the front despite the penalty. The 15-20% is calibrated to maintain variety by default, not to exclude.
 
-**Empty-throne fallback** (per §3.5): if no photo scores high enough to win the beauty throne — including after the side-profile penalty — the card front displays the best-available photo by raw aesthetic score regardless of shot type. A coverage nudge fires to admin. For not-available animals with only side profiles in their photo history (e.g., some reference animals), this fallback ensures the best side profile appears on the front without an explicit beauty-type candidate.
+**Empty-king fallback** (per §3.5): if no photo scores high enough to win the beauty-king crown — including after the side-profile penalty — the card front displays the best-available photo by raw aesthetic score regardless of shot type. A coverage nudge fires to admin. For not-available animals with only side profiles in their photo history (e.g., some reference animals), this fallback ensures the best side profile appears on the front without an explicit beauty-type candidate.
 
 **Phase 2:** dedicated beauty/action rubric with its own subscores — deferred. Will formalize the side-profile penalty value, define beauty-specific scoring dimensions, and handle edge cases (cow-and-calf shots, seasonal mood shots, action sequences).
+
+**Technical quality floor applies here too.** Photos with aesthetic technical-quality subscore below 0.4 are excluded from the beauty-king pool, same gate as the side-profile king (§14.8). A blurry beauty shot is no better than a blurry side profile.
 
 ### 14.10 🟧 Life stages
 
@@ -1027,7 +1154,7 @@ Life stages drive staleness thresholds and bucketing density:
 
 ### 14.11 🟧 Staleness thresholds
 
-"This throne-holder is too old" triggers a coverage nudge. Threshold depends on life stage and availability:
+"This king is too old" triggers a coverage nudge. Threshold depends on life stage and availability:
 
 | State | Threshold |
 |---|---|
@@ -1039,7 +1166,7 @@ Life stages drive staleness thresholds and bucketing density:
 | Mature, available | 60 days (override) |
 | Reference animal | Never stale |
 
-Threshold is measured from the throne-holder's capture date.
+Threshold is measured from the king's capture date.
 
 ### 14.12 🟧 Prefer / Hide admin overrides
 
@@ -1060,7 +1187,7 @@ Nudges are gentle prompts that surface when admin attention would improve the si
 
 Fire on completion milestones or individual data gaps:
 
-- An animal's throne-holder photo is past its staleness threshold
+- An animal's king photo is past its staleness threshold
 - An animal's required fields are all filled but 1-2 optional fields are missing — "completion celebration" nudge
 - An animal has changed status (new calf, new availability, distinction awarded) and relevant sections need review
 - An animal has no photos and exists (missing initial uploads)
@@ -1616,13 +1743,13 @@ interface CattleMediaLink {
   // join table between AnimalRecord and MediaAsset
   animalId: string
   mediaAssetId: string
-  // throne flags (independent)
-  cardFrontThrone: boolean              // side-profile throne
-  cardFrontThroneSince: string | null
-  cardFrontThroneLostAt: string | null
-  cardFrontBeautyThrone: boolean        // beauty/action throne
-  cardFrontBeautyThroneSince: string | null
-  cardFrontBeautyThroneLostAt: string | null
+  // king-of-the-hill flags (independent)
+  cardFrontKing: boolean              // side-profile king
+  cardFrontKingSince: string | null
+  cardFrontKingLostAt: string | null
+  cardFrontBeautyKing: boolean        // beauty/action king
+  cardFrontBeautyKingSince: string | null
+  cardFrontBeautyKingLostAt: string | null
   // admin overrides
   forceInclude: boolean
   forceIncludeExpiresAt: string | null  // bounded by life-stage staleness
@@ -1715,7 +1842,7 @@ interface InstallToken {
 interface Nudge {
   id: string
   type: 'per-animal' | 'coverage'
-  subtype: string                // e.g. 'stale-throne', 'completion-celebration', 'no-summer-hero'
+  subtype: string                // e.g. 'stale-king', 'completion-celebration', 'no-summer-hero'
   animalId: string | null        // null for coverage nudges
   targetFieldPath: string | null // deep-link to specific field on animal
   createdAt: string
@@ -1835,7 +1962,7 @@ Length target: 150 lines, readable in 5 minutes.
 When the rebuild replaces v1 in production, the following gets wiped and rebuilt:
 - All herd-related components and pages (cards, herd list, animal detail)
 - All admin surfaces (none existed in v1)
-- All photo logic (throne, classification, carousel)
+- All photo logic (king-of-the-hill, classification, carousel)
 
 The following is preserved from v1:
 - Astro scaffold and `astro.config.mjs`
@@ -1861,7 +1988,22 @@ The following are intentionally deferred beyond Phase 1:
 - Beauty/action rubric (card-front for not-available animals)
 - HEIC → WebP/AVIF server pipeline
 - EXIF strip + GPS removal
-- ML-based classification (Phase 1 uses heuristics + admin overrides)
+- Photo byte-identity across re-encoding (§14.6.1 edge case)
+
+**Explicitly not on the roadmap — automatic animal re-identification from photos:**
+
+Some upload flows might suggest it would be useful for the classifier to also recognize *which specific animal* is in a photo (to auto-suggest a tag for untagged uploads, or catch tag errors). This was considered and rejected.
+
+Rationale:
+- Herefords are deliberately bred to be visually uniform. Large red-brown bodies, white faces, white socks — that's the breed standard. Individual markings exist but are subtle, inconsistent across angles and lighting, and don't reliably differentiate adult cows.
+- Ear tags themselves rotate, catch oblique angles, and often aren't legible at typical photograph distance.
+- A perceptual/embedding system trained on this herd would likely produce embeddings that cluster tightly across all adult cows and get confused by the same cow at different ages, seasons, and lighting.
+- False positives ("this looks like Sweetheart" when it's actually a different cow) would be frustrating and erode trust in the system.
+- The operational benefit is small: users can just enter or skip the tag themselves, and the Phase 1 pipeline handles both cases cleanly (§14.2, §14.6.1).
+
+**Ranch-general is a first-class upload state, not a fallback from failed identification.** The system never tries to guess. If Marty skips the tag, the photo is ranch-general; if he enters one, the photo is tagged. No middle ground.
+
+---
 
 **Share sheet:**
 - Filter-aware OpenGraph composites
@@ -1981,7 +2123,7 @@ The following are intentionally deferred beyond Phase 1:
    - `/api/upload` Worker (§14)
    - `/api/resolve-tag` Worker (§14.2)
    - Classification stub (shot type, orientation, basic scores)
-   - Throne calculation logic (§14.8, §14.9)
+   - King-of-the-hill calculation logic (§14.8, §14.9)
    - Staleness threshold and nudge generation (§14.11, §15)
    - Web upload fallback page (§14.4)
    - Install token endpoint (§17.5)
